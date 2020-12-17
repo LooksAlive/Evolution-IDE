@@ -35,6 +35,7 @@
 #include <QList>
 #include <QUrl>
 
+
 #include "linenumberarea.h"
 #include "plaintextedit.h"
 #include "highlighter.h"
@@ -42,7 +43,7 @@
 #include "filedock.h"
 #include "tab.h"
 #include "settingswindow.h"
-#include "compiledock.h"
+#include "consoledock.h"
 
 
 #include "EnvironmentSettings.h"
@@ -88,7 +89,7 @@ private:
     /* Docker stuffs */
     FileDock *Docker;
     /* Compile dock stuffs */
-    CompileDock *OutputWindow;
+    ConsoleDock *OutputWindow;
 
     void dragEnterEvent(QDragEnterEvent* drag_event) override;
     void dropEvent(QDropEvent* drop_event) override;

@@ -17,8 +17,8 @@ set(SOURCE_FILES main.cpp
                 filedock.h
                 tab.cpp
                 tab.h
-                compiledock.cpp
-                compiledock.h
+                consoledock.cpp
+                consoledock.h
                 settingswindow.cpp
                 settingswindow.h
                 customtabstyle.h

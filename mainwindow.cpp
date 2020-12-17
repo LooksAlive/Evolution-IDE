@@ -156,7 +156,7 @@ void MainWindow::SetupFileDocker() {
 
 
 void MainWindow::SetupCompileDock(){
-    OutputWindow = new CompileDock(this);
+    OutputWindow = new ConsoleDock(this);
     addDockWidget(Qt::BottomDockWidgetArea, OutputWindow);
 }
 

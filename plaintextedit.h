@@ -9,6 +9,9 @@
 #include <QResizeEvent>
 #include <QPlainTextEdit>
 
+#include <QCompleter>
+#include <QLineEdit>
+
 
 class PlainTextEdit : public QPlainTextEdit {
     Q_OBJECT
@@ -28,7 +31,10 @@ private slots:
     void updateLineNumberArea(const QRect &, int);
 
 private:
+    QCompleter *Completer;
     QWidget *lineNumberArea;
+
+    void GetCompletion();
 };
 
 #endif // CODEEDITOR_H

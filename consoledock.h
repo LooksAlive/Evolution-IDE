@@ -5,6 +5,7 @@
 
 #include <QTabWidget>
 #include <QPlainTextEdit>
+
 #include <QWidget>
 
 #include "customtabstyle.h"
@@ -16,11 +17,11 @@
 
 */
 
-class CompileDock : public QDockWidget
+class ConsoleDock : public QDockWidget
 {
     Q_OBJECT
 public:
-    CompileDock(QWidget *parent = nullptr);
+    ConsoleDock(QWidget *parent = nullptr);
 
 private:
     QTabWidget *OuterTab;

@@ -13,8 +13,8 @@ FileExplorer::FileExplorer(QWidget *parent) : QDockWidget(parent)
     FileView->setHeaderHidden(true);
 
     /* QDockWidget inherited functions */
-    setWindowTitle("File Explorer");
-    setVisible(false);
-    setFeatures(AllDockWidgetFeatures);
-    setWidget(FileView);
+    FileExplorer::setWindowTitle("File Explorer");
+    FileExplorer::setVisible(false);
+    FileExplorer::setFeatures(AllDockWidgetFeatures);
+    FileExplorer::setWidget(FileView);
 }

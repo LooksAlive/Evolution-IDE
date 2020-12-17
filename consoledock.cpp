@@ -1,17 +1,17 @@
-#include "compiledock.h"
+#include "consoledock.h"
 
 /* enum QTabBar::Shape */
 
-CompileDock::CompileDock(QWidget *parent) : QDockWidget(parent)
+ConsoleDock::ConsoleDock(QWidget *parent) : QDockWidget(parent)
 {
     /* QDockWidget inherited functions */
-    setWindowTitle("Terminal");
-    setVisible(false);
-    setFeatures(AllDockWidgetFeatures);
+    ConsoleDock::setWindowTitle("Terminal");
+    ConsoleDock::setVisible(false);
+    ConsoleDock::setFeatures(AllDockWidgetFeatures);
     // setAllowedAreas(Qt::BottomDockWidgetArea);
 
     OuterTab = new QTabWidget(this);
-    setWidget(OuterTab);
+    ConsoleDock::setWidget(OuterTab);
     // features
     OuterTab->setMovable(false);
     OuterTab->setTabsClosable(false);

@@ -95,4 +95,15 @@ void PlainTextEdit::lineNumberAreaPaintEvent(QPaintEvent *event) {
         bottom = top + (int) blockBoundingRect(block).height();
         ++blockNumber;
     }
+
 }
+
+void PlainTextEdit::GetCompletion(){
+    QStringList wordList{"zeta", "omicron", "omega"};
+    Completer = new QCompleter(wordList, this);
+    QLineEdit *lineEdit = new QLineEdit(this);
+    Completer->setCaseSensitivity(Qt::CaseInsensitive);
+    lineEdit->setCompleter(Completer);
+
+}
+

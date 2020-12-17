@@ -5,8 +5,8 @@ FileDock::FileDock(QWidget *parent) : QDockWidget(parent)
     DockerFileList = new QListWidget(this);
 
     /* QDockWidget inherited functions */
-    setWindowTitle("Opened files");
-    setVisible(false);
-    setFeatures(AllDockWidgetFeatures);
-    setWidget(DockerFileList);
+    FileDock::setWindowTitle("Opened files");
+    FileDock::setVisible(false);
+    FileDock::setFeatures(AllDockWidgetFeatures);
+    FileDock::setWidget(DockerFileList);
 }
