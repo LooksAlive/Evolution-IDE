@@ -1,0 +1,11 @@
+# TODO
+
+* search panel in console
+* settings window layout
+* stacked widget
+
+
+# CHANGES
+
+* added Console, settings widget
+* create separate dir for widgets -> change include policy
