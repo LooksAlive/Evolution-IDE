@@ -21,6 +21,8 @@ set(SOURCE_FILES main.cpp
                 consoledock.h
                 settingswindow.cpp
                 settingswindow.h
+                findreplace.cpp
+                findreplace.h
                 customtabstyle.h
                 EnvironmentSettings.h
                 mainwindow.ui)

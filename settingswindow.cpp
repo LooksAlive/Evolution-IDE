@@ -4,36 +4,54 @@
 
 SettingsWindow::SettingsWindow(QWidget *parent) : QWidget(parent)
 {
-    OuterTab = new QTabWidget(this);
-    GeneralTab = new QTabWidget(this);
-    //OuterLayout = new QGridLayout();
-    changelater = new QPlainTextEdit();
-
     // features
-
     SettingsWindow::setWindowTitle("Settings");
     SettingsWindow::setMinimumSize(400, 250);
 
-    OuterTab->setMovable(false);
-    OuterTab->setTabsClosable(false);
-    OuterTab->setUsesScrollButtons(true);
-    OuterTab->setTabPosition(QTabWidget::West);
-    style = new CustomTabStyle();
-    OuterTab->tabBar()->setStyle(style);
-
-    OuterTab->addTab(GeneralTab, "General");
-    OuterTab->addTab(new QTabWidget(), "OtherStuffs");
-
-    GeneralTab->addTab(changelater, "1");
-    GeneralTab->addTab(new QPlainTextEdit(), "2");
-    GeneralTab->addTab(new QPlainTextEdit(), "3");
-
-    // for exmpl.
-    // OuterTab->addTab(GeneralTab, "OtherStuffs");
-
-    //OuterLayout->addWidget(OuterTab);
-    //OuterLayout->addWidget(GeneralTab);
-    //OuterTab->setLayout(OuterLayout);
+    OuterLayout = new QVBoxLayout(this);
+    OuterLayout->addLayout(buildForm());
+    OuterLayout->addWidget(buildButtonBox());
+    OuterLayout->setContentsMargins(4, 4, 4, 4);
+    OuterLayout->setSpacing(2);
+    SettingsWindow::setAttribute(Qt::WA_DeleteOnClose);
 
 
+
+
+}
+
+QWidget *SettingsWindow::buildButtonBox()
+{
+    m_ButtonBox = new QDialogButtonBox(QDialogButtonBox::Save | QDialogButtonBox::Cancel, this);
+    /*
+    connect(m_ButtonBox, &QDialogButtonBox::accepted, m_AppearanceSettingsWidget, &AppearanceSettingsWidget::save);
+    connect(m_ButtonBox, &QDialogButtonBox::accepted, m_BinarySettingsWidget, &BinarySettingsWidget::save);
+    connect(m_ButtonBox, &QDialogButtonBox::accepted, m_SigningConfigWidget, &SigningConfigWidget::save);
+    connect(m_ButtonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
+    connect(m_ButtonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    */
+    return m_ButtonBox;
+}
+
+QLayout *SettingsWindow::buildForm()
+{
+    InnerLayout = new QHBoxLayout(this);
+    OptionsList = new QListWidget(this);
+    WidgetStack = new QStackedWidget(this);
+
+    InnerLayout->addWidget(OptionsList, 1);
+    OptionsList->addItem(new QListWidgetItem("General"));
+    OptionsList->addItem(new QListWidgetItem("Appearance"));
+    OptionsList->addItem(new QListWidgetItem("Compiler"));
+    OptionsList->addItem(new QListWidgetItem("Cmake"));
+    OptionsList->addItem(new QListWidgetItem("Debugger"));
+    OptionsList->addItem(new QListWidgetItem("Formater"));
+    OptionsList->addItem(new QListWidgetItem("Git"));
+
+    OptionsList->setCurrentRow(0);
+    InnerLayout->addWidget(WidgetStack, 3);
+    WidgetStack->addWidget(new QPlainTextEdit(this)); // 6 more
+    connect(OptionsList, &QListWidget::currentRowChanged, WidgetStack, &QStackedWidget::setCurrentIndex);
+
+    return InnerLayout;
 }

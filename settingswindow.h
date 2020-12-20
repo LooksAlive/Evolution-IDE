@@ -1,13 +1,15 @@
 #ifndef SETTINGSWINDOW_H
 #define SETTINGSWINDOW_H
 
+#include <QDialogButtonBox>
+#include <QListWidget>
+#include <QStackedWidget>
 #include <QWidget>
-#include <QTabWidget>
-#include <QGridLayout>
-// #include <QVBoxLayout>
+// #include <QTabWidget>
+// #include <QGridLayout>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QPlainTextEdit>
-
-#include "customtabstyle.h"
 
 
 class SettingsWindow : public QWidget
@@ -16,13 +18,17 @@ class SettingsWindow : public QWidget
 public:
     explicit SettingsWindow(QWidget *parent = nullptr);
 
-
 private:
-    QTabWidget *OuterTab;
-    QTabWidget *GeneralTab;
-    QGridLayout *OuterLayout;
-    QPlainTextEdit *changelater;
-    CustomTabStyle *style;
+
+    QDialogButtonBox *m_ButtonBox;
+    QListWidget *OptionsList;
+    QStackedWidget *WidgetStack;
+    QHBoxLayout *InnerLayout;
+    QVBoxLayout *OuterLayout;
+
+    QWidget *buildButtonBox();
+    QLayout *buildForm();
+
 
 signals:
 

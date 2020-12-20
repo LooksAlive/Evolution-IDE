@@ -9,6 +9,7 @@
 #include <QWidget>
 
 #include "customtabstyle.h"
+#include "findreplace.h"
 
 /*
 
@@ -22,17 +23,20 @@ class ConsoleDock : public QDockWidget
     Q_OBJECT
 public:
     ConsoleDock(QWidget *parent = nullptr);
+    FindReplaceWidget *find_replace;
 
 private:
     QTabWidget *OuterTab;
+    CustomTabStyle *TabStyle; // innertab style -> horizontal and right(west) aligned
 
+    QWidget *BuildOutput();
     QTabWidget *InnerTab;
-    CustomTabStyle *style; // innertab style -> horizontal and right(west) aligned
     QPlainTextEdit *Logs;
     QPlainTextEdit *CompileOutput;
-    QPlainTextEdit *RawCompileOutput;
+    QPlainTextEdit *RawOutput;
 
-    QWidget *SearchResults;
+    QWidget *BuildSearchResults();
+
 };
 
 #endif // COMPILEDOCK_H

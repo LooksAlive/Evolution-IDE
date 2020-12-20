@@ -157,6 +157,7 @@ void MainWindow::SetupFileDocker() {
 
 void MainWindow::SetupCompileDock(){
     OutputWindow = new ConsoleDock(this);
+    OutputWindow->find_replace->setTextEdit((PlainTextEdit*)Tabs->currentWidget());
     addDockWidget(Qt::BottomDockWidgetArea, OutputWindow);
 }
 
