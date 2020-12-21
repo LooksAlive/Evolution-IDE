@@ -36,7 +36,6 @@
 #include <QUrl>
 
 
-#include "linenumberarea.h"
 #include "plaintextedit.h"
 #include "highlighter.h"
 #include "fileexplorer.h"

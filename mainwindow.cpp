@@ -157,7 +157,7 @@ void MainWindow::SetupFileDocker() {
 
 void MainWindow::SetupCompileDock(){
     OutputWindow = new ConsoleDock(this);
-    OutputWindow->find_replace->setTextEdit((PlainTextEdit*)Tabs->currentWidget());
+    OutputWindow->find_replace->setTextEdit(qobject_cast<PlainTextEdit*>(Tabs->currentWidget()));
     addDockWidget(Qt::BottomDockWidgetArea, OutputWindow);
 }
 

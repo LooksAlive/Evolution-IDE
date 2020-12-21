@@ -21,7 +21,7 @@ private:
     QCheckBox *m_CheckCase;
     QCheckBox *m_CheckRegexp;
     QCheckBox *m_CheckWhole;
-    QPointer<QPlainTextEdit> m_Edit;
+    QPlainTextEdit *m_Edit;
     QLineEdit *m_EditFind;
     QLineEdit *m_EditReplacement;
     QRadioButton *m_RadioDown;

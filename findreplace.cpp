@@ -4,13 +4,14 @@
 #include <QMainWindow>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QButtonGroup>
 
 #include "findreplace.h"
 
 FindReplaceWidget::FindReplaceWidget(const bool replace, QWidget *parent)
     : QWidget(parent), m_Edit(nullptr)
 {
-    auto layout = new QVBoxLayout(this);
+    QVBoxLayout *layout = new QVBoxLayout(this);
     layout->addLayout(buildForm(replace));
     layout->addWidget(buildButtonBox(replace));
     layout->setContentsMargins(4, 4, 4, 4);

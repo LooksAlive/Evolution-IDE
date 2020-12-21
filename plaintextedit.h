@@ -1,40 +1,63 @@
-#ifndef CODEEDITOR_H
-#define CODEEDITOR_H
+#ifndef SOURCECODEEDIT_H
+#define SOURCECODEEDIT_H
 
-#include <QWidget>
-#include <QRect>
-#include <QPainter>
-#include <QTextBlock>
-#include <QPaintEvent>
-#include <QResizeEvent>
 #include <QPlainTextEdit>
 
-#include <QCompleter>
-#include <QLineEdit>
+class LineNumberArea;
 
-
-class PlainTextEdit : public QPlainTextEdit {
+class PlainTextEdit : public QPlainTextEdit
+{
     Q_OBJECT
-
 public:
-    PlainTextEdit(QWidget *parent = 0);
-
-    void lineNumberAreaPaintEvent(QPaintEvent *event);
-    int lineNumberAreaWidth();
+    explicit PlainTextEdit(QWidget *parent = nullptr);
+    QRectF blockBoundingGeometryProxy(const QTextBlock &block);
+    QRectF blockBoundingRectProxy(const QTextBlock &block);
+    QPointF contentOffsetProxy();
+    QTextBlock firstVisibleBlockProxy();
+    void gotoLine(const int no);
+    void moveCursor(const bool end);
 
 protected:
-    void resizeEvent(QResizeEvent *event) override;
-
-private slots:
-    void updateLineNumberAreaWidth(int newBlockCount);
-    void highlightCurrentLine();
-    void updateLineNumberArea(const QRect &, int);
+    void keyPressEvent(QKeyEvent *event);
+    void paintEvent(QPaintEvent *event);
+    void resizeEvent(QResizeEvent *event);
+    void wheelEvent(QWheelEvent *event);
 
 private:
-    QCompleter *Completer;
-    QWidget *lineNumberArea;
+    LineNumberArea *LineArea;
+    int indentSize(const QString &text);
+    bool indentText(const bool forward);
+    QString indentText(QString text, int count) const;
+    void moveSelection(const bool up);
+    void transformText(const bool upper);
 
-    void GetCompletion();
+private slots:
+    void handleBlockCountChanged(const int count);
+    void handleCursorPositionChanged();
+    void handleUpdateRequest(const QRect &rect, const int column);
+    void handleTextChanged();
 };
 
-#endif // CODEEDITOR_H
+
+
+class LineNumberArea : public QWidget
+{
+    Q_OBJECT
+public:
+    explicit LineNumberArea(PlainTextEdit *edit);
+    QSize sizeHint() const;
+
+protected:
+    void leaveEvent(QEvent *event);
+    void mouseEvent(QMouseEvent *event);
+    void mouseMoveEvent(QMouseEvent *event);
+    void mousePressEvent(QMouseEvent *event);
+    void mouseReleaseEvent(QMouseEvent *event);
+    void paintEvent(QPaintEvent *event);
+    void wheelEvent(QWheelEvent *event);
+
+private:
+    PlainTextEdit *m_Edit;
+};
+
+#endif // SOURCECODEEDIT_H

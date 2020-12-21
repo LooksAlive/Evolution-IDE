@@ -8,7 +8,6 @@ set(SOURCE_FILES main.cpp
                 plaintextedit.h
                 highlighter.cpp
                 highlighter.h
-                linenumberarea.h
                 mainwindow.cpp
                 mainwindow.h
                 fileexplorer.cpp
