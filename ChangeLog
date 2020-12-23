@@ -1,8 +1,12 @@
 # TODO
 
-* search panel in console
-* settings window layout
-* stacked widget
+* binary info, hex view as tab and detect .bin, .hex files -> enable this buttons on toolbar, not active otherwise
+* seach box sometimes not working -> QWidget init error
+* Converter -> small widget with line edit to convert text into different formats(hex, base64 ...) + terminal, bash executor
+* * Qt settings -> remember position opened files, path, reopen there, (also) setup open path for dialog to fileexplorer
+* allow drag & drop file, dir on both(fileexplorer, textedit) and set up
+* set up completer for text
+* start to dig into clangd -> indexer
 
 
 # CHANGES
