@@ -87,6 +87,7 @@ void MainWindow::SetupMenuBar() {
     viewMenu->addAction(Explorer->toggleViewAction());
     viewMenu->addAction(Docker->toggleViewAction());
     viewMenu->addAction(OutputWindow->toggleViewAction());
+    viewMenu->addAction(find_replace->toggleViewAction()); // or simply setvisible(true)
 
     /* replace ui; decide if use namespace or just MainWindow->declared int .h as private pointer  */
     ui->menuBar->addMenu(fileMenu);
@@ -113,7 +114,7 @@ void MainWindow::SetupDockWidgetsLayering(){
 
 void MainWindow::SetFont(){
     QFont font;
-    font.setFamily("Console");
+    font.setFamily("Ubuntu Mono");
     font.setWeight(15);
 
     // create font dialog
@@ -157,13 +158,13 @@ void MainWindow::SetupFileDocker() {
 
 void MainWindow::SetupCompileDock(){
     OutputWindow = new ConsoleDock(this);
-    OutputWindow->find_replace->setTextEdit(qobject_cast<PlainTextEdit*>(Tabs->currentWidget()));
+    find_replace = new FindReplaceWidget(Tabs, this);
+
     addDockWidget(Qt::BottomDockWidgetArea, OutputWindow);
+    addDockWidget(Qt::BottomDockWidgetArea, find_replace);
+
+    tabifyDockWidget(OutputWindow, find_replace);
 }
-
-
-
-
 
 
 /* exteranl windows */
@@ -195,10 +196,12 @@ void MainWindow::CreateFile() {
     UpdateCurrentIndex(index);
 }
 
-/* Base operations in MenuBar */
+/* Base operations in MenuBar
+--------------------------------------------------------------------------*/
+
 
 void MainWindow::OpenFile() {
-    QString filepath = QFileDialog::getOpenFileName(this, "Open file", FILE_DIALOG_PATH);
+    QString filepath = QFileDialog::getOpenFileName(this, "Open file", QDir::homePath());
     if (filepath.isEmpty())
         return;
     OpenFile(filepath);
@@ -398,7 +401,8 @@ void MainWindow::OpenFile(QModelIndex file_index) {
 
 
 
-/* tab functions ;   also move into separate file with tabs */
+/* tab functions ;   also move into separate file with tabs
+--------------------------------------------------------------------------*/
 
 void MainWindow::DeleteTabFromList(int index) {
     QListWidgetItem* temp_item = Docker->DockerFileList->takeItem(index);

@@ -3,28 +3,39 @@ project(Evolution-IDE)
 
 set(CMAKE_CXX_STANDARD 11)
 
+#add_subdirectory(Widgets)
+
+#include_directories(Widgets)
+
 set(SOURCE_FILES main.cpp
-                plaintextedit.cpp
-                plaintextedit.h
                 highlighter.cpp
                 highlighter.h
                 mainwindow.cpp
                 mainwindow.h
-                fileexplorer.cpp
-                fileexplorer.h
-                filedock.cpp
-                filedock.h
-                tab.cpp
-                tab.h
-                consoledock.cpp
-                consoledock.h
-                settingswindow.cpp
-                settingswindow.h
-                findreplace.cpp
-                findreplace.h
                 customtabstyle.h
                 EnvironmentSettings.h
-                mainwindow.ui)
+                mainwindow.ui
+                Widgets/PlainTextEdit/plaintextedit.cpp
+                Widgets/PlainTextEdit/plaintextedit.h
+                Widgets/FileExplorer/fileexplorer.cpp
+                Widgets/FileExplorer/fileexplorer.h
+                Widgets/FileDock/filedock.cpp
+                Widgets/FileDock/filedock.h
+                Widgets/Tab/tab.cpp
+                Widgets/Tab/tab.h
+                Widgets/Settings/settingswindow.cpp
+                Widgets/Settings/settingswindow.h
+                Widgets/ConsoleDock/consoledock.cpp
+                Widgets/ConsoleDock/consoledock.h
+                Widgets/ConsoleDock/findreplace.cpp
+                Widgets/ConsoleDock/findreplace.h
+                Widgets/BinaryInfo/binaryinfo.cpp
+                Widgets/BinaryInfo/binaryinfo.h
+                #Widgets/HexView/hexview.cpp
+                #Widgets/HexView/hexview.h
+                #Widgets/Converter/converter.cpp
+                #WWidgets/Converter/converter.h
+                )
 
 #set(Qt5Core_DIR "/opt/Qt/5.9.3/gcc_64/lib/cmake/Qt5Core/")
 #set(Qt5Widgets_DIR "/opt/Qt/5.9.3/gcc_64/lib/cmake/Qt5Widgets/")

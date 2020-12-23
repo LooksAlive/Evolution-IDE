@@ -36,13 +36,15 @@
 #include <QUrl>
 
 
-#include "plaintextedit.h"
+#include "Widgets/PlainTextEdit/plaintextedit.h"
 #include "highlighter.h"
-#include "fileexplorer.h"
-#include "filedock.h"
-#include "tab.h"
-#include "settingswindow.h"
-#include "consoledock.h"
+#include "Widgets/FileExplorer/fileexplorer.h"
+#include "Widgets/FileDock/filedock.h"
+#include "Widgets/Tab/tab.h"
+#include "Widgets/Settings/settingswindow.h"
+
+#include "Widgets/ConsoleDock/findreplace.h"
+#include "Widgets/ConsoleDock/consoledock.h"
 
 
 #include "EnvironmentSettings.h"
@@ -87,8 +89,10 @@ private:
     FileExplorer *Explorer;
     /* Docker stuffs */
     FileDock *Docker;
+
     /* Compile dock stuffs */
     ConsoleDock *OutputWindow;
+    FindReplaceWidget *find_replace;
 
     void dragEnterEvent(QDragEnterEvent* drag_event) override;
     void dropEvent(QDropEvent* drop_event) override;

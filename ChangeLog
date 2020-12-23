@@ -9,6 +9,8 @@
 
 * added Console, settings widget
 * ctrl + mouse wheel increase font size
+* find box added as dockwidget -> tabified widget .... later make show as one in menu
+* settings window buttons works
 
 
 - apkstudio searchreplace(change to QWidget, insert into console) -> easy made, qhexedit(new stacked widget in some option field ... think later - maybe new start window at first and some switcher between diferent views --> hexview, editor, llvm binary info, assembler view(find some) ) also 
