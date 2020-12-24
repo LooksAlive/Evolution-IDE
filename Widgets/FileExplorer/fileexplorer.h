@@ -22,6 +22,8 @@ public:
     explicit FileExplorer(QWidget *parent = nullptr);
     QDirModel* FileModel;
     QTreeView* FileView;
+
+    void setRootDirectory(const QString &path);
 };
 
 #endif // FILEEXPLORER_H

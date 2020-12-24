@@ -29,12 +29,22 @@ set(SOURCE_FILES main.cpp
                 Widgets/ConsoleDock/consoledock.h
                 Widgets/ConsoleDock/findreplace.cpp
                 Widgets/ConsoleDock/findreplace.h
-                Widgets/BinaryInfo/binaryinfo.cpp
-                Widgets/BinaryInfo/binaryinfo.h
+                Widgets/BinaryInfo/binaryview.cpp
+                Widgets/BinaryInfo/binaryview.h
                 #Widgets/HexView/hexview.cpp
                 #Widgets/HexView/hexview.h
-                #Widgets/Converter/converter.cpp
-                #WWidgets/Converter/converter.h
+                Widgets/Converter/converter.cpp
+                Widgets/Converter/converter.h
+                #Debugger/lldbbridge.cpp
+                #Debugger/lldbbridge.h
+                #Debugger/debuggerdock.cpp
+                #Debugger/debuggerdock.h
+                #Clang/indexer.cpp
+                #Clang/indexer.h
+                #Clang/parser.cpp
+                #Clang/parser.h
+                #llvm/llvmbridge.cpp
+                #llvm/llvmbridge.h
                 )
 
 #set(Qt5Core_DIR "/opt/Qt/5.9.3/gcc_64/lib/cmake/Qt5Core/")

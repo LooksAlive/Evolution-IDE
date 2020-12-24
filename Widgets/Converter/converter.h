@@ -6,12 +6,31 @@
 */
 
 #include <QWidget>
+#include <QPlainTextEdit>
+#include <QComboBox>
+#include <QVBoxLayout>
+#include <QLabel>
+#include <QPushButton>
 
 class Converter : public QWidget
 {
     Q_OBJECT
 public:
     explicit Converter(QWidget *parent = nullptr);
+
+private:
+    QComboBox *Option;
+    QPlainTextEdit  *InputWindow;
+    QPlainTextEdit  *OutputWindow;
+    QLabel *Caption;
+    QPushButton *convert_button;
+
+    QLayout *BuildForm();
+    void runConverter();
+
+private slots:
+    void slotConvert();
+
 
 signals:
 

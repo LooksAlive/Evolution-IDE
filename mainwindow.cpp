@@ -72,7 +72,7 @@ void MainWindow::SetupMenuBar() {
     fileMenu->addAction("Close File", this, SLOT(CloseFile()),     Qt::CTRL + Qt::Key_W);
     fileMenu->addAction("Close All",  this, SLOT(CloseAllFiles()), Qt::SHIFT + Qt::CTRL + Qt::Key_W);
     fileMenu->addSeparator();
-    fileMenu->addAction("Settings", this, SLOT(OpenSettingsWindow()), Qt::CTRL + Qt::Key_P);
+    fileMenu->addAction("Settings", this, SLOT(SetupSettingsWindow()), Qt::CTRL + Qt::Key_P);
     fileMenu->addSeparator();
     fileMenu->addAction("Exit",       this, SLOT(CloseWindow()),   Qt::CTRL + Qt::Key_Q);
 
@@ -88,6 +88,7 @@ void MainWindow::SetupMenuBar() {
     viewMenu->addAction(Docker->toggleViewAction());
     viewMenu->addAction(OutputWindow->toggleViewAction());
     viewMenu->addAction(find_replace->toggleViewAction()); // or simply setvisible(true)
+    viewMenu->addAction("Converter", this, SLOT(SetupConverter()));
 
     /* replace ui; decide if use namespace or just MainWindow->declared int .h as private pointer  */
     ui->menuBar->addMenu(fileMenu);
@@ -112,6 +113,7 @@ void MainWindow::SetupDockWidgetsLayering(){
     setCorner(Qt::BottomRightCorner, Qt::RightDockWidgetArea);
 }
 
+// edit menu
 void MainWindow::SetFont(){
     QFont font;
     font.setFamily("Ubuntu Mono");
@@ -169,9 +171,14 @@ void MainWindow::SetupCompileDock(){
 
 /* exteranl windows */
 
-void MainWindow::OpenSettingsWindow(){
+void MainWindow::SetupSettingsWindow(){
     Settings = new SettingsWindow(); // if there will be this --> not working ...
     Settings->show();
+}
+
+void MainWindow::SetupConverter(){
+    converter = new Converter();
+    converter->show();
 }
 
 
@@ -201,9 +208,18 @@ void MainWindow::CreateFile() {
 
 
 void MainWindow::OpenFile() {
-    QString filepath = QFileDialog::getOpenFileName(this, "Open file", QDir::homePath());
+    QFileDialog *dialog = new QFileDialog(this);
+    QString filepath = dialog->getOpenFileName(this, "Open file", QDir::homePath());
+    dialog->setFileMode(QFileDialog::ExistingFiles);
+    dialog->setFileMode(QFileDialog::Directory);
     if (filepath.isEmpty())
         return;
+    // #TODO:  do not work yet << setfilemode
+    if (QFileInfo(filepath).isDir()){
+        // set project path into file view
+        Explorer->setRootDirectory(filepath);
+        return;
+    }
     OpenFile(filepath);
 }
 
@@ -219,7 +235,7 @@ void MainWindow::OpenFile(const QString& filepath) {
     QFile file(filepath);
 
     if (file.open(QIODevice::ReadOnly)) {
-        PlainTextEdit* temp_text = (PlainTextEdit*)Tabs->currentWidget(); /* #TODO: change this ridiculous check */
+        PlainTextEdit *temp_text = (PlainTextEdit*)Tabs->currentWidget(); /* #TODO: change this ridiculous check */
         if (temp_text->document()->isEmpty() &&
             Tabs->tabToolTip(Tabs->currentIndex()) == "" &&
             Tabs->tabText(Tabs->currentIndex()) == NEW_TAB_NAME) {

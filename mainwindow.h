@@ -37,7 +37,6 @@
 
 
 #include "Widgets/PlainTextEdit/plaintextedit.h"
-#include "highlighter.h"
 #include "Widgets/FileExplorer/fileexplorer.h"
 #include "Widgets/FileDock/filedock.h"
 #include "Widgets/Tab/tab.h"
@@ -46,8 +45,10 @@
 #include "Widgets/ConsoleDock/findreplace.h"
 #include "Widgets/ConsoleDock/consoledock.h"
 
-
 #include "EnvironmentSettings.h"
+#include "highlighter.h"
+#include "Widgets/Converter/converter.h"
+
 
 
 /*
@@ -94,6 +95,9 @@ private:
     ConsoleDock *OutputWindow;
     FindReplaceWidget *find_replace;
 
+    /* Converter - small widget */
+    Converter *converter;
+
     void dragEnterEvent(QDragEnterEvent* drag_event) override;
     void dropEvent(QDropEvent* drop_event) override;
 
@@ -104,6 +108,7 @@ private:
     void SetupFileExplorer();
     void SetupFileDocker();
     void SetupCompileDock();
+
     void closeEvent(QCloseEvent*) override;
 
     // the way to show DockWidgets in app --> select corners, do not take all bottom, top for one dock
@@ -125,7 +130,8 @@ private slots:
     void CloseAllFiles();
     void CloseWindow();
 
-    void OpenSettingsWindow();
+    void SetupSettingsWindow();
+    void SetupConverter();
     void SetFont();
 
 

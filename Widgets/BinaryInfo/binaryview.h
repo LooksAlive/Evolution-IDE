@@ -3,11 +3,11 @@
 
 #include <QWidget>
 
-class BinaryInfo : public QWidget
+class BinaryView : public QWidget
 {
     Q_OBJECT
 public:
-    explicit BinaryInfo(QWidget *parent = nullptr);
+    explicit BinaryView(QWidget *parent = nullptr);
 
 signals:
 
