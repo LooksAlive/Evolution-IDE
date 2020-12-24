@@ -24,20 +24,21 @@ FindReplaceWidget::FindReplaceWidget(Tab *tab, QWidget *parent)
     base->setMaximumSize(550, base->maximumHeight()); // needed to not expand more etc.
     //FindReplaceWidget::setMaximumSize(base->maximumWidth(), base->maximumHeight());
     // setWindowIcon(QIcon(replace ? ":/icons/fugue/edit-replace.png" : ":/icons/fugue/binocular.png"));
+
     setWindowTitle("Find & Replace");
     LineEditFind->setFocus();
     LineEditFind->setMaximumWidth(400);
     LineEditReplacement->setMaximumWidth(400);
 
 
-    connect(next, &QPushButton::clicked, this, &FindReplaceWidget::slotFind);
-
+    connect(next, &QPushButton::clicked, this, &FindReplaceWidget::slotNext);
+    connect(next, &QPushButton::clicked, this, &FindReplaceWidget::slotPrevious);
     connect(replace, &QPushButton::clicked, this, &FindReplaceWidget::slotReplace);
     connect(replaceall, &QPushButton::clicked, this, &FindReplaceWidget::slotReplaceAll);
 
 }
 
-/* replcae, replace all, find : buttons */
+/* next, previous, replce, replace all buttons */
 QWidget *FindReplaceWidget::buildButtonBox()
 {
     QGroupBox *button_box = new QGroupBox();
@@ -51,6 +52,7 @@ QWidget *FindReplaceWidget::buildButtonBox()
     replaceall = new QPushButton();
     replaceall->setText("Replace All");
     layout->addWidget(next);
+    layout->addWidget(previous);
     layout->addWidget(replace);
     layout->addWidget(replaceall);
     button_box->setLayout(layout);
@@ -105,8 +107,13 @@ void FindReplaceWidget::getOptionsAndTexts()
     m_Edit->findInTextEdit(search_text, find_options);
 }
 
-void FindReplaceWidget::slotFind()
+void FindReplaceWidget::slotNext()
 {
+    m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
+    getOptionsAndTexts();
+}
+// figure it out later
+void FindReplaceWidget::slotPrevious(){
     m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
     getOptionsAndTexts();
 }

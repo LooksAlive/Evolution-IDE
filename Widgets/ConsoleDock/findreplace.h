@@ -49,7 +49,8 @@ private:
     QString replace_text;
 
 private slots:
-    void slotFind();
+    void slotNext();
+    void slotPrevious();
     void slotReplace();
     void slotReplaceAll();
 };

@@ -45,6 +45,14 @@ set(SOURCE_FILES main.cpp
                 #Clang/parser.h
                 #llvm/llvmbridge.cpp
                 #llvm/llvmbridge.h
+                commandlineexecutor.cpp
+                commandlineexecutor.h
+                Widgets/Settings/CmakeGenerator/cmakegenerator.cpp
+                Widgets/Settings/CmakeGenerator/cmakegenerator.h
+                Widgets/Settings/CmakeGenerator/cmagegeneratorwidget.cpp
+                Widgets/Settings/CmakeGenerator/cmagegeneratorwidget.h
+                Widgets/Settings/git/gitbridge.cpp
+                Widgets/Settings/git/gitbridge.h
                 )
 
 #set(Qt5Core_DIR "/opt/Qt/5.9.3/gcc_64/lib/cmake/Qt5Core/")

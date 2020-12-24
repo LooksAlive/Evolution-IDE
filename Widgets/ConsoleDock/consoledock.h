@@ -23,6 +23,8 @@ class  ConsoleDock : public QDockWidget
 public:
     ConsoleDock(QWidget *parent = nullptr);
 
+    void setRawOutput(const QString &raw);
+    void addLogMessage(const QString &log_msg);
 
 private:
     QTabWidget *OuterTab;
@@ -33,6 +35,9 @@ private:
     QPlainTextEdit *Logs;
     QPlainTextEdit *CompileOutput;
     QPlainTextEdit *RawOutput;
+
+    // process raw output, set as compile
+    void FormatRawOutput(const QString &raw);
 
 };
 
