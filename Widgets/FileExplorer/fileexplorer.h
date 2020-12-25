@@ -4,6 +4,7 @@
 #include <QDockWidget>
 #include <QTreeView>
 #include <QDirModel>
+#include <QDir>
 
 
 /*

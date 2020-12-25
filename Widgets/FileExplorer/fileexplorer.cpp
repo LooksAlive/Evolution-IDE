@@ -4,6 +4,10 @@ FileExplorer::FileExplorer(QWidget *parent) : QDockWidget(parent)
 {
 
     FileModel = new QDirModel; /* explore by directories */
+    FileModel->setSorting(QDir::DirsFirst);
+    FileModel->sort(0, Qt::AscendingOrder);
+    // FileModel->setFilter(QDir::NoDotAndDotDot | QDir::Executable | QDir::NoSymLinks);
+
     FileView  = new QTreeView; /* explore by list */
     FileView->setModel(FileModel); /* set model */
     FileView->setRootIndex(FileModel->index(QDir::homePath())); /* default location #TODO set with OpenFile */
@@ -11,6 +15,8 @@ FileExplorer::FileExplorer(QWidget *parent) : QDockWidget(parent)
     FileView->setColumnHidden(2, true);
     FileView->setColumnHidden(3, true);
     FileView->setHeaderHidden(true);
+    FileView->acceptDrops();
+    FileView->showDropIndicator();
 
     /* QDockWidget inherited functions */
     FileExplorer::setWindowTitle("File Explorer");

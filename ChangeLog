@@ -3,7 +3,16 @@
 * binary info, hex view as tab and detect .bin, .hex files -> enable this buttons on toolbar, not active otherwise
 * seach box sometimes not working -> QWidget init error
 * Qt settings -> remember position opened files, path, reopen there, (also) setup open path for dialog to fileexplorer
+
+
+* cuties_ide arrows to show code between its {}
+
+* for git use libgit2 : https://github.com/libgit2/libgit2
+
 * allow drag & drop file, dir on both(fileexplorer, textedit) and set up
+
+
+
 * set up completer for text
 * start to dig into clangd -> indexer
 
@@ -15,5 +24,5 @@
 * find box added as dockwidget -> tabified widget .... later make show as one in menu
 * settings window buttons works
 * Converter -> small widget with line edit to convert text into different formats(hex, base64 ...)
+* dir can be dropped onto explorer and set as root dir,  text edit drop still do not work
 
-- apkstudio searchreplace(change to QWidget, insert into console) -> easy made, qhexedit(new stacked widget in some option field ... think later - maybe new start window at first and some switcher between diferent views --> hexview, editor, llvm binary info, assembler view(find some) ) also 

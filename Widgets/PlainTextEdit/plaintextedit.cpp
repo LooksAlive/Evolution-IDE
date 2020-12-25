@@ -371,6 +371,11 @@ void PlainTextEdit::setSelectedWordstyle(){
 /* plaintextedit protected functions
 ------------------------------------------------------------------------- */
 
+void PlainTextEdit::dropEvent(QDropEvent *e){
+    e->acceptProposedAction();
+    QPlainTextEdit::dropEvent(e);
+}
+
 void PlainTextEdit::wheelEvent(QWheelEvent *event)
 {
     if (event->modifiers() & Qt::ControlModifier) {

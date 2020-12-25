@@ -32,7 +32,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     font.setFamily("Console");
     font.setWeight(15);
 
-
 }
 
 MainWindow::~MainWindow() {
@@ -47,8 +46,17 @@ void MainWindow::dragEnterEvent(QDragEnterEvent* drag_event) {
 
 void MainWindow::dropEvent(QDropEvent* drop_event) {
     QList<QUrl> url_list = drop_event->mimeData()->urls();
+    // set dir into file explorer as default for project; handled in drop event
     foreach (QUrl url, url_list) {
-        OpenFile(url.url(QUrl::RemoveScheme));
+        QString path = url.url(QUrl::RemoveScheme);
+
+        if (QFileInfo(path).isDir())  {
+                Explorer->setRootDirectory(path);
+                return;
+            }
+        else{
+            OpenFile(path);
+        }
     }
 }
 
@@ -266,7 +274,9 @@ void MainWindow::OpenFile(const QString& filepath) {
 
         Tabs->setTabWhatsThis(index, "No changes");
         UpdateCurrentIndex(index); // setting up selected item in opened_docs_dock
-    } else {
+    }
+
+    else {
         (new QErrorMessage(this))->showMessage("Cannot open file!");
         return;
     }

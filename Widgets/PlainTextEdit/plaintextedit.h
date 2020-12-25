@@ -19,10 +19,11 @@ public:
     void findInTextEdit(const QString &search, const QTextDocument::FindFlags &find_options);
 
 protected:
-    void keyPressEvent(QKeyEvent *event);
-    void paintEvent(QPaintEvent *event);
-    void resizeEvent(QResizeEvent *event);
-    void wheelEvent(QWheelEvent *event);
+    void keyPressEvent(QKeyEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
+    void dropEvent(QDropEvent *e) override;
 
 private:
     LineNumberArea *LineArea;
@@ -47,16 +48,16 @@ class LineNumberArea : public QWidget
     Q_OBJECT
 public:
     explicit LineNumberArea(PlainTextEdit *edit);
-    QSize sizeHint() const;
+    QSize sizeHint() const override;
 
 protected:
-    void leaveEvent(QEvent *event);
+    void leaveEvent(QEvent *event) override;
     void mouseEvent(QMouseEvent *event);
-    void mouseMoveEvent(QMouseEvent *event);
-    void mousePressEvent(QMouseEvent *event);
-    void mouseReleaseEvent(QMouseEvent *event);
-    void paintEvent(QPaintEvent *event);
-    void wheelEvent(QWheelEvent *event);
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
 
 private:
     PlainTextEdit *m_Edit;
