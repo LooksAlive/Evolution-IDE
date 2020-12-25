@@ -3,7 +3,7 @@
 #include "QHexView/document/buffer/qmemorybuffer.h"
 #include "hexview.h"
 
-HexEdit::HexEdit(QWidget *parent)
+HexView::HexView(QWidget *parent)
     : QWidget(parent)
 {
     auto layout = new QVBoxLayout();
@@ -12,19 +12,19 @@ HexEdit::HexEdit(QWidget *parent)
     setLayout(layout);
 }
 
-QString HexEdit::filePath()
+QString HexView::filePath()
 {
     return m_FilePath;
 }
 
-void HexEdit::open(const QString &path)
+void HexView::open(const QString &path)
 {
     auto document = QHexDocument::fromFile<QMemoryBuffer>(path);
     m_HexView->setDocument(document);
     m_FilePath = path;
 }
 
-bool HexEdit::save()
+bool HexView::save()
 {
     QFile file(m_FilePath);
     if (file.open(QFile::WriteOnly)) {

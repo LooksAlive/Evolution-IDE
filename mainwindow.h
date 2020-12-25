@@ -48,6 +48,7 @@
 #include "EnvironmentSettings.h"
 #include "highlighter.h"
 #include "Widgets/Converter/converter.h"
+#include "Widgets/HexView/hexview.h"
 
 
 
@@ -77,6 +78,7 @@ public:
     ~MainWindow();
     
 private:
+
     Ui::MainWindow *ui;
     /* base tab widget for plaintext */
     Highlighter* highlighter;
@@ -97,6 +99,11 @@ private:
 
     /* Converter - small widget */
     Converter *converter;
+
+    /* hexview in tab */
+    HexView *hexview;
+    QString hex_file_path = "/home/adam/Desktop/sources/build-Evolution-IDE-Desktop-Debug/editor";
+
 
     void dragEnterEvent(QDragEnterEvent* drag_event) override;
     void dropEvent(QDropEvent* drop_event) override;
@@ -133,6 +140,8 @@ private slots:
     void SetupSettingsWindow();
     void SetupConverter();
     void SetFont();
+
+    void showHexView();
 
 
     void ChangeTabIndexInList(int, int);

@@ -3,6 +3,8 @@
 
 #include <QPlainTextEdit>
 
+#include "completer.h"
+
 class LineNumberArea;
 
 class PlainTextEdit : public QPlainTextEdit

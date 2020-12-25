@@ -11,6 +11,8 @@
 
 #include <QWidget>
 
+#include "cmakegenerator.h"
+
 class CmageGeneratorWidget : public QWidget
 {
     Q_OBJECT

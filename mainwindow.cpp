@@ -83,6 +83,8 @@ void MainWindow::SetupMenuBar() {
     fileMenu->addAction("Settings", this, SLOT(SetupSettingsWindow()), Qt::CTRL + Qt::Key_P);
     fileMenu->addSeparator();
     fileMenu->addAction("Exit",       this, SLOT(CloseWindow()),   Qt::CTRL + Qt::Key_Q);
+    fileMenu->addSeparator();
+    fileMenu->addAction("Hex View",       this, SLOT(showHexView()));
 
     editMenu->addAction("Cut",        this, SLOT(slotCut()),       Qt::CTRL + Qt::Key_X);
     editMenu->addAction("Copy",       this, SLOT(slotCopy()),      Qt::CTRL + Qt::Key_C);
@@ -109,6 +111,7 @@ void MainWindow::SetupToolBar() {
     ui->mainToolBar->addAction(QIcon(":/icons/open_file.png"),      "Open File",       this, SLOT(OpenFile()));
     ui->mainToolBar->addAction(QIcon(":/icons/save_file.png"),      "Save File",       this, SLOT(SaveFile()));
     ui->mainToolBar->addAction(QIcon(":/icons/save_all_files.png"), "Save All Files",  this, SLOT(SaveAllFiles()));
+    ui->mainToolBar->addAction(QIcon(":/icons/hex.jpg"), "Hex View",  this, SLOT(showHexView()));
 }
 
 
@@ -136,7 +139,11 @@ void MainWindow::SetFont(){
 
 }
 
-
+void MainWindow::showHexView(){
+    hexview = new HexView();
+    hexview->open(hex_file_path);
+    Tabs->addTab(hexview, Tabs->tabText(Tabs->currentIndex()) + "[hex]");
+}
 
 void MainWindow::SetupTabWidget() {
     Tabs = new Tab(this);
@@ -228,6 +235,7 @@ void MainWindow::OpenFile() {
         Explorer->setRootDirectory(filepath);
         return;
     }
+    //hex_file_path = filepath;
     OpenFile(filepath);
 }
 

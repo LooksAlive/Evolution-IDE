@@ -11,6 +11,8 @@
 #include <QHBoxLayout>
 #include <QPlainTextEdit>
 
+#include "CmakeGenerator/cmagegeneratorwidget.h"
+#include "git/gitwidget.h"
 
 class SettingsWindow : public QDialog
 {
@@ -25,6 +27,9 @@ private:
     QStackedWidget *WidgetStack;
     QHBoxLayout *InnerLayout;
     QVBoxLayout *OuterLayout;
+
+    CmageGeneratorWidget *cmake;
+    GitWidget *git;
 
     QWidget *buildButtonBox();
     QLayout *buildForm();

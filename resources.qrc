@@ -6,5 +6,6 @@
         <file>icons/save_file.png</file>
         <file>icons/icon.png</file>
         <file>highlights/languages.xml</file>
+        <file>icons/hex.jpeg</file>
     </qresource>
 </RCC>

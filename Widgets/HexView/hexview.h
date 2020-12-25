@@ -2,16 +2,16 @@
 #define HEXEDIT_H
 
 #include <QWidget>
-#include "QHexView/qhexview.h
+#include "QHexView/qhexview.h"
 
-class HexEdit : public QWidget
+class HexView : public QWidget
 {
     Q_OBJECT
 private:
     QString m_FilePath;
     QHexView *m_HexView;
 public:
-    explicit HexEdit(QWidget *parent = nullptr);
+    explicit HexView(QWidget *parent = nullptr);
     QString filePath();
     void open(const QString &path);
     bool save();

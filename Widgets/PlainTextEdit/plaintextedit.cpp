@@ -59,6 +59,7 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
     connect(new QShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Down, this), &QShortcut::activated, [=] {
         moveSelection(false);
     });
+
 }
 
 

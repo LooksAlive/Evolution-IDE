@@ -6,7 +6,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QDialog(parent)
 {
     // features
     SettingsWindow::setWindowTitle("Settings");
-    SettingsWindow::setMinimumSize(400, 250);
+    SettingsWindow::setMinimumSize(500, 250);
 
     OuterLayout = new QVBoxLayout(this);
     OuterLayout->addLayout(buildForm());
@@ -41,6 +41,9 @@ QLayout *SettingsWindow::buildForm()
     OptionsList = new QListWidget();
     WidgetStack = new QStackedWidget();
 
+    cmake = new CmageGeneratorWidget();
+    git = new GitWidget();
+
     InnerLayout->addWidget(OptionsList, 1);
     OptionsList->addItem(new QListWidgetItem("General"));
     OptionsList->addItem(new QListWidgetItem("Appearance"));
@@ -51,8 +54,15 @@ QLayout *SettingsWindow::buildForm()
     OptionsList->addItem(new QListWidgetItem("Git"));
 
     OptionsList->setCurrentRow(0);
-    InnerLayout->addWidget(WidgetStack, 3);
-    WidgetStack->addWidget(new QPlainTextEdit(this)); // 6 more
+    OptionsList->setMaximumWidth(125);
+    InnerLayout->addWidget(WidgetStack);
+    WidgetStack->addWidget(new QPlainTextEdit(this));
+    WidgetStack->addWidget(new QPlainTextEdit(this));
+    WidgetStack->addWidget(new QPlainTextEdit(this));
+    WidgetStack->addWidget(cmake);
+    WidgetStack->addWidget(new QPlainTextEdit(this));
+    WidgetStack->addWidget(new QPlainTextEdit(this));
+    WidgetStack->addWidget(git);
     connect(OptionsList, &QListWidget::currentRowChanged, WidgetStack, &QStackedWidget::setCurrentIndex);
 
     return InnerLayout;
