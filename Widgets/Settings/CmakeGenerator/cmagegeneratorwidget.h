@@ -18,6 +18,7 @@ class CmageGeneratorWidget : public QWidget
     Q_OBJECT
 public:
     explicit CmageGeneratorWidget(QWidget *parent = nullptr);
+    void loadData();    // loading data from settings
 
 signals:
 

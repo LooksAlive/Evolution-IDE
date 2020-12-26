@@ -11,6 +11,8 @@
 #include <QHBoxLayout>
 #include <QPlainTextEdit>
 
+#include <QSettings>
+
 #include "CmakeGenerator/cmagegeneratorwidget.h"
 #include "git/gitwidget.h"
 
@@ -35,14 +37,16 @@ private:
     QLayout *buildForm();
 
 
+
 signals:
 
 
 
 private slots:
-
-
-
+    /*
+    void saveData();    // every widget save data function is called here [ save button ]
+    void loadData();    // loading data from settings -> all subwidgets load functions [ in constructor init. ]
+    */
 };
 
 #endif // SETTINGSWINDOW_H

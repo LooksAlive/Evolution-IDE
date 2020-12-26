@@ -81,6 +81,8 @@ set(SOURCE_FILES main.cpp
 
                 commandlineexecutor.cpp
                 commandlineexecutor.h
+                filemanager.cpp
+                filemanager.h
                 Widgets/Settings/CmakeGenerator/cmakegenerator.cpp
                 Widgets/Settings/CmakeGenerator/cmakegenerator.h
                 Widgets/Settings/CmakeGenerator/cmagegeneratorwidget.cpp
@@ -89,6 +91,8 @@ set(SOURCE_FILES main.cpp
                 Widgets/Settings/git/gitbridge.h
                 Widgets/Settings/git/gitwidget.cpp
                 Widgets/Settings/git/gitwidget.h
+                icons/iconfactory.cpp
+                icons/iconfactory.h
                 )
 
 #set(Qt5Core_DIR "/opt/Qt/5.9.3/gcc_64/lib/cmake/Qt5Core/")

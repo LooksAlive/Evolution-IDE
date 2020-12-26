@@ -111,7 +111,11 @@ void MainWindow::SetupToolBar() {
     ui->mainToolBar->addAction(QIcon(":/icons/open_file.png"),      "Open File",       this, SLOT(OpenFile()));
     ui->mainToolBar->addAction(QIcon(":/icons/save_file.png"),      "Save File",       this, SLOT(SaveFile()));
     ui->mainToolBar->addAction(QIcon(":/icons/save_all_files.png"), "Save All Files",  this, SLOT(SaveAllFiles()));
-    ui->mainToolBar->addAction(QIcon(":/icons/hex.jpg"), "Hex View",  this, SLOT(showHexView()));
+    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/hex.png"), "Hex View",  this, SLOT(showHexView()));
+    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/binary_view.svg"), "Binary View");
+    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/build.png"), "Build");
+    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/run.png"), "Run");
+
 }
 
 
@@ -155,6 +159,7 @@ void MainWindow::SetupTabWidget() {
 
 void MainWindow::SetupFileExplorer() {
     Explorer = new FileExplorer(this);
+    Explorer->setRootDirectory(file_manager.FileExplorer_RootDir);
 
     connect(Explorer->FileView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(OpenFile(QModelIndex)));/* double click */
     addDockWidget(Qt::LeftDockWidgetArea, Explorer); /* show at left side; function for MainWindow */
@@ -227,6 +232,7 @@ void MainWindow::OpenFile() {
     QString filepath = dialog->getOpenFileName(this, "Open file", QDir::homePath());
     dialog->setFileMode(QFileDialog::ExistingFiles);
     dialog->setFileMode(QFileDialog::Directory);
+
     if (filepath.isEmpty())
         return;
     // #TODO:  do not work yet << setfilemode
@@ -240,6 +246,7 @@ void MainWindow::OpenFile() {
 }
 
 void MainWindow::OpenFile(const QString& filepath) {
+
     /* checks for duplicate file-openning and prevents it by opening identical tab twice */
     for (int i = 0; i < Tabs->count(); ++i)
         if (Tabs->tabToolTip(i) == filepath) {

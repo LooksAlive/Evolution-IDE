@@ -47,9 +47,10 @@
 
 #include "EnvironmentSettings.h"
 #include "highlighter.h"
+#include "filemanager.h"
 #include "Widgets/Converter/converter.h"
 #include "Widgets/HexView/hexview.h"
-
+#include "commandlineexecutor.h"
 
 
 /*
@@ -88,6 +89,8 @@ private:
 
     /* Tab widget stuffs */
     Tab* Tabs;
+    /* file manager */
+    FileManager file_manager;
     /* explorer stuffs */
     FileExplorer *Explorer;
     /* Docker stuffs */
@@ -140,7 +143,6 @@ private slots:
     void SetupSettingsWindow();
     void SetupConverter();
     void SetFont();
-
     void showHexView();
 
 
@@ -149,6 +151,15 @@ private slots:
     void UpdateCurrentIndex(int);
     void UpdateCurrentIndex(QListWidgetItem*);
     void UpdateCurrentIndexOnDelete(int);
+
+    // commandline executor , for now ... later programatically
+    void slotBuild();
+    void slotRun();
+    void slotClangFormat();
+    void slotClangTidy();
+    void slotClangCheck();
+    void slotValgrind();
+
 
     void slotCut();
     void slotCopy();
