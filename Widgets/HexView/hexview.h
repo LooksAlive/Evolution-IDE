@@ -12,6 +12,8 @@ private:
     QHexView *m_HexView;
 public:
     explicit HexView(QWidget *parent = nullptr);
+    ~HexView();
+
     QString filePath();
     void open(const QString &path);
     bool save();

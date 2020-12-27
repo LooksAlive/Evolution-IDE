@@ -4,3 +4,7 @@ Completer::Completer(QObject *parent) : QCompleter(parent)
 {
 
 }
+
+Completer::~Completer(){
+
+}

@@ -8,6 +8,15 @@ Converter::Converter(QWidget *parent) : QWidget(parent)
     connect(convert_button, &QPushButton::clicked, this, &Converter::slotConvert);
 }
 
+Converter::~Converter(){
+    delete Option;
+    delete InputWindow;
+    delete OutputWindow;
+    delete Caption;
+    delete convert_button;
+    // delete BuildForm();  // ???
+}
+
 QLayout *Converter::BuildForm(){
 
     QVBoxLayout *layout = new QVBoxLayout();

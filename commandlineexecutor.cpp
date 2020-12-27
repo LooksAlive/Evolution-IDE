@@ -1,5 +1,6 @@
 #include "commandlineexecutor.h"
 #include <QString>
+
 CommandLineExecutor::CommandLineExecutor()
 {
     if(GenerateCmake){
@@ -15,7 +16,8 @@ std::string CommandLineExecutor::ExecuteCommand(std::string cmd) {
   FILE * stream;
   const int max_buffer = 256;
   char buffer[max_buffer];
-  cmd.append(" 2>&1");
+  // ????
+  //cmd.append(" 2>&1");
 
   stream = popen(cmd.c_str(), "r");
   if (stream) {
@@ -41,17 +43,19 @@ void CommandLineExecutor::setCompiler(const std::string &compiler, const BuildMo
             break;
         default: break;
     }
-    DetermineCompilerVersion(compiler);
-    compile_args += compiler + version + " " + addflags;
+    //DetermineCompilerVersion(compiler);
+    compile_args += compiler + version + " " + flags + " " + addflags;
 }
 
-void CommandLineExecutor::setExecutableName(const std::string &executable){
-    executable_name = executable;
-    compile_args += " -o " + executable_name;
+void CommandLineExecutor::setExecutableName(const std::string &name, const std::string &path){
+    executable_name = name;
+    executable_path = path;
+    compile_args += " -o " + executable_path + name;
 }
 
 void CommandLineExecutor::setSourceFiles(const std::vector<std::string> &sources){
-    for (unsigned int i = 0; i<=sources.size(); i++) {
+
+    for (unsigned int i = 0; i < sources.size(); i++) {
         compile_args += " " + sources[i];
     }
 }
@@ -59,7 +63,7 @@ void CommandLineExecutor::setSourceFiles(const std::vector<std::string> &sources
 void CommandLineExecutor::setLibraryPaths(const std::vector<std::string> &library_paths){
 
     compile_args += "-L ";
-    for (unsigned int i = 0; i<=library_paths.size(); i++) {
+    for (unsigned int i = 0; i < library_paths.size(); i++) {
         compile_args += " " + library_paths[i];
     }
 
@@ -77,10 +81,9 @@ std::string CommandLineExecutor::Build(){
 
     return output;
 }
-
 std::string CommandLineExecutor::Execute(){
     // string will be returned into console
-    executable_name = "./" + executable_name;
+    executable_name = executable_path + executable_name;
     std::string output = ExecuteCommand(executable_name);
 
     return output;
@@ -93,7 +96,7 @@ std::string CommandLineExecutor::ClangFormat(const std::vector<std::string> &sou
     std::string clang_format_args = "/usr/bin/clang-format ";
     std::string base_flags = "";
 
-    for (unsigned int i = 0; i<=sources.size(); i++) {
+    for (unsigned int i = 0; i < sources.size(); i++) {
         clang_format_args += " " + sources[i];
     }
     clang_format_args += base_flags;
@@ -106,7 +109,7 @@ std::string CommandLineExecutor::ClangCheck(const std::vector<std::string> &sour
     std::string clang_check_args = "/usr/bin/clang-check ";
     std::string base_flags = "";
 
-    for (unsigned int i = 0; i<=sources.size(); i++) {
+    for (unsigned int i = 0; i < sources.size(); i++) {
         clang_check_args += " " + sources[i];
     }
     clang_check_args += base_flags;
@@ -119,7 +122,7 @@ std::string CommandLineExecutor::ClangTidy(const std::vector<std::string> &sourc
     std::string clang_tidy_args = "/usr/bin/clang-tidy ";
     std::string base_flags = "";
 
-    for (unsigned int i = 0; i<=sources.size(); i++) {
+    for (unsigned int i = 0; i < sources.size(); i++) {
         clang_tidy_args += " " + sources[i];
     }
     clang_tidy_args += base_flags;
@@ -132,7 +135,7 @@ std::string CommandLineExecutor::ClangTidy(const std::vector<std::string> &sourc
 ------------------------------------------------------------------------ */
 
 std::string CommandLineExecutor::Valgrind(){
-    std::string valgrind_args = "/usr/bin/valgrind ./" + executable_name;
+    std::string valgrind_args = "/usr/bin/valgrind --tool=memcheck ./" + executable_name;
     std::string base_flags = "";
 
     valgrind_args += base_flags;

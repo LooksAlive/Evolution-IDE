@@ -35,7 +35,19 @@ FindReplaceWidget::FindReplaceWidget(Tab *tab, QWidget *parent)
     connect(next, &QPushButton::clicked, this, &FindReplaceWidget::slotPrevious);
     connect(replace, &QPushButton::clicked, this, &FindReplaceWidget::slotReplace);
     connect(replaceall, &QPushButton::clicked, this, &FindReplaceWidget::slotReplaceAll);
+}
 
+FindReplaceWidget::~FindReplaceWidget(){
+    delete next;
+    delete previous;
+    delete replace;
+    delete replaceall;
+    delete CaseSensitive;
+    delete RegularExpression;
+    delete WholeWords;
+    delete LineEditFind;
+    delete LineEditReplacement;
+    delete LabelText;
 }
 
 /* next, previous, replce, replace all buttons */
@@ -43,14 +55,17 @@ QWidget *FindReplaceWidget::buildButtonBox()
 {
     QGroupBox *button_box = new QGroupBox();
     QVBoxLayout *layout = new QVBoxLayout();
+
     next = new QPushButton();
-    next->setText("Next");
     previous = new QPushButton();
-    previous->setText("Previous");
     replace = new QPushButton();
-    replace->setText("Replace");
     replaceall = new QPushButton();
+
+    next->setText("Next");
+    previous->setText("Previous");
+    replace->setText("Replace");
     replaceall->setText("Replace All");
+
     layout->addWidget(next);
     layout->addWidget(previous);
     layout->addWidget(replace);

@@ -24,6 +24,11 @@ FileExplorer::FileExplorer(QWidget *parent) : QDockWidget(parent)
     FileExplorer::setWidget(FileView);
 }
 
+FileExplorer::~FileExplorer(){
+    delete FileModel;
+    delete FileView;
+}
+
 void FileExplorer::setRootDirectory(const QString &path){
     FileView->setRootIndex(FileModel->index(path));
 }

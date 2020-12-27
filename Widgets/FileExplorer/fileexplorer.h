@@ -21,6 +21,8 @@ class FileExplorer : public QDockWidget
     Q_OBJECT
 public:
     explicit FileExplorer(QWidget *parent = nullptr);
+    ~FileExplorer();
+
     QDirModel* FileModel;
     QTreeView* FileView;
 

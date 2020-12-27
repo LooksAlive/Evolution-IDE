@@ -16,6 +16,9 @@ constexpr auto FILE_DIALOG_PATH = "/home";
 constexpr auto FONT_FAMILY = "Console";
 constexpr auto FONT_SIZE = 16;
 
+// files operation variables
+static bool CHANGES_IN_PROJECT = false;
+static bool ALWAYS_SAVE = true;         // set later in settings with one window message or in settings!!
 
 
 // C++ template examples to insert into code: check clangd

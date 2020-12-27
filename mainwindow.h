@@ -34,6 +34,7 @@
 
 #include <QList>
 #include <QUrl>
+#include <QString>
 
 
 #include "Widgets/PlainTextEdit/plaintextedit.h"
@@ -51,6 +52,12 @@
 #include "Widgets/Converter/converter.h"
 #include "Widgets/HexView/hexview.h"
 #include "commandlineexecutor.h"
+
+
+#include <QDebug>
+
+#include <iostream>
+#include <vector>
 
 
 /*
@@ -91,13 +98,14 @@ private:
     Tab* Tabs;
     /* file manager */
     FileManager file_manager;
+
     /* explorer stuffs */
     FileExplorer *Explorer;
     /* Docker stuffs */
     FileDock *Docker;
 
     /* Compile dock stuffs */
-    ConsoleDock *OutputWindow;
+    ConsoleDock *ConsoleOutput;
     FindReplaceWidget *find_replace;
 
     /* Converter - small widget */
@@ -152,6 +160,7 @@ private slots:
     void UpdateCurrentIndex(QListWidgetItem*);
     void UpdateCurrentIndexOnDelete(int);
 
+
     // commandline executor , for now ... later programatically
     void slotBuild();
     void slotRun();
@@ -159,6 +168,7 @@ private slots:
     void slotClangTidy();
     void slotClangCheck();
     void slotValgrind();
+    void slotGdbGui();
 
 
     void slotCut();

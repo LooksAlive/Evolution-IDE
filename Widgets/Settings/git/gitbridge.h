@@ -15,6 +15,7 @@ class GitBridge
 {
 public:
     GitBridge();
+    ~GitBridge() = default;
 };
 
 #endif // GITBRIDGE_H

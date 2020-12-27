@@ -49,14 +49,7 @@ void MainWindow::dropEvent(QDropEvent* drop_event) {
     // set dir into file explorer as default for project; handled in drop event
     foreach (QUrl url, url_list) {
         QString path = url.url(QUrl::RemoveScheme);
-
-        if (QFileInfo(path).isDir())  {
-                Explorer->setRootDirectory(path);
-                return;
-            }
-        else{
-            OpenFile(path);
-        }
+        OpenFile(path);
     }
 }
 
@@ -96,7 +89,7 @@ void MainWindow::SetupMenuBar() {
 
     viewMenu->addAction(Explorer->toggleViewAction());
     viewMenu->addAction(Docker->toggleViewAction());
-    viewMenu->addAction(OutputWindow->toggleViewAction());
+    viewMenu->addAction(ConsoleOutput->toggleViewAction());
     viewMenu->addAction(find_replace->toggleViewAction()); // or simply setvisible(true)
     viewMenu->addAction("Converter", this, SLOT(SetupConverter()));
 
@@ -113,8 +106,8 @@ void MainWindow::SetupToolBar() {
     ui->mainToolBar->addAction(QIcon(":/icons/save_all_files.png"), "Save All Files",  this, SLOT(SaveAllFiles()));
     ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/hex.png"), "Hex View",  this, SLOT(showHexView()));
     ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/binary_view.svg"), "Binary View");
-    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/build.png"), "Build");
-    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/run.png"), "Run");
+    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/build.png"), "Build", this, SLOT(slotBuild()));
+    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/run.png"), "Run", this, SLOT(slotRun()));
 
 }
 
@@ -144,9 +137,11 @@ void MainWindow::SetFont(){
 }
 
 void MainWindow::showHexView(){
-    hexview = new HexView();
-    hexview->open(hex_file_path);
-    Tabs->addTab(hexview, Tabs->tabText(Tabs->currentIndex()) + "[hex]");
+    hexview = new HexView(this);
+    int index = Tabs->addTab(hexview, Tabs->tabText(Tabs->currentIndex()) + "[hex]");
+    hexview->open(Tabs->tabToolTip(index));
+    // hexview->open(hex_file_path);
+    Tabs->setCurrentIndex(index);
 }
 
 void MainWindow::SetupTabWidget() {
@@ -159,7 +154,7 @@ void MainWindow::SetupTabWidget() {
 
 void MainWindow::SetupFileExplorer() {
     Explorer = new FileExplorer(this);
-    Explorer->setRootDirectory(file_manager.FileExplorer_RootDir);
+    Explorer->setRootDirectory(QDir::homePath());
 
     connect(Explorer->FileView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(OpenFile(QModelIndex)));/* double click */
     addDockWidget(Qt::LeftDockWidgetArea, Explorer); /* show at left side; function for MainWindow */
@@ -179,27 +174,29 @@ void MainWindow::SetupFileDocker() {
 
 
 void MainWindow::SetupCompileDock(){
-    OutputWindow = new ConsoleDock(this);
+    ConsoleOutput = new ConsoleDock(this);
     find_replace = new FindReplaceWidget(Tabs, this);
 
-    addDockWidget(Qt::BottomDockWidgetArea, OutputWindow);
+    addDockWidget(Qt::BottomDockWidgetArea, ConsoleOutput);
     addDockWidget(Qt::BottomDockWidgetArea, find_replace);
 
-    tabifyDockWidget(OutputWindow, find_replace);
+    tabifyDockWidget(ConsoleOutput, find_replace);
 }
 
 
 /* exteranl windows */
 
 void MainWindow::SetupSettingsWindow(){
-    Settings = new SettingsWindow(); // if there will be this --> not working ...
+    Settings = new SettingsWindow(this); // if there will be this --> not working ...
     Settings->show();
 }
 
 void MainWindow::SetupConverter(){
-    converter = new Converter();
+    converter = new Converter(this);
     converter->show();
 }
+
+
 
 
 
@@ -208,6 +205,7 @@ void MainWindow::SetupConverter(){
 /* File handling stuffs */
 
 void MainWindow::CreateFile() {
+    // tab
     PlainTextEdit* NewPlainText = new PlainTextEdit;
     int index = Tabs->addTab(NewPlainText, NEW_TAB_NAME);
     Tabs->setCurrentIndex(index);
@@ -215,6 +213,7 @@ void MainWindow::CreateFile() {
     Tabs->setTabWhatsThis(index, "No changes");
     connect(NewPlainText, SIGNAL(textChanged()), this, SLOT(UpdateParameter()));
 
+    // file dock
     QListWidgetItem* new_item = new QListWidgetItem;
     new_item->setText(Tabs->tabText(index));
     new_item->setToolTip(Tabs->tabToolTip(index));
@@ -228,122 +227,111 @@ void MainWindow::CreateFile() {
 
 
 void MainWindow::OpenFile() {
+    // #TODO:  do not work yet << setfilemode, to set dir into explorer from dialog
     QFileDialog *dialog = new QFileDialog(this);
-    QString filepath = dialog->getOpenFileName(this, "Open file", QDir::homePath());
-    dialog->setFileMode(QFileDialog::ExistingFiles);
-    dialog->setFileMode(QFileDialog::Directory);
+    //QString filepath = dialog->getOpenFileName(this, "Open file", QDir::homePath());
+    QString filepath = dialog->getExistingDirectory(this, "Open directory", QDir::homePath());
+    //dialog->setFileMode(QFileDialog::ExistingFiles);
+    //dialog->setFileMode(QFileDialog::Directory);
 
     if (filepath.isEmpty())
         return;
-    // #TODO:  do not work yet << setfilemode
-    if (QFileInfo(filepath).isDir()){
-        // set project path into file view
-        Explorer->setRootDirectory(filepath);
-        return;
-    }
-    //hex_file_path = filepath;
+
     OpenFile(filepath);
 }
 
 void MainWindow::OpenFile(const QString& filepath) {
 
+    // directory operations
+    if (QFileInfo(filepath).isDir()){
+        // set project path into file view
+        Explorer->setRootDirectory(filepath);
+        // set recursively all files in dir, set root project dir
+        file_manager.getFilesRecursively(filepath);
+        return;
+    }
+
+    PlainTextEdit* new_text_edit = new PlainTextEdit();
+    new_text_edit->appendPlainText(file_manager.read(filepath));
+
     /* checks for duplicate file-openning and prevents it by opening identical tab twice */
+
     for (int i = 0; i < Tabs->count(); ++i)
-        if (Tabs->tabToolTip(i) == filepath) {
+        if (Tabs->tabToolTip(i) == file_manager.current_full_filepath) {
             Tabs->setCurrentIndex(i);
             return;
         }
 
-    QString filename = filepath.section("/",-1,-1);
-    QFile file(filepath);
+    // ????????????????????????????????????????????????????????
 
-    if (file.open(QIODevice::ReadOnly)) {
-        PlainTextEdit *temp_text = (PlainTextEdit*)Tabs->currentWidget(); /* #TODO: change this ridiculous check */
-        if (temp_text->document()->isEmpty() &&
+    PlainTextEdit *temp_text = (PlainTextEdit*)Tabs->currentWidget();
+    if (temp_text->document()->isEmpty() &&
             Tabs->tabToolTip(Tabs->currentIndex()) == "" &&
             Tabs->tabText(Tabs->currentIndex()) == NEW_TAB_NAME) {
-            DeleteTabFromList(Tabs->currentIndex());
-            delete Tabs->widget(Tabs->currentIndex());
-        }
 
-        PlainTextEdit* new_text_edit = new PlainTextEdit;
-        QString content = file.readAll();
-        file.close();
-        new_text_edit->appendPlainText(content);
-        int index = Tabs->addTab(new_text_edit, filename);
-        Tabs->setCurrentIndex(index);
-        Tabs->setTabToolTip(index, filepath);
-        Tabs->setTabWhatsThis(index, "No changes");
-        connect(new_text_edit, SIGNAL(textChanged()), this, SLOT(UpdateParameter()));
-
-        QListWidgetItem* new_item = new QListWidgetItem;
-        new_item->setText(Tabs->tabText(index));
-        new_item->setToolTip(Tabs->tabToolTip(index));
-        Docker->DockerFileList->addItem(new_item);
-
-        QString file_extension = QFileInfo(filename).suffix(); // setting up highlight
-        if (highlighter->setExtension(file_extension)) {
-            highlighter->setDocument(new_text_edit->document());
-            highlighter->highlightBlock(new_text_edit->toPlainText());
-        }
-
-        Tabs->setTabWhatsThis(index, "No changes");
-        UpdateCurrentIndex(index); // setting up selected item in opened_docs_dock
+        DeleteTabFromList(Tabs->currentIndex());
+        delete Tabs->widget(Tabs->currentIndex());
     }
 
-    else {
-        (new QErrorMessage(this))->showMessage("Cannot open file!");
-        return;
+
+
+    // tab
+    int index = Tabs->addTab(new_text_edit, file_manager.current_file_name);
+    Tabs->setCurrentIndex(index);
+    Tabs->setTabToolTip(index, file_manager.current_full_filepath);
+    Tabs->setTabWhatsThis(index, "No changes");
+    connect(new_text_edit, SIGNAL(textChanged()), this, SLOT(UpdateParameter()));
+
+    QListWidgetItem* new_item = new QListWidgetItem();
+    new_item->setText(Tabs->tabText(index));
+    new_item->setToolTip(Tabs->tabToolTip(index));
+    Docker->DockerFileList->addItem(new_item);
+
+    // setting up highlight
+    if (highlighter->setExtension(file_manager.getFileExtension(file_manager.current_file_name))) {
+        highlighter->setDocument(new_text_edit->document());
+        highlighter->highlightBlock(new_text_edit->toPlainText());
     }
+
+    Tabs->setTabWhatsThis(index, "No changes");
+    UpdateCurrentIndex(index); // setting up selected item in opened_docs_dock
 }
 
+
 void MainWindow::SaveFile() {
+    // new file created, but not saved yet
     if (Tabs->tabToolTip(Tabs->currentIndex()) == "") {
+        CHANGES_IN_PROJECT = true;
         SaveFileAs();
         return;
     }
-    QString filepath = Tabs->tabToolTip(Tabs->currentIndex());
-    QFile file(filepath);
-    if (file.open(QIODevice::WriteOnly)) {
-        file.write(((PlainTextEdit*)Tabs->currentWidget())->document()->toPlainText().toUtf8()); // unsafe getting!
-        file.close();
-        Tabs->setTabWhatsThis(Tabs->currentIndex(), "No changes");
-    } else {
-        (new QErrorMessage(this))->showMessage("Cannot save file!");
-        return;
-    }
+    CHANGES_IN_PROJECT = true;
+
+    file_manager.write(Tabs->tabToolTip(Tabs->currentIndex()), // filepath, buffer
+                       ((PlainTextEdit*)Tabs->currentWidget())->toPlainText().toUtf8());
+
+    // ??????????????????????????????????????????
+    Tabs->setTabWhatsThis(Tabs->currentIndex(), "No changes");
+
 }
 
 void MainWindow::SaveFileAs() {
-    QString filename = Tabs->tabText(Tabs->currentIndex());
-    QString filepath = QFileDialog::getSaveFileName(this, "Save " + filename, "/home/" + filename);
+
+    CHANGES_IN_PROJECT = true;
+
+    //QString filename = Tabs->tabText(Tabs->currentIndex());
+    QString filepath = QFileDialog::getSaveFileName(this, "Save as");
     if (filepath.isEmpty())
         return;
-    if (QFileInfo(filepath).suffix().isEmpty())
-        filepath.append(".txt");
-    if (QFileInfo(filepath).suffix() == "pdf") {
-        QPrinter printer(QPrinter::PrinterResolution);
-        printer.setOutputFormat(QPrinter::PdfFormat);
-        printer.setPaperSize(QPrinter::A4);
-        printer.setOutputFileName(filepath);
-        //QTextDocument.setPageSize(printer.pageRect().size());
-        ((PlainTextEdit*)Tabs->currentWidget())->document()->print(&printer);
-    } else {
-        QFile file(filepath);
-        if (file.open(QIODevice::WriteOnly)) {
-            file.write(((PlainTextEdit*)Tabs->currentWidget())->document()->toPlainText().toUtf8()); // unsafe getting!
-            file.close();
-        } else {
-            (new QErrorMessage(this))->showMessage("Cannot save file!");
-            return;
-        }
-    }
-    filename = filepath.section("/",-1,-1);
-    Tabs->tabBar()->setTabText(Tabs->currentIndex(), filename);
+
+    file_manager.write(filepath, ((PlainTextEdit*)Tabs->currentWidget())->toPlainText().toUtf8());
+
+
+    Tabs->tabBar()->setTabText(Tabs->currentIndex(), file_manager.current_file_name);
     Tabs->tabBar()->setTabToolTip(Tabs->currentIndex(), filepath);
 
-    QString file_extension = QFileInfo(filename).suffix(); // setting up highlight
-    if (highlighter->setExtension(file_extension)) {
+    // setting up highlight
+    if (highlighter->setExtension(file_manager.getFileExtension(file_manager.current_file_name))) {
         highlighter->setDocument(((PlainTextEdit*)Tabs->currentWidget())->document()); // unsafe getting!
         highlighter->highlightBlock(((PlainTextEdit*)Tabs->currentWidget())->toPlainText()); // unsafe getting!
     }
@@ -364,15 +352,21 @@ void MainWindow::SaveAllFiles() {
 /* help function for tab index close action */
 void MainWindow::CloseFile(int index_) {
     if (Tabs->tabWhatsThis(Tabs->currentIndex()) != "No changes") {
-        QMessageBox::StandardButton reply;
-        reply = QMessageBox::question(this, "Saving changes", "Save changes before closing?",
-                                      QMessageBox::Yes|QMessageBox::No);
-        if (reply == QMessageBox::Yes) {
+        if(ALWAYS_SAVE){
             SaveFile();
+            // return; // OMG return and what about delete files from tab, file dock ?????
+        }
+        else{
+            QMessageBox::StandardButton reply;
+            reply = QMessageBox::question(this, "Saving changes", "Save changes before closing?",
+                                          QMessageBox::Yes|QMessageBox::No);
+            if (reply == QMessageBox::Yes) {
+                SaveFile();
+            }
         }
     }
-    delete Tabs->widget(index_);
 
+    delete Tabs->widget(index_);
     DeleteTabFromList(index_);
 
     if (!Tabs->count())
@@ -385,19 +379,22 @@ void MainWindow::CloseFile() {
 }
 
 void MainWindow::CloseAllFiles() {
-    bool checker = false;
+    bool some_changes = false;
     for (int i = 0; i < Tabs->count(); ++i) { // QTabWidget guarantees the consistency of indices?
         if (Tabs->tabWhatsThis(i) != "No changes") {
-            checker = true;
+            some_changes = true;
             break;
         }
     }
-    if (checker) {
+    if (some_changes && !ALWAYS_SAVE) {
         QMessageBox::StandardButton reply = QMessageBox::question(
             this, "Save all changes", "Save all changes before closing?",
             QMessageBox::Yes|QMessageBox::No);
         if (reply == QMessageBox::Yes)
             SaveAllFiles();
+    }
+    else if(ALWAYS_SAVE){
+        SaveAllFiles();
     }
     while (Tabs->count() > 0)
         delete Tabs->widget(0);
@@ -473,6 +470,68 @@ void MainWindow::UpdateCurrentIndex(int new_selection_index) {
         }
     }
 }
+
+
+void MainWindow::slotBuild(){
+
+    if(!CHANGES_IN_PROJECT){
+        return;
+    }
+
+    CommandLineExecutor executor;
+
+    executor.setCompiler("clang++", CommandLineExecutor::Debug, "");
+    executor.setExecutableName("executable", "/home/adam/Desktop/SKUSKA/"); // watch for / at the end
+    std::vector<std::string> sources;
+    sources.push_back("/home/adam/Desktop/SKUSKA/skuska.cpp");
+    executor.setSourceFiles(sources);
+    QString raw = QString::fromStdString(executor.Build());
+    // works perfectly, check unprintable characters
+    /*
+    std::string s = "test";
+    QString q = QString::fromStdString(s);
+    qDebug() << q;
+    qDebug() << q.size();
+    */
+    ConsoleOutput->setRawOutput(raw);
+    //qDebug() << raw; // empty !!!!
+    //qDebug() << executor.Build().c_str();
+}
+void MainWindow::slotRun(){
+
+    if(CHANGES_IN_PROJECT){
+        slotBuild();
+    }
+
+    CommandLineExecutor executor;
+    ConsoleOutput->setRawOutput(QString::fromStdString(executor.Execute()));
+}
+void MainWindow::slotClangFormat(){
+    CommandLineExecutor executor;
+    std::vector<std::string> sources;
+    ConsoleOutput->addLogMessage(QString::fromStdString(executor.ClangFormat(sources)));
+}
+void MainWindow::slotClangTidy(){
+    CommandLineExecutor executor;
+    std::vector<std::string> sources;
+    ConsoleOutput->addLogMessage(QString::fromStdString(executor.ClangTidy(sources)));
+}
+void MainWindow::slotClangCheck(){
+    CommandLineExecutor executor;
+    std::vector<std::string> sources;
+    ConsoleOutput->addLogMessage(QString::fromStdString(executor.ClangCheck(sources)));
+}
+void MainWindow::slotValgrind(){
+    CommandLineExecutor executor;
+    ConsoleOutput->addLogMessage(QString::fromStdString(executor.Valgrind()));
+}
+void MainWindow::slotGdbGui(){
+    CommandLineExecutor executor;
+    executor.OpenGdbGui();
+}
+
+
+
 
 void MainWindow::UpdateCurrentIndexOnDelete(int) { // should be better?
     /* (Relies on fact that after deletion current tab is always (count() - 1)th tab) */

@@ -67,3 +67,18 @@ QLayout *SettingsWindow::buildForm()
 
     return InnerLayout;
 }
+
+
+SettingsWindow::~SettingsWindow(){
+
+    delete ButtonBox;
+    delete OptionsList;
+    delete WidgetStack;
+    delete InnerLayout;
+    delete OuterLayout;
+    //delete cmake;
+    //delete git;
+    // delete buildForm();
+
+}
+

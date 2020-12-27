@@ -11,6 +11,7 @@ class IconFactory
 {
 public:
     IconFactory();
+    ~IconFactory() = default;
 };
 
 #endif // ICONFACTORY_H

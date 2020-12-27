@@ -1,5 +1,9 @@
 #include "consoledock.h"
 
+#include <QString>
+#include <iostream>
+#include <QDebug>
+
 /* enum QTabBar::Shape */
 
 ConsoleDock::ConsoleDock(QWidget *parent) : QDockWidget(parent)
@@ -13,6 +17,10 @@ ConsoleDock::ConsoleDock(QWidget *parent) : QDockWidget(parent)
     BuildOutput();
 
     // connect(InnerTab->tabBar(),SIGNAL(currentChanged(int)),this, SLOT(setRawOutput(QString)));
+}
+
+ConsoleDock::~ConsoleDock(){
+    delete TabStyle;
 }
 
 // change to QListWidget most probably, bc. of specific widget shows its own data and do not know
@@ -40,8 +48,8 @@ void ConsoleDock::BuildOutput()
 }
 
 void ConsoleDock::setRawOutput(const QString &raw){
-    RawOutput->setPlainText(raw);
-    FormatRawOutput(raw);
+    RawOutput->appendPlainText(raw);
+    //FormatRawOutput(raw);
 }
 
 void ConsoleDock::addLogMessage(const QString &log_msg){

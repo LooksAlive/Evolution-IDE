@@ -9,6 +9,7 @@ class CommandLineExecutor
 {
 public:
     CommandLineExecutor();
+    ~CommandLineExecutor() = default;
     bool GenerateCmake = false;
 
     enum BuildMode {
@@ -19,7 +20,7 @@ public:
     std::string ExecuteCommand(std::string cmd);
 
     void setCompiler(const std::string &compiler, const BuildMode &mode, const std::string &addflags);
-    void setExecutableName(const std::string &executable);
+    void setExecutableName(const std::string &name, const std::string &path);
     void setSourceFiles(const std::vector<std::string> &sources);
     void setLibraryPaths(const std::vector<std::string> &library_paths);
     std::string Build();
@@ -37,11 +38,12 @@ private:
 
     void DetermineCompilerVersion(const std::string &tool);
 
-    std::string version = "";
     std::string compile_args = "/usr/bin/";
+    std::string version = "";
     std::string flags = "";
 
-    std::string executable_name = "a.out";
+    std::string executable_name = "a.out";   //    /home/adam/Desktop/SKUSKA/
+    std::string executable_path = "";        //    executable.elf
 
     std::string cmake_args = "mkdir build && cd build && cmake ..";
 };

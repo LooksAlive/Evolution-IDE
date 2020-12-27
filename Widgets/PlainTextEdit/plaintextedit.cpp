@@ -41,6 +41,8 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
     setTabChangesFocus(false);
     setWordWrapMode(QTextOption::WordWrap);
     setSelectedWordstyle();
+    setReadOnly(false);
+
 
     connect(this, &QPlainTextEdit::cursorPositionChanged, this, &PlainTextEdit::handleCursorPositionChanged);
     connect(this, &QPlainTextEdit::blockCountChanged, this, &PlainTextEdit::handleBlockCountChanged);
@@ -60,7 +62,17 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
         moveSelection(false);
     });
 
+    /*
+    QTextCursor cur;
+    cur.movePosition(QTextCursor::Start);
+    cur.setPosition(0);
+
+    setTextCursor(cur);
+    */
+
 }
+
+PlainTextEdit::~PlainTextEdit(){}
 
 
 /* helper functoins
@@ -489,6 +501,8 @@ void PlainTextEdit::keyPressEvent(QKeyEvent *event)
 LineNumberArea::LineNumberArea(PlainTextEdit *edit)
     : QWidget(edit), m_Edit(edit)
 {
+}
+LineNumberArea::~LineNumberArea(){
 }
 
 void LineNumberArea::leaveEvent(QEvent *e)

@@ -10,3 +10,7 @@ FileDock::FileDock(QWidget *parent) : QDockWidget(parent)
     FileDock::setFeatures(AllDockWidgetFeatures);
     FileDock::setWidget(DockerFileList);
 }
+
+FileDock::~FileDock(){
+    delete DockerFileList;
+}

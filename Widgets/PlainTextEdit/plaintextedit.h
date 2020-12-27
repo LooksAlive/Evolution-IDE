@@ -12,6 +12,8 @@ class PlainTextEdit : public QPlainTextEdit
     Q_OBJECT
 public:
     explicit PlainTextEdit(QWidget *parent = nullptr);
+    ~PlainTextEdit();
+
     QRectF blockBoundingGeometryProxy(const QTextBlock &block);
     QRectF blockBoundingRectProxy(const QTextBlock &block);
     QPointF contentOffsetProxy();
@@ -50,6 +52,7 @@ class LineNumberArea : public QWidget
     Q_OBJECT
 public:
     explicit LineNumberArea(PlainTextEdit *edit);
+    ~LineNumberArea();
     QSize sizeHint() const override;
 
 protected:

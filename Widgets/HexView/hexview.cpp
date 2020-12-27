@@ -12,6 +12,10 @@ HexView::HexView(QWidget *parent)
     setLayout(layout);
 }
 
+HexView::~HexView(){
+    delete m_HexView;
+}
+
 QString HexView::filePath()
 {
     return m_FilePath;

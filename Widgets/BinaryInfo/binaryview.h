@@ -8,6 +8,7 @@ class BinaryView : public QWidget
     Q_OBJECT
 public:
     explicit BinaryView(QWidget *parent = nullptr);
+    ~BinaryView() = default;   // change later
 
 signals:
 

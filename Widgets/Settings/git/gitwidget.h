@@ -8,6 +8,8 @@ class GitWidget : public QWidget
     Q_OBJECT
 public:
     explicit GitWidget(QWidget *parent = nullptr);
+    ~GitWidget();
+
     void loadData();    // loading data from settings
 
 signals:

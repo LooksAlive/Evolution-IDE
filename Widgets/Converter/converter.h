@@ -17,6 +17,7 @@ class Converter : public QWidget
     Q_OBJECT
 public:
     explicit Converter(QWidget *parent = nullptr);
+    ~Converter();
 
 private:
     QComboBox *Option;
