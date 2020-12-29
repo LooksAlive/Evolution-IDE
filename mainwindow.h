@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QToolBar>
 #include <QGridLayout>
 #include <QWidget>
 #include <QTabWidget>
@@ -36,6 +37,7 @@
 #include <QUrl>
 #include <QString>
 
+#include <QToolButton>
 
 #include "Widgets/PlainTextEdit/plaintextedit.h"
 #include "Widgets/FileExplorer/fileexplorer.h"
@@ -50,9 +52,12 @@
 #include "highlighter.h"
 #include "filemanager.h"
 #include "Widgets/Converter/converter.h"
-#include "Widgets/HexView/hexview.h"
 #include "commandlineexecutor.h"
 
+#include "Widgets/HexView/hexview.h"
+#include "Debugger/debuggerdock.h"
+#include "Widgets/BinaryInfo/binaryview.h"
+//#include "Debugger/Decompiler"
 
 #include <QDebug>
 
@@ -82,14 +87,26 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     
 private:
 
+    /* vertical_bar stack  */
+    QStackedWidget *vertical_stack;
+
     Ui::MainWindow *ui;
     /* base tab widget for plaintext */
     Highlighter* highlighter;
+
+    /* toolbar -> views */
+    QToolBar *vertical_bar;     // all kind of views: hex, binary, debugger, decompiler ---> widgets
+
+    // editorView are Tabs
+    HexView *hexview;
+    DebuggerDock *debuggerView;
+    BinaryView *binaryView;
+    // Decompiler *decompilerView;
 
     /* settings window */
     SettingsWindow *Settings;
@@ -111,11 +128,6 @@ private:
     /* Converter - small widget */
     Converter *converter;
 
-    /* hexview in tab */
-    HexView *hexview;
-    QString hex_file_path = "/home/adam/Desktop/sources/build-Evolution-IDE-Desktop-Debug/editor";
-
-
     void dragEnterEvent(QDragEnterEvent* drag_event) override;
     void dropEvent(QDropEvent* drop_event) override;
 
@@ -126,6 +138,11 @@ private:
     void SetupFileExplorer();
     void SetupFileDocker();
     void SetupCompileDock();
+
+    void SetupVerticalBar();
+    void SetupDebuggerView();
+    void SetupBinaryView();
+    //void SetupDecompilerView();
 
     void closeEvent(QCloseEvent*) override;
 
@@ -151,8 +168,12 @@ private slots:
     void SetupSettingsWindow();
     void SetupConverter();
     void SetFont();
-    void showHexView();
 
+    void showEditorView();
+    void showHexView();
+    void showDebuggerView();
+    void showBinaryView();
+    void showDecompilerView();
 
     void ChangeTabIndexInList(int, int);
     void DeleteTabFromList(int);
@@ -173,6 +194,8 @@ private slots:
 
     void slotCut();
     void slotCopy();
+    void slotUndo();
+    void slotRedo();
     void slotPaste();
     void slotSelectAll();
     void slotClear();

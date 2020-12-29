@@ -20,11 +20,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     SetupMenuBar();
     SetupToolBar();
 
+    SetupDebuggerView();
+    SetupBinaryView();
+    SetupVerticalBar();
 
     CreateFile();
     SetupDockWidgetsLayering();
 
-    setCentralWidget(Tabs); /* ??? replace in future */
+    setCentralWidget(vertical_stack);
     Tabs->currentWidget()->setFocus();
     highlighter = new Highlighter(":/highlights/languages.xml", this);
 
@@ -36,6 +39,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
 MainWindow::~MainWindow() {
     delete ui;
+    delete converter;
 }
 
 /* drag and drop functions for file into window as it would be openned */
@@ -54,6 +58,51 @@ void MainWindow::dropEvent(QDropEvent* drop_event) {
 }
 
 
+void MainWindow::SetupVerticalBar(){
+    vertical_bar = new QToolBar(this);
+    vertical_bar->setWindowTitle("Windows");
+    vertical_bar->setOrientation(Qt::Vertical);
+    vertical_bar->setMovable(false);
+    //vertical_bar->setSizePolicy(QSizePolicy::Fixed);
+    vertical_bar->setFixedWidth(70);
+    vertical_bar->setFloatable(false);
+    vertical_bar->setAcceptDrops(false);
+    vertical_bar->setIconSize(QSize(250, 45));
+
+    vertical_bar->setContentsMargins(10,10,10,10);
+    //vertical_bar->setToolButtonStyle();
+
+
+    vertical_stack = new QStackedWidget(this);
+    vertical_stack->setParent(this);
+
+    vertical_stack->insertWidget(0, Tabs);
+    vertical_stack->insertWidget(1, binaryView);
+    vertical_stack->insertWidget(2, debuggerView);
+
+    vertical_stack->setCurrentIndex(0);  // start with editor
+
+    vertical_bar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/accessories-text-editor.png"), "Editor",  this, SLOT(showEditorView()));
+    vertical_bar->addSeparator();
+    vertical_bar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/hex.png"), "Hex Editor",  this, SLOT(showHexView()));
+    vertical_bar->addSeparator();
+    vertical_bar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/bug-buddy.svg"), "Debugger",  this, SLOT(showDebuggerView()));
+    vertical_bar->addSeparator();
+    vertical_bar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/binary_view.svg"), "Binary View",  this, SLOT(showBinaryView()));
+    vertical_bar->addSeparator();
+    // decompiler ... later :)
+    //vertical_bar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/hex.png"), "Binary View",  this, SLOT(showBinaryView()));
+    //vertical_bar->addSeparator();
+
+    addToolBar(Qt::LeftToolBarArea, vertical_bar);
+}
+
+void MainWindow::SetupDebuggerView(){
+    debuggerView = new DebuggerDock(this);
+}
+void MainWindow::SetupBinaryView(){
+    binaryView = new BinaryView(this);
+}
 
 
 void MainWindow::SetupMenuBar() {
@@ -104,6 +153,9 @@ void MainWindow::SetupToolBar() {
     ui->mainToolBar->addAction(QIcon(":/icons/open_file.png"),      "Open File",       this, SLOT(OpenFile()));
     ui->mainToolBar->addAction(QIcon(":/icons/save_file.png"),      "Save File",       this, SLOT(SaveFile()));
     ui->mainToolBar->addAction(QIcon(":/icons/save_all_files.png"), "Save All Files",  this, SLOT(SaveAllFiles()));
+    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/undo.png"), "undo", this, SLOT(slotUndo()));
+    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/redo.png"), "redo", this, SLOT(slotRedo()));
+
     ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/hex.png"), "Hex View",  this, SLOT(showHexView()));
     ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/binary_view.svg"), "Binary View");
     ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/build.png"), "Build", this, SLOT(slotBuild()));
@@ -136,16 +188,56 @@ void MainWindow::SetFont(){
 
 }
 
-void MainWindow::showHexView(){
-    hexview = new HexView(this);
-    int index = Tabs->addTab(hexview, Tabs->tabText(Tabs->currentIndex()) + "[hex]");
-    hexview->open(Tabs->tabToolTip(index));
-    // hexview->open(hex_file_path);
-    Tabs->setCurrentIndex(index);
+
+// setToolTip: 1 -> created[visible] ;  2 -> created[invisible] ;   "" -> not created
+void MainWindow::showEditorView(){
+
+    vertical_stack->setCurrentWidget(Tabs);
 }
+
+void MainWindow::showBinaryView(){
+
+    vertical_stack->setCurrentWidget(binaryView);
+}
+
+void MainWindow::showDebuggerView(){
+
+    vertical_stack->setCurrentWidget(debuggerView);
+}
+
+void MainWindow::showHexView(){
+    if(Tabs->toolTip() == "1"){delete Tabs;}
+    else if(binaryView->toolTip() == "1"){delete binaryView;}
+    else if(debuggerView->toolTip() == "1"){delete debuggerView;}
+    else if(hexview->toolTip() == "1"){return;}
+
+    hexview = new HexView(this);
+    hexview->setToolTip("1");
+    //int index = Tabs->addTab(hexview, Tabs->tabText(Tabs->currentIndex()) + "[hex]");
+    hexview->open(Tabs->tabToolTip(0)); // index
+    //hexview->show();
+
+    //Tabs->setCurrentIndex(index);   // before not matter anymore, change later if works
+
+    setCentralWidget(hexview);
+    //stack->setCurrentIndex(3);
+}
+
+
+
+
+
+void MainWindow::showDecompilerView(){
+
+}
+
+
+
+
 
 void MainWindow::SetupTabWidget() {
     Tabs = new Tab(this);
+    TABS_ACTIVE = true;
     connect(Tabs, SIGNAL(tabCloseRequested(int)), this, SLOT(CloseFile(int)));
 
     connect(Tabs->AddNewTabButton, SIGNAL(clicked()), this, SLOT(CreateFile()));
@@ -192,7 +284,7 @@ void MainWindow::SetupSettingsWindow(){
 }
 
 void MainWindow::SetupConverter(){
-    converter = new Converter(this);
+    converter = new Converter();
     converter->show();
 }
 
@@ -351,12 +443,25 @@ void MainWindow::SaveAllFiles() {
 
 /* help function for tab index close action */
 void MainWindow::CloseFile(int index_) {
+
+    // untitled tab, first ask, before opening savedialog in savefile function
+    if(Tabs->tabText(Tabs->currentIndex()) == NEW_TAB_NAME &&
+            Tabs->tabWhatsThis(Tabs->currentIndex()) != "No changes")
+    {
+        QMessageBox::StandardButton reply;
+        reply = QMessageBox::question(this, "Saving changes", "Save changes before closing?",
+                                      QMessageBox::Yes|QMessageBox::No);
+        if (reply == QMessageBox::Yes) {
+            SaveFile();
+        }
+    }
+
     if (Tabs->tabWhatsThis(Tabs->currentIndex()) != "No changes") {
         if(ALWAYS_SAVE){
             SaveFile();
             // return; // OMG return and what about delete files from tab, file dock ?????
         }
-        else{
+        else {
             QMessageBox::StandardButton reply;
             reply = QMessageBox::question(this, "Saving changes", "Save changes before closing?",
                                           QMessageBox::Yes|QMessageBox::No);
@@ -544,6 +649,14 @@ void MainWindow::slotCopy() {
 
 void MainWindow::slotCut() {
     ((PlainTextEdit*)Tabs->currentWidget())->cut();
+}
+
+
+void MainWindow::slotUndo(){
+    ((PlainTextEdit*)Tabs->currentWidget())->undo();
+}
+void MainWindow::slotRedo(){
+    ((PlainTextEdit*)Tabs->currentWidget())->redo();
 }
 
 void MainWindow::slotSelectAll() {

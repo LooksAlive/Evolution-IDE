@@ -18,7 +18,13 @@ constexpr auto FONT_SIZE = 16;
 
 // files operation variables
 static bool CHANGES_IN_PROJECT = false;
-static bool ALWAYS_SAVE = true;         // set later in settings with one window message or in settings!!
+
+static bool ALWAYS_SAVE = false;         // set later in settings with one window message or in settings!!
+
+static bool TABS_ACTIVE = false;
+static bool BINARY_ACTIVE = false;
+static bool DEBUGGER_ACTIVE = false;
+static bool HEX_ACTIVE = false;
 
 
 // C++ template examples to insert into code: check clangd

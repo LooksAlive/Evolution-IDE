@@ -3,9 +3,14 @@ project(Evolution-IDE)
 
 set(CMAKE_CXX_STANDARD 11)
 
+set(CMAKE_CXX_COMPILER clang++-10)
+set(CMAKE_CXX_FLAGS "-O0 -g") # -Wall -- warnings
+
+#set(CMAKE_CXX_FLAGS "-O0 -g -std=c++17 -fsanitize=address -fno-omit-frame-pointer")
+
 #add_subdirectory(Widgets)
 
-#include_directories(Widgets)
+include_directories(cmake-build-debug/editor_autogen/include)
 
 set(HEX_VIEW
         Widgets/HexView/QHexView/document/buffer/qfilebuffer.cpp
