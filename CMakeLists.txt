@@ -10,7 +10,7 @@ set(CMAKE_CXX_FLAGS "-O0 -g") # -Wall -- warnings
 
 #add_subdirectory(Widgets)
 
-include_directories(cmake-build-debug/editor_autogen/include)
+#include_directories(cmake-build-debug/editor_autogen/include)
 
 set(HEX_VIEW
         Widgets/HexView/QHexView/document/buffer/qfilebuffer.cpp
@@ -75,8 +75,8 @@ set(SOURCE_FILES main.cpp
 
                 Debugger/lldbbridge.cpp
                 Debugger/lldbbridge.h
-                Debugger/debuggerdock.cpp
-                Debugger/debuggerdock.h
+        Debugger/debuggerwidget.cpp
+        Debugger/debuggerwidget.h
                 Clang/indexer.cpp
                 Clang/indexer.h
                 Clang/parser.cpp

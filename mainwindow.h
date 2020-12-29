@@ -55,7 +55,7 @@
 #include "commandlineexecutor.h"
 
 #include "Widgets/HexView/hexview.h"
-#include "Debugger/debuggerdock.h"
+#include "Debugger/debuggerwidget.h"
 #include "Widgets/BinaryInfo/binaryview.h"
 //#include "Debugger/Decompiler"
 
@@ -104,7 +104,7 @@ private:
 
     // editorView are Tabs
     HexView *hexview;
-    DebuggerDock *debuggerView;
+    DebuggerWidget *debuggerView;
     BinaryView *binaryView;
     // Decompiler *decompilerView;
 
@@ -140,6 +140,7 @@ private:
     void SetupCompileDock();
 
     void SetupVerticalBar();
+    void SetupHexView();
     void SetupDebuggerView();
     void SetupBinaryView();
     //void SetupDecompilerView();

@@ -8,9 +8,6 @@ Integrated Development Environment
   separate folders(widgets) and can be reused without extern 
   requirement(headers, sources, etc.)
 
-
-
-
 Features:
 * ctrl + wheel -> amplify font
 * syntax highligting
@@ -24,7 +21,7 @@ Features:
 * cmake generator
 * git version control
 * gdbgui possible to launch
-* lldg debugger
+* lldb debugger
 
 
 

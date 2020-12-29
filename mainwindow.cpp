@@ -22,6 +22,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     SetupDebuggerView();
     SetupBinaryView();
+    SetupHexView();
     SetupVerticalBar();
 
     CreateFile();
@@ -79,6 +80,7 @@ void MainWindow::SetupVerticalBar(){
     vertical_stack->insertWidget(0, Tabs);
     vertical_stack->insertWidget(1, binaryView);
     vertical_stack->insertWidget(2, debuggerView);
+    vertical_stack->insertWidget(3, hexview);
 
     vertical_stack->setCurrentIndex(0);  // start with editor
 
@@ -98,10 +100,13 @@ void MainWindow::SetupVerticalBar(){
 }
 
 void MainWindow::SetupDebuggerView(){
-    debuggerView = new DebuggerDock(this);
+    debuggerView = new DebuggerWidget(this);
 }
 void MainWindow::SetupBinaryView(){
     binaryView = new BinaryView(this);
+}
+void MainWindow::SetupHexView(){
+    hexview = new HexView(this);
 }
 
 
@@ -206,30 +211,16 @@ void MainWindow::showDebuggerView(){
 }
 
 void MainWindow::showHexView(){
-    if(Tabs->toolTip() == "1"){delete Tabs;}
-    else if(binaryView->toolTip() == "1"){delete binaryView;}
-    else if(debuggerView->toolTip() == "1"){delete debuggerView;}
-    else if(hexview->toolTip() == "1"){return;}
 
-    hexview = new HexView(this);
-    hexview->setToolTip("1");
-    //int index = Tabs->addTab(hexview, Tabs->tabText(Tabs->currentIndex()) + "[hex]");
-    hexview->open(Tabs->tabToolTip(0)); // index
-    //hexview->show();
-
-    //Tabs->setCurrentIndex(index);   // before not matter anymore, change later if works
-
-    setCentralWidget(hexview);
-    //stack->setCurrentIndex(3);
+    hexview->open(file_manager.current_full_filepath);
+    vertical_stack->setCurrentWidget(hexview);
 }
-
-
-
-
 
 void MainWindow::showDecompilerView(){
-
+    
 }
+
+
 
 
 
@@ -638,7 +629,7 @@ void MainWindow::slotGdbGui(){
 
 
 
-void MainWindow::UpdateCurrentIndexOnDelete(int) { // should be better?
+void MainWindow::UpdateCurrentIndexOnDelete(int) {
     /* (Relies on fact that after deletion current tab is always (count() - 1)th tab) */
     Docker->DockerFileList->setCurrentRow(Docker->DockerFileList->count() - 1);
 }
@@ -650,7 +641,6 @@ void MainWindow::slotCopy() {
 void MainWindow::slotCut() {
     ((PlainTextEdit*)Tabs->currentWidget())->cut();
 }
-
 
 void MainWindow::slotUndo(){
     ((PlainTextEdit*)Tabs->currentWidget())->undo();
