@@ -570,6 +570,7 @@ void MainWindow::UpdateCurrentIndex(int new_selection_index) {
 
 void MainWindow::slotBuild(){
 
+    bool cmake = false;
     if(!CHANGES_IN_PROJECT){
         return;
     }
@@ -581,7 +582,7 @@ void MainWindow::slotBuild(){
     std::vector<std::string> sources;
     sources.push_back("/home/adam/Desktop/SKUSKA/skuska.cpp");
     executor.setSourceFiles(sources);
-    QString raw = QString::fromStdString(executor.Build());
+    QString raw = QString::fromStdString(executor.Build(cmake));
     // works perfectly, check unprintable characters
     /*
     std::string s = "test";
@@ -595,12 +596,13 @@ void MainWindow::slotBuild(){
 }
 void MainWindow::slotRun(){
 
+    bool cmake = false;
     if(CHANGES_IN_PROJECT){
         slotBuild();
     }
 
     CommandLineExecutor executor;
-    ConsoleOutput->setRawOutput(QString::fromStdString(executor.Execute()));
+    ConsoleOutput->setRawOutput(QString::fromStdString(executor.Execute(cmake)));
 }
 void MainWindow::slotClangFormat(){
     CommandLineExecutor executor;

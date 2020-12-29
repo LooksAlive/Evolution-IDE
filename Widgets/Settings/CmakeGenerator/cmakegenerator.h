@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include <QFile>
 
 #include "cmakegenerator.h"
 
@@ -32,10 +33,12 @@ public:
     //void createStaticLibrary(const std::string &llib_name);    // static library from sources
     //void createSharedLibrary(const std::string &slib_name);   // shared library from sources
 
-    void buildCmakeLists(const std::string &path = ".");
+    void createCmakeLists(const std::string &path = ".");
 
 private:
+
     // gathered
+    std::string cmakelists_path = "";
     std::string m_name = "";
     std::string m_compiler = "";
     std::string m_flags = "";
@@ -59,7 +62,6 @@ private:
 
     void generateLinkLibraries();
     std::string g_link_libraries = "target_link_libraries ";
-
 
 
 

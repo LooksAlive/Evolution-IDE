@@ -23,8 +23,8 @@ public:
     void setExecutableName(const std::string &name, const std::string &path);
     void setSourceFiles(const std::vector<std::string> &sources);
     void setLibraryPaths(const std::vector<std::string> &library_paths);
-    std::string Build();
-    std::string Execute();
+    std::string Build(bool cmake);
+    std::string Execute(bool cmake);
 
     std::string ClangFormat(const std::vector<std::string> &sources);
     std::string ClangTidy(const std::vector<std::string> &sources);
@@ -34,6 +34,10 @@ public:
 
     void OpenGdbGui();
 
+    std::string ProjectRootDir = "";
+    std::string cmake_build = "";
+    std::string cmake_exec = "";
+
 private:
 
     void DetermineCompilerVersion(const std::string &tool);
@@ -42,10 +46,9 @@ private:
     std::string version = "";
     std::string flags = "";
 
-    std::string executable_name = "a.out";   //    /home/adam/Desktop/SKUSKA/
-    std::string executable_path = "";        //    executable.elf
+    std::string executable_name = "a.out";   //    executable.elf
+    std::string executable_path = "";        //    /home/adam/Desktop/SKUSKA/
 
-    std::string cmake_args = "mkdir build && cd build && cmake ..";
 };
 
 

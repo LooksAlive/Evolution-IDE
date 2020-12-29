@@ -10,9 +10,9 @@ void CmakeGenerator::addSourceFile(const std::string &file){
     m_sources.push_back(file);
 }
 
-void CmakeGenerator::setProjectName(const std::string &name){
-    m_name = name;
-    g_name = "project(" + name + ")";
+void CmakeGenerator::setProjectName(const std::string &project_name){
+    m_name = project_name;
+    g_name = "project(" + project_name + ")";
 }
 
 void CmakeGenerator::setLibraryPath(const std::string &lpath){
@@ -37,7 +37,7 @@ void CmakeGenerator::setCompileFlags(const std::string &flags){
 
 void CmakeGenerator::generateSources(){
 
-    for (unsigned int i = 0; i <= m_sources.size(); i++) {
+    for (unsigned int i = 0; i < m_sources.size(); i++) {
         g_sources += m_sources[i] + "\n";
     }
     g_sources += ")";
@@ -50,7 +50,7 @@ void CmakeGenerator::generateExecutable(){
 
 void CmakeGenerator::generateLibraryPathsList(){
 
-    for (unsigned int i = 0; i <= m_lpaths.size(); i++) {
+    for (unsigned int i = 0; i < m_lpaths.size(); i++) {
         g_lpaths += m_lpaths[i] + "\n";
     }
     g_lpaths += ")";
@@ -65,7 +65,9 @@ void CmakeGenerator::generateLinkLibraries(){
 
 
 
-void CmakeGenerator::buildCmakeLists(const std::string &path){
+void CmakeGenerator::createCmakeLists(const std::string &path){
+    cmakelists_path = path; // get from filemanager -> Rootdir
+
     g_buffer += m_minimum_cmake_version + "\n";
     g_buffer += g_name + "\n\n";
     g_buffer += "set(CMAKE_CXX_COMPILER " + m_compiler + ")";
@@ -73,4 +75,9 @@ void CmakeGenerator::buildCmakeLists(const std::string &path){
     g_buffer += m_cmake_code + "\n";    // additional code added by user
     g_buffer += g_sources + "\n\n";
     g_buffer += g_link_libraries + "\n\n";
+
+
+    QFile file(QString::fromStdString(path));
+    file.write(g_buffer.c_str());
+
 }
