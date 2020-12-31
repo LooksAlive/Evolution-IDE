@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 
+#include <QDir> // only for build section to find out if cmake-build already exists...
+#include <QString>
+
 class CommandLineExecutor
 {
 public:
@@ -38,11 +41,15 @@ public:
     std::string cmake_build = "";
     std::string cmake_exec = "";
 
+
+    std::string compile_args = "/usr/bin/";
+    std::string exec_args = "";
+
 private:
 
     void DetermineCompilerVersion(const std::string &tool);
 
-    std::string compile_args = "/usr/bin/";
+
     std::string version = "";
     std::string flags = "";
 

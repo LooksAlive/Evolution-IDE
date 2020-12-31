@@ -50,7 +50,7 @@ void CommandLineExecutor::setCompiler(const std::string &compiler, const BuildMo
 void CommandLineExecutor::setExecutableName(const std::string &name, const std::string &path){
     executable_name = name;
     executable_path = path;
-    compile_args += " -o " + executable_path + name;
+    compile_args += " -o " + executable_path + "/" + name;
 }
 
 void CommandLineExecutor::setSourceFiles(const std::vector<std::string> &sources){
@@ -78,8 +78,13 @@ void CommandLineExecutor::DetermineCompilerVersion(const std::string &tool){
 std::string CommandLineExecutor::Build(bool cmake){
 
     std::string output = "";
-    if(cmake){
-        cmake_build += "mkdir " + ProjectRootDir + "cmake-build && cd " + ProjectRootDir + "cmake-build " +
+    if(cmake){ // later -> cmake only generates file(cmake ..), so real build (make -j2) separate later,
+        // also num of cpu cores as argument to build + add them to non cmake build
+        QDir dir;
+        if(dir.exists(QString::fromStdString(ProjectRootDir) + "/cmake-build"))
+            cmake_build = "cd " + ProjectRootDir + "/cmake-build" + " && cmake .. && make -j2";
+
+        cmake_build += "mkdir " + ProjectRootDir + "/cmake-build && cd " + ProjectRootDir + "/cmake-build " +
                 " && cmake .. && make -j2";
         output = ExecuteCommand(cmake_build);
     }
@@ -94,13 +99,14 @@ std::string CommandLineExecutor::Execute(bool cmake){
 
     std::string output = "";
     if(cmake){
-        cmake_exec += "cd " + ProjectRootDir + "cmake-build" + " && ./" + executable_name;
+        cmake_exec += ProjectRootDir + "/cmake-build/" + executable_name;
         output = ExecuteCommand(cmake_exec);
     }
-    // string will be returned into console
-    executable_name = executable_path + executable_name;
-    output = ExecuteCommand(executable_name);
-
+    else {
+        // string will be returned into console
+        exec_args = executable_path + "/" + executable_name;
+        output = ExecuteCommand(exec_args);
+    }
     return output;
 }
 

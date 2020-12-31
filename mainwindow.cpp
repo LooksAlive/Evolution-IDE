@@ -99,17 +99,6 @@ void MainWindow::SetupVerticalBar(){
     addToolBar(Qt::LeftToolBarArea, vertical_bar);
 }
 
-void MainWindow::SetupDebuggerView(){
-    debuggerView = new DebuggerWidget(this);
-}
-void MainWindow::SetupBinaryView(){
-    binaryView = new BinaryView(this);
-}
-void MainWindow::SetupHexView(){
-    hexview = new HexView(this);
-}
-
-
 void MainWindow::SetupMenuBar() {
     /* menu names  */
     QMenu* fileMenu = new QMenu("File");
@@ -161,8 +150,6 @@ void MainWindow::SetupToolBar() {
     ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/undo.png"), "undo", this, SLOT(slotUndo()));
     ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/redo.png"), "redo", this, SLOT(slotRedo()));
 
-    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/hex.png"), "Hex View",  this, SLOT(showHexView()));
-    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/binary_view.svg"), "Binary View");
     ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/build.png"), "Build", this, SLOT(slotBuild()));
     ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/run.png"), "Run", this, SLOT(slotRun()));
 
@@ -215,13 +202,6 @@ void MainWindow::showHexView(){
     hexview->open(file_manager.current_full_filepath);
     vertical_stack->setCurrentWidget(hexview);
 }
-
-void MainWindow::showDecompilerView(){
-    
-}
-
-
-
 
 
 
@@ -280,7 +260,19 @@ void MainWindow::SetupConverter(){
 }
 
 
+void MainWindow::SetupDebuggerView(){
+    debuggerView = new DebuggerWidget(this);
+}
+void MainWindow::SetupBinaryView(){
+    binaryView = new BinaryView(this);
+}
+void MainWindow::SetupHexView(){
+    hexview = new HexView(this);
+}
 
+void MainWindow::showDecompilerView(){
+
+}
 
 
 
@@ -567,42 +559,75 @@ void MainWindow::UpdateCurrentIndex(int new_selection_index) {
     }
 }
 
-
 void MainWindow::slotBuild(){
 
-    bool cmake = false;
-    if(!CHANGES_IN_PROJECT){
+    bool cmake = true;
+    /*
+    QString exec = file_manager.Project_Dir +"/" + "executable";
+    if(!CHANGES_IN_PROJECT && QDir::exists(exec)){
         return;
     }
-
+    */
     CommandLineExecutor executor;
 
-    executor.setCompiler("clang++", CommandLineExecutor::Debug, "");
-    executor.setExecutableName("executable", "/home/adam/Desktop/SKUSKA/"); // watch for / at the end
-    std::vector<std::string> sources;
-    sources.push_back("/home/adam/Desktop/SKUSKA/skuska.cpp");
-    executor.setSourceFiles(sources);
-    QString raw = QString::fromStdString(executor.Build(cmake));
-    // works perfectly, check unprintable characters
-    /*
-    std::string s = "test";
-    QString q = QString::fromStdString(s);
-    qDebug() << q;
-    qDebug() << q.size();
-    */
-    ConsoleOutput->setRawOutput(raw);
-    //qDebug() << raw; // empty !!!!
-    //qDebug() << executor.Build().c_str();
+    if(cmake){ // set option flags to some default
+        CmakeGenerator generator;
+        generator.setProjectName("executable");
+        generator.setCompiler("clang++");
+        generator.setCompileFlags("-O0 -g ");
+        for (int i = 0; i < file_manager.source_files.size(); i++) {
+            generator.addSourceFile((file_manager.source_files[i].toStdString()));
+        }
+        generator.createCmakeLists(file_manager.Project_Dir.toStdString());
+        executor.ProjectRootDir = file_manager.Project_Dir.toStdString();
+
+        QString raw = QString::fromStdString(executor.Build(cmake));
+        qDebug() << QString::fromStdString(executor.cmake_build);
+        ConsoleOutput->setRawOutput(raw);
+    }
+    else{
+        executor.setCompiler("clang++", CommandLineExecutor::Debug, "");
+        executor.setExecutableName("executable", file_manager.Project_Dir.toStdString()); // watch for / at the end
+        std::vector<std::string> sources;
+        for (int i = 0; i < file_manager.source_files.size(); i++) {
+            sources.push_back(file_manager.source_files[i].toStdString());
+        }
+        executor.setSourceFiles(sources);
+        QString raw = QString::fromStdString(executor.Build(cmake));
+        // works perfectly, check unprintable characters
+        /*
+        std::string s = "test";
+        QString q = QString::fromStdString(s);
+        qDebug() << q;
+        qDebug() << q.size();
+        */
+        qDebug() << QString::fromStdString(executor.compile_args);
+        ConsoleOutput->setRawOutput(raw);
+        qDebug() << raw;
+    }
+    qDebug() << "build done";
 }
 void MainWindow::slotRun(){
 
-    bool cmake = false;
+    bool cmake = true;
     if(CHANGES_IN_PROJECT){
         slotBuild();
     }
 
     CommandLineExecutor executor;
-    ConsoleOutput->setRawOutput(QString::fromStdString(executor.Execute(cmake)));
+
+    if(cmake){
+        executor.setExecutableName("executable", file_manager.Project_Dir.toStdString());
+        ConsoleOutput->setRawOutput(QString::fromStdString(executor.cmake_exec));
+        qDebug() << QString::fromStdString(executor.cmake_exec);
+        ConsoleOutput->setRawOutput(QString::fromStdString(executor.Execute(cmake)));
+    }
+    else{
+        ConsoleOutput->setRawOutput(QString::fromStdString(executor.exec_args));
+        qDebug() << QString::fromStdString(executor.exec_args);
+        executor.setExecutableName("executable", file_manager.Project_Dir.toStdString());
+        ConsoleOutput->setRawOutput(QString::fromStdString(executor.Execute(cmake)));
+    }
 }
 void MainWindow::slotClangFormat(){
     CommandLineExecutor executor;

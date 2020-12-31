@@ -14,6 +14,7 @@
 #include <vector>
 #include <fstream>
 #include <QFile>
+#include <QDir>
 
 #include "cmakegenerator.h"
 

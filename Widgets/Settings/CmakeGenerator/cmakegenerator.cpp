@@ -66,7 +66,7 @@ void CmakeGenerator::generateLinkLibraries(){
 
 
 void CmakeGenerator::createCmakeLists(const std::string &path){
-    cmakelists_path = path; // get from filemanager -> Rootdir
+    cmakelists_path = path; // get from filemanager -> Rootdir ||||  CMakeLists.txt not contained !
 
     g_buffer += m_minimum_cmake_version + "\n";
     g_buffer += g_name + "\n\n";
@@ -77,7 +77,12 @@ void CmakeGenerator::createCmakeLists(const std::string &path){
     g_buffer += g_link_libraries + "\n\n";
 
 
-    QFile file(QString::fromStdString(path));
+    QString cmake_path = QString::fromStdString(path) + "/CMakeLists.txt";
+    QDir dir;
+    if (!dir.exists(cmake_path))
+        dir.mkpath(cmake_path); // creates only dir !!!!!! , come up with other solution to create file fast
+
+    QFile file(cmake_path);
     file.write(g_buffer.c_str());
 
 }

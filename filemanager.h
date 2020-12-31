@@ -36,11 +36,12 @@ public:
     QString current_full_filepath = "";  // /home/user/file.txt
     QString current_file_name = "";       // file.txt
 
+    QList<QString> all_files;       // filled with absolute paths
+    QList<QString> source_files;    // later into cmdexecutor or cmake -> strip front known path or not, however
 
 private:
 
-    QList<QString> all_files;       // filled with absolute paths
-    QList<QString> source_files;    // later into cmdexecutor or cmake -> strip front known path or not, however
+
 
 
 };

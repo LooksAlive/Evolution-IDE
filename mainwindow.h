@@ -52,6 +52,7 @@
 #include "highlighter.h"
 #include "filemanager.h"
 #include "Widgets/Converter/converter.h"
+#include "Widgets/Settings/CmakeGenerator/cmakegenerator.h"
 #include "commandlineexecutor.h"
 
 #include "Widgets/HexView/hexview.h"
