@@ -81,11 +81,13 @@ std::string CommandLineExecutor::Build(bool cmake){
     if(cmake){ // later -> cmake only generates file(cmake ..), so real build (make -j2) separate later,
         // also num of cpu cores as argument to build + add them to non cmake build
         QDir dir;
-        if(dir.exists(QString::fromStdString(ProjectRootDir) + "/cmake-build"))
-            cmake_build = "cd " + ProjectRootDir + "/cmake-build" + " && cmake .. && make -j2";
-
-        cmake_build += "mkdir " + ProjectRootDir + "/cmake-build && cd " + ProjectRootDir + "/cmake-build " +
-                " && cmake .. && make -j2";
+        if(dir.exists(QString::fromStdString(ProjectRootDir) + "/cmake-build")) {
+            cmake_build = "cd " + ProjectRootDir + "/cmake-build" + " && cmake .. && make -j2 ";
+        }
+        else {
+            cmake_build += "mkdir " + ProjectRootDir + "/cmake-build && cd " + ProjectRootDir + "/cmake-build " +
+                    " && cmake .. && make -j2";
+        }
         output = ExecuteCommand(cmake_build);
     }
     else{
@@ -99,7 +101,7 @@ std::string CommandLineExecutor::Execute(bool cmake){
 
     std::string output = "";
     if(cmake){
-        cmake_exec += ProjectRootDir + "/cmake-build/" + executable_name;
+        cmake_exec += executable_path + "/cmake-build/" + executable_name; // ProjectRootDir
         output = ExecuteCommand(cmake_exec);
     }
     else {

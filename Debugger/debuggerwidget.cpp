@@ -2,64 +2,152 @@
 
 DebuggerWidget::DebuggerWidget(QWidget *parent) : QWidget(parent)
 {
-    top = new QHBoxLayout();
-    top_layout = new QVBoxLayout();
+    MainWindowLayout = new QHBoxLayout();
+    SourceConsoleLayout = new QVBoxLayout();
     setWindowTitle("debugger");
-    buildDebugConsole();
+    buildConsole();
     buildDebugVariableWindow();
     source_view = new PlainTextEdit(this);
 
-    top_layout->addWidget(source_view);
-    top_layout->addWidget(debug_console);
+    SourceConsoleLayout->addWidget(source_view);
+    SourceConsoleLayout->addWidget(Console);
 
-    top->addLayout(top_layout);
-    top->addWidget(debug_variable_window);
+    /*
+    splitter = new QSplitter(this);
+    splitter->setOrientation(Qt::Vertical);
+    splitter->addWidget(Console);
+    splitter->addWidget(source_view);
 
-    setLayout(top);
+    SourceConsoleLayout->addWidget(splitter);
+    */
+    MainWindowLayout->addLayout(SourceConsoleLayout);
+    MainWindowLayout->addWidget(debug_variable_window);
+
+    setLayout(MainWindowLayout);
 
 }
 
 DebuggerWidget::~DebuggerWidget(){}
 
 
-void DebuggerWidget::buildDebugConsole(){
+void DebuggerWidget::buildConsole(){
 
-    debug_console = new QWidget();
-    console_layout = new QVBoxLayout();
-    QHBoxLayout *lay = new QHBoxLayout();
-    debug_console->setMaximumHeight(150);
+    Console = new QWidget(this);
+    MainConsoleLayout = new QHBoxLayout(this);
+    debug_output = new PlainTextEdit(this);
 
-    debug_output = new PlainTextEdit(debug_console);
-    step = new QPushButton(debug_console);
-    step->setText("Step");
-    step->setFixedSize(70, 30);
-    step_over = new QPushButton(debug_console);
-    step_over->setText("Step Over");
-    step_over->setFixedSize(70, 30);
-    step_in = new QPushButton(debug_console);
-    step_in->setText("step In");
-    step_in->setFixedSize(70, 30);
-    step_out = new QPushButton(debug_console);
-    step_out->setText("step Out");
-    step_out->setFixedSize(70, 30);
+    Console->setFixedHeight(230);
+    //Console->setStyleSheet("border: 1px solid rgb(0, 255, 0);");
 
-    console_layout->addWidget(step);
-    console_layout->addWidget(step_over);
-    console_layout->addWidget(step_in);
-    console_layout->addWidget(step_out);
+    createControlPanel();
 
-    lay->addLayout(console_layout);
-    lay->addWidget(debug_output);
+    MainConsoleLayout->addLayout(ControlPanel);
+    MainConsoleLayout->addWidget(debug_output);
 
-    debug_console->setLayout(lay);
+    Console->setLayout(MainConsoleLayout);
 }
 
+void DebuggerWidget::createToolBar()
+{
+    QString tmpToolTip;
+
+    DebugToolBar=new QToolBar(this);
+    DebugToolBar->setContentsMargins(0,0,0,0);
+
+    tblStartDebug=new QToolButton(this);
+    tblStartDebug->setIcon(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/StartDebug.png"));
+    tblStartDebug->setFixedSize(26,26);
+    tmpToolTip=tr("Start debugging.");
+    tblStartDebug->setToolTip(tmpToolTip);
+    //connect(tblStartDebug,SIGNAL(clicked()),
+    //        this,SLOT(onStartDebugButtonClicked()));
+    DebugToolBar->addWidget(tblStartDebug);
+
+    tblStopDebug=new QToolButton(this);
+    tblStopDebug->setIcon(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/StopDebug.png"));
+    tblStopDebug->setFixedSize(26,26);
+    DebugToolBar->addWidget(tblStopDebug);
+    DebugToolBar->addSeparator();
+
+    tblRunToCursor=new QToolButton(this);
+    tblRunToCursor->setIcon(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/RunToCursor.png"));
+    tblRunToCursor->setFixedSize(26,26);
+    DebugToolBar->addWidget(tblRunToCursor);
+
+    ControlPanel->addWidget(DebugToolBar);
+}
+
+void DebuggerWidget::createControlPanel()
+{
+
+    ControlPanel=new QVBoxLayout;
+    ControlPanel->setContentsMargins(0,0,0,0);
+    ControlPanel->setSpacing(0);
+
+    createToolBar();
+
+    tblNextLine=new QToolButton(this);
+    tblNextLine->setText(QString(" " + tr("Next Step")));
+    tblNextLine->setIcon(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/NextStep.png"));
+    tblNextLine->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    tblNextLine->setFixedSize(160,30);
+    ControlPanel->addWidget(tblNextLine);
+    tblIntoLine=new QToolButton(this);
+    tblIntoLine->setText(QString(" " + tr("Into Line")));
+    tblIntoLine->setIcon(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/NextLine.png"));
+    tblIntoLine->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    tblIntoLine->setFixedSize(160,30);
+    ControlPanel->addWidget(tblIntoLine);
+    tblContinue=new QToolButton(this);
+    tblContinue->setText(QString(" " + tr("Continue")));
+    tblContinue->setIcon(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/Continue.png"));
+    tblContinue->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    tblContinue->setFixedSize(160,30);
+    ControlPanel->addWidget(tblContinue);
+    tblNextInstruction=new QToolButton(this);
+    tblNextInstruction->setText(QString(" " + tr("Next Instruction")));
+    tblNextInstruction->setIcon(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/JumpFunction.png"));
+    tblNextInstruction->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    tblNextInstruction->setFixedSize(160,30);
+    ControlPanel->addWidget(tblNextInstruction);
+    tblIntoInstruction=new QToolButton(this);
+    tblIntoInstruction->setText(QString(" " + tr("Into Instruction")));
+    tblIntoInstruction->setIcon(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/GetIntoFunction.png"));
+    tblIntoInstruction->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    tblIntoInstruction->setFixedSize(160,30);
+    ControlPanel->addWidget(tblIntoInstruction);
+    tblSkipFunction=new QToolButton(this);
+    tblSkipFunction->setText(QString(" " + tr("Skip Function")));
+    tblSkipFunction->setIcon(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/GetOutOfFunction.png"));
+    tblSkipFunction->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    tblSkipFunction->setFixedSize(160,30);
+    ControlPanel->addWidget(tblSkipFunction);
+    ControlPanel->addStretch();
+}
+
+
 void DebuggerWidget::buildDebugVariableWindow() {
-    debug_variable_window = new QWidget();
-    var_layout = new QVBoxLayout();
-    debug_variable_window->setMaximumWidth(150); // for now ... later change responsibly
-    //debug_variable_window->setMinimumSize(350, height());
-    //debug_variable_window->setMaximumSize(350, height());
+
+    debug_variable_window = new QWidget(this);
+    var_layout = new QVBoxLayout(this);
+    debug_variable_window->setMaximumWidth(250); // for now ... later change responsibly
+
     var_layout->addWidget(new PlainTextEdit);
     debug_variable_window->setLayout(var_layout);
+
+    QSplitter *watchDockContainer=new QSplitter(this);
+    watchDockContainer->setOrientation(Qt::Vertical);
+    QToolBar *customWatchControl=new QToolBar(watchDockContainer);
+    QToolButton *addwatch =new QToolButton(watchDockContainer);
+    addwatch->setIcon(QPixmap(":/DebugToolBar/image/Debug Docks/AddWatch.png"));
+    customWatchControl->addWidget(addwatch);
+    QToolButton *modifywatch=new QToolButton(watchDockContainer);
+    modifywatch->setIcon(QPixmap(":/DebugToolBar/image/Debug Docks/ModifyWatch.png"));
+    customWatchControl->addWidget(modifywatch);
+    customWatchControl->addSeparator();
+    QToolButton *removewatch=new QToolButton(watchDockContainer);
+    removewatch->setIcon(QPixmap(":/DebugToolBar/image/Debug Docks/RemoveWatch.png"));
+
+    customWatchControl->addWidget(removewatch);
+
 }

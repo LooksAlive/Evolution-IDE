@@ -18,7 +18,7 @@
 #include <QFileInfo>
 #include <QFontDialog>
 
-#include <QPrinter>
+//#include <QPrinter>
 #include <QListWidgetItem>
 #include <QListWidget>
 #include <QModelIndex>
@@ -148,7 +148,7 @@ private:
 
     void closeEvent(QCloseEvent*) override;
 
-    // the way to show DockWidgets in app --> select corners, do not take all bottom, top for one dock
+    // the way to show DockWidgets in app --> select corners, do not take all bottom, MainWindowLayout for one dock
     void SetupDockWidgetsLayering();
 
 

@@ -94,7 +94,7 @@ QLayout *FindReplaceWidget::buildForm()
     form->addRow("Find:  ", LineEditFind);
     form->addRow("Replace:  ", LineEditReplacement);
 
-    QVBoxLayout *layout = new QVBoxLayout;
+    QVBoxLayout *layout = new QVBoxLayout();
     layout->addLayout(form);
     layout->addLayout(flags);
     layout->addWidget(LabelText);

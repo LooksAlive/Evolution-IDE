@@ -584,6 +584,7 @@ void MainWindow::slotBuild(){
         QString raw = QString::fromStdString(executor.Build(cmake));
         qDebug() << QString::fromStdString(executor.cmake_build);
         ConsoleOutput->setRawOutput(raw);
+        qDebug() << raw;
     }
     else{
         executor.setCompiler("clang++", CommandLineExecutor::Debug, "");
@@ -605,6 +606,7 @@ void MainWindow::slotBuild(){
         ConsoleOutput->setRawOutput(raw);
         qDebug() << raw;
     }
+    ConsoleOutput->setRawOutput("done");
     qDebug() << "build done";
 }
 void MainWindow::slotRun(){
@@ -632,21 +634,21 @@ void MainWindow::slotRun(){
 void MainWindow::slotClangFormat(){
     CommandLineExecutor executor;
     std::vector<std::string> sources;
-    ConsoleOutput->addLogMessage(QString::fromStdString(executor.ClangFormat(sources)));
+    ConsoleOutput->setRawOutput(QString::fromStdString(executor.ClangFormat(sources)));
 }
 void MainWindow::slotClangTidy(){
     CommandLineExecutor executor;
     std::vector<std::string> sources;
-    ConsoleOutput->addLogMessage(QString::fromStdString(executor.ClangTidy(sources)));
+    ConsoleOutput->setRawOutput(QString::fromStdString(executor.ClangTidy(sources)));
 }
 void MainWindow::slotClangCheck(){
     CommandLineExecutor executor;
     std::vector<std::string> sources;
-    ConsoleOutput->addLogMessage(QString::fromStdString(executor.ClangCheck(sources)));
+    ConsoleOutput->setRawOutput(QString::fromStdString(executor.ClangCheck(sources)));
 }
 void MainWindow::slotValgrind(){
     CommandLineExecutor executor;
-    ConsoleOutput->addLogMessage(QString::fromStdString(executor.Valgrind()));
+    ConsoleOutput->setRawOutput(QString::fromStdString(executor.Valgrind()));
 }
 void MainWindow::slotGdbGui(){
     CommandLineExecutor executor;

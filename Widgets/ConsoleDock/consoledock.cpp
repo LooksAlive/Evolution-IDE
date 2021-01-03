@@ -14,49 +14,24 @@ ConsoleDock::ConsoleDock(QWidget *parent) : QDockWidget(parent)
     setFeatures(AllDockWidgetFeatures);
     // setAllowedAreas(Qt::BottomDockWidgetArea);
 
-    BuildOutput();
+    BuildConsole();
 
-    // connect(InnerTab->tabBar(),SIGNAL(currentChanged(int)),this, SLOT(setRawOutput(QString)));
+    setWidget(ConsoleOutput);
 }
 
-ConsoleDock::~ConsoleDock(){
-    delete TabStyle;
-}
+ConsoleDock::~ConsoleDock(){}
 
 // change to QListWidget most probably, bc. of specific widget shows its own data and do not know
 // how to do that with tabs, at least yet
-void ConsoleDock::BuildOutput()
+void ConsoleDock::BuildConsole()
 {
-    InnerTab = new QTabWidget(this);
-    ConsoleDock::setWidget(InnerTab);
-
-    // features
-    InnerTab->setMovable(false);
-    InnerTab->setTabsClosable(false);
-    InnerTab->setUsesScrollButtons(true);
-    InnerTab->setTabPosition(QTabWidget::West);
-    TabStyle = new CustomTabStyle();
-    InnerTab->tabBar()->setStyle(TabStyle);
-
-    Logs = new QPlainTextEdit(this);
-    CompileOutput = new QPlainTextEdit(this);
-    RawOutput = new QPlainTextEdit(this);
-
-    InnerTab->addTab(Logs, "Logs");
-    InnerTab->addTab(CompileOutput, "Compile Output");
-    InnerTab->addTab(RawOutput, "Raw Output");
+    ConsoleOutput = new QPlainTextEdit(this);
 }
 
 void ConsoleDock::setRawOutput(const QString &raw){
-    RawOutput->appendPlainText(raw);
-    //FormatRawOutput(raw);
+    ConsoleOutput->appendPlainText(raw);
 }
 
-void ConsoleDock::addLogMessage(const QString &log_msg){
-    Logs->setPlainText(log_msg);
-}
-
-void ConsoleDock::FormatRawOutput(const QString &raw){
-    // """"""""""""""""""""""""""""
-    CompileOutput->setPlainText(raw);
+void ConsoleDock::clear(){
+    ConsoleOutput->clear();
 }

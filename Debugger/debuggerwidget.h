@@ -1,10 +1,22 @@
 #ifndef DEBUGGERDOCK_H
 #define DEBUGGERDOCK_H
 
+/*
+ * console & source view on left, variable view on right
+ *
+*/
+
+
+
 #include <QDockWidget>
 #include <QWidget>
 #include <QPushButton>
 #include <QLabel>
+#include <QToolBar>
+#include <QToolButton>
+#include <QString>
+#include <QSplitter>
+#include <QTreeView>
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -17,35 +29,54 @@ class DebuggerWidget : public QWidget
 {
     Q_OBJECT
 public:
-    DebuggerWidget(QWidget *parent = nullptr);
+    explicit DebuggerWidget(QWidget *parent = nullptr);
     ~DebuggerWidget();
 
 
 private:
 
-    QHBoxLayout *top;
-    QVBoxLayout *top_layout;
+    QHBoxLayout *MainWindowLayout;  // SourceConsoleLayout + debug_variable_window
+    QVBoxLayout *SourceConsoleLayout;        // source_view + Console
     PlainTextEdit *source_view;
 
-    QWidget *debug_console;
-    QVBoxLayout *console_layout;
+    // ------------------------------------------------------------------
+
+    QWidget *Console;
+    QHBoxLayout *MainConsoleLayout;     // ControlPanel + debug_output
     PlainTextEdit *debug_output;
+    QSplitter *splitter;
 
-    QPushButton *step;
-    QPushButton *step_over;
+    QToolButton *tblStartDebug, *tblStopDebug, *tblRunToCursor,
+            *tblNextLine, *tblIntoLine, *tblNextInstruction,
+            *tblIntoInstruction, *tblContinue, *tblSkipFunction;
 
-    QPushButton *step_in;
-    QPushButton *step_out;
+    QToolBar *DebugToolBar;
+    QVBoxLayout *ControlPanel;      // DebugToolBar + all buttons
+
+    void createToolBar();
+    void createControlPanel();
+    void buildConsole();
+
+    // ------------------------------------------------------------------
 
     QWidget *debug_variable_window;
     QVBoxLayout *var_layout;
 
-    void buildDebugConsole();
     void buildDebugVariableWindow();
 
+private slots:
+    /*
+    void onActionAddWatch();
+    void onActionModifyWatch();
+    void onActionRemoveWatch();
 
+    
 
+    void createStackView();
+    void createGDBConversation();
+    void createWatchLayout();
 
+    */
 
 };
 

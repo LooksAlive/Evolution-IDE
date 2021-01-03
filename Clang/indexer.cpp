@@ -4,3 +4,5 @@ Indexer::Indexer()
 {
 
 }
+
+Indexer::~Indexer() {}

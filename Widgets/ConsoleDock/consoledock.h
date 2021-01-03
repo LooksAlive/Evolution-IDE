@@ -21,23 +21,16 @@ class  ConsoleDock : public QDockWidget
 {
     Q_OBJECT
 public:
-    ConsoleDock(QWidget *parent = nullptr);
+    explicit ConsoleDock(QWidget *parent = nullptr);
     ~ConsoleDock();
 
     void setRawOutput(const QString &raw);
-    void addLogMessage(const QString &log_msg);
+    void clear();
 
 private:
-    CustomTabStyle *TabStyle; // innertab style -> horizontal and right(west) aligned
+    QPlainTextEdit *ConsoleOutput;
 
-    QTabWidget *InnerTab;
-    QPlainTextEdit *Logs;
-    QPlainTextEdit *CompileOutput;
-    QPlainTextEdit *RawOutput;
-
-    void BuildOutput();
-    // process raw output, set as compile
-    void FormatRawOutput(const QString &raw);
+    void BuildConsole();
 
 };
 

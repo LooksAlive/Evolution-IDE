@@ -1,16 +1,20 @@
 cmake_minimum_required(VERSION 3.5.1)
 project(Evolution-IDE)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_COMPILER clang++-10)
-set(CMAKE_CXX_FLAGS "-O0 -g") # -Wall -- warnings
+set(BASE_FLAGS "-O0 -g -Wall")
+
+# required flags for clang, llvm, lldb
+set(CXX_FLAGS
+        " ${BASE_FLAGS} -fno-exceptions -fno-rtti -D_GNU_SOURCE -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS")
+set(CMAKE_CXX_FLAGS ${CXX_FLAGS})
 
 #set(CMAKE_CXX_FLAGS "-O0 -g -std=c++17 -fsanitize=address -fno-omit-frame-pointer")
 
 #add_subdirectory(Widgets)
-
-#include_directories(cmake-build-debug/editor_autogen/include)
 
 set(HEX_VIEW
         Widgets/HexView/QHexView/document/buffer/qfilebuffer.cpp
@@ -75,8 +79,8 @@ set(SOURCE_FILES main.cpp
 
                 Debugger/lldbbridge.cpp
                 Debugger/lldbbridge.h
-        Debugger/debuggerwidget.cpp
-        Debugger/debuggerwidget.h
+                Debugger/debuggerwidget.cpp
+                Debugger/debuggerwidget.h
                 Clang/indexer.cpp
                 Clang/indexer.h
                 Clang/parser.cpp
@@ -98,7 +102,7 @@ set(SOURCE_FILES main.cpp
                 Widgets/Settings/git/gitwidget.h
                 icons/iconfactory.cpp
                 icons/iconfactory.h
-                )
+        )
 
 #set(Qt5Core_DIR "/opt/Qt/5.9.3/gcc_64/lib/cmake/Qt5Core/")
 #set(Qt5Widgets_DIR "/opt/Qt/5.9.3/gcc_64/lib/cmake/Qt5Widgets/")
@@ -106,24 +110,125 @@ set(SOURCE_FILES main.cpp
 
 
 SET(CMAKE_AUTOUIC ON)
-
 set (CMAKE_AUTOMOC ON)
 set (CMAKE_AUTORCC ON)
+
 set (CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include_directories(
         ${CMAKE_CURRENT_BINARY_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
+        #/usr/local/include         # llvm, lldb, clang
+        #/usr/local/include/clangd  # clangd -> indexer, completer, parser etc.
 )
+
+# required libs by clang ...
+set(SYSTEM_LIBS rt dl tinfo pthread m z)
+
+set(LLDB_LIBS lldb) # one shared lib
+
+# clang libraries; also added manually:
+# clangd has no shared libs, so if i want to use clang shared lib in the future and recompile clang by in this manner
+# i would need to go deep into clangd and extract, what i need -> so yes later
+set(CLANG_LIBS
+        clangAnalysis clangApplyReplacements clangARCMigrate
+        clangAST clangASTMatchers clangBasic
+        clangCodeGen clangTidyLLVMLibcModule clangQuery
+        clangToolingRefactoring clangToolingSyntax
+        clangTransformer clangToolingInclusions clangTidy
+        clangToolingCore clangToolingASTDiff clangTooling
+        clangTidyZirconModule clangTidyUtils clangTidyMain
+        clangTidyReadabilityModule clangTidyPortabilityModule
+        clangTidyOpenMPModule clangTidyPerformanceModule
+        clangTidyPlugin clangTidyObjCModule clangTidyMPIModule
+        clangTidyModernizeModule clangTidyMiscModule
+        clangStaticAnalyzerFrontend clangStaticAnalyzerCheckers
+        clangTesting clangTidyLLVMModule clangParse
+        clangTidyLinuxKernelModule clangTidyHICPPModule
+        clangTidyGoogleModule clangTidyFuchsiaModule
+        clangTidyDarwinModule clangTidyCppCoreGuidelinesModule
+        clangTidyAbseilModule clangTidyAndroidModule
+        clangTidyBoostModule clangTidyBugproneModule
+        clangTidyCERTModule clangStaticAnalyzerCore
+        clangReorderFields clangRewrite clangRewriteFrontend
+        clangSema clangSerialization clangLex clangMove
+        clangHandleCXX clangHandleLLVM clangChangeNamespace
+        clangIncludeFixer clangIncludeFixerPlugin clangIndex
+        clangFormat clangFrontend clangFrontendTool
+        clangdSupport clangDynamicASTMatchers clangEdit
+        clangDoc clangdRemoteIndex clangDriver
+        clangDaemonTweaks clangDependencyScanning
+        clangDirectoryWatcher clangCrossTU clangDaemon
+        )
+
+# LLVM libraries: `llvm-config -ibs $(LLVM_MODULES)`;LLVM_MODULES = all engine
+set(LLVM_LIBS
+        LLVMXRay LLVMWindowsManifest LLVMTableGen LLVMSymbolize
+        LLVMDebugInfoPDB LLVMOrcJIT LLVMOrcError LLVMJITLink
+        LLVMObjectYAML LLVMMCA LLVMLTO LLVMPasses LLVMCoroutines
+        LLVMObjCARCOpts LLVMExtensions LLVMLineEditor LLVMLibDriver
+        LLVMInterpreter LLVMInterfaceStub LLVMFuzzMutate LLVMMCJIT
+        LLVMExecutionEngine LLVMRuntimeDyld LLVMDWARFLinker
+        LLVMDlltoolDriver LLVMOption LLVMDebugInfoGSYM LLVMCoverage
+        LLVMXCoreDisassembler LLVMXCoreCodeGen LLVMXCoreDesc LLVMXCoreInfo
+        LLVMX86Disassembler LLVMX86AsmParser LLVMX86CodeGen LLVMX86Desc
+        LLVMX86Info LLVMWebAssemblyDisassembler LLVMWebAssemblyCodeGen
+        LLVMWebAssemblyDesc LLVMWebAssemblyAsmParser LLVMWebAssemblyInfo
+        LLVMSystemZDisassembler LLVMSystemZCodeGen LLVMSystemZAsmParser
+        LLVMSystemZDesc LLVMSystemZInfo LLVMSparcDisassembler LLVMSparcCodeGen
+        LLVMSparcAsmParser LLVMSparcDesc LLVMSparcInfo LLVMRISCVDisassembler
+        LLVMRISCVCodeGen LLVMRISCVAsmParser LLVMRISCVDesc LLVMRISCVUtils
+        LLVMRISCVInfo LLVMPowerPCDisassembler LLVMPowerPCCodeGen
+        LLVMPowerPCAsmParser LLVMPowerPCDesc LLVMPowerPCInfo LLVMNVPTXCodeGen
+        LLVMNVPTXDesc LLVMNVPTXInfo LLVMMSP430Disassembler LLVMMSP430CodeGen
+        LLVMMSP430AsmParser LLVMMSP430Desc LLVMMSP430Info LLVMMipsDisassembler
+        LLVMMipsCodeGen LLVMMipsAsmParser LLVMMipsDesc LLVMMipsInfo
+        LLVMLanaiDisassembler LLVMLanaiCodeGen LLVMLanaiAsmParser LLVMLanaiDesc
+        LLVMLanaiInfo LLVMHexagonDisassembler LLVMHexagonCodeGen
+        LLVMHexagonAsmParser LLVMHexagonDesc LLVMHexagonInfo LLVMBPFDisassembler
+        LLVMBPFCodeGen LLVMBPFAsmParser LLVMBPFDesc LLVMBPFInfo
+        LLVMAVRDisassembler LLVMAVRCodeGen LLVMAVRAsmParser LLVMAVRDesc
+        LLVMAVRInfo LLVMARMDisassembler LLVMARMCodeGen LLVMARMAsmParser
+        LLVMARMDesc LLVMARMUtils LLVMARMInfo LLVMAMDGPUDisassembler
+        LLVMAMDGPUCodeGen LLVMMIRParser LLVMipo LLVMInstrumentation
+        LLVMVectorize LLVMLinker LLVMIRReader LLVMAsmParser LLVMFrontendOpenMP
+        LLVMAMDGPUAsmParser LLVMAMDGPUDesc LLVMAMDGPUUtils LLVMAMDGPUInfo
+        LLVMAArch64Disassembler LLVMMCDisassembler LLVMAArch64CodeGen
+        LLVMCFGuard LLVMGlobalISel LLVMSelectionDAG LLVMAsmPrinter
+        LLVMDebugInfoDWARF LLVMCodeGen LLVMTarget LLVMScalarOpts
+        LLVMInstCombine LLVMAggressiveInstCombine LLVMTransformUtils
+        LLVMBitWriter LLVMAnalysis LLVMProfileData LLVMObject LLVMTextAPI
+        LLVMBitReader LLVMCore LLVMRemarks LLVMBitstreamReader
+        LLVMAArch64AsmParser LLVMMCParser LLVMAArch64Desc LLVMMC
+        LLVMDebugInfoCodeView LLVMDebugInfoMSF LLVMBinaryFormat
+        LLVMAArch64Utils LLVMAArch64Info LLVMSupport LLVMDemangle
+
+        )
+
+
+link_directories(/usr/local/lib)
 
 add_executable(editor ${SOURCE_FILES} resources.qrc)
 
+# marked as comment -> not needed ...
+#find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
+#find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
 
+find_package( Qt5 REQUIRED
+        Core
+        Widgets
+        Gui
+        Xml
+        PrintSupport
+        )
+#find_package( Qt5Widgets REQUIRED )
+#find_package( Qt5Gui REQUIRED )
+#find_package( Qt5Xml REQUIRED )
+#find_package( Qt5PrintSupport REQUIRED )
 
-find_package( Qt5Core REQUIRED )
-find_package( Qt5Widgets REQUIRED )
-find_package( Qt5Gui REQUIRED )
-find_package( Qt5Xml REQUIRED )
-find_package( Qt5PrintSupport REQUIRED )
+#qt5_use_modules( editor Core Widgets Gui Xml PrintSupport)
 
-qt5_use_modules( editor Core Widgets Gui Xml PrintSupport)
+set_target_properties(Qt5::Core PROPERTIES MAP_IMPORTED_CONFIG_COVERAGE "DEBUG")
+
+target_link_libraries(editor Qt5::Widgets Qt5::Gui Qt5::Core Qt5::Xml Qt5::PrintSupport
+        -Wl,--start-group ${SYSTEM_LIBS} ${LLVM_LIBS} ${CLANG_LIBS} ${LLDB_LIBS} -Wl,--end-group)

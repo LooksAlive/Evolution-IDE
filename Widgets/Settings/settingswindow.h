@@ -5,12 +5,9 @@
 #include <QListWidget>
 #include <QStackedWidget>
 #include <QDialog>
-// #include <QTabWidget>
-// #include <QGridLayout>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QPlainTextEdit>
-
 #include <QSettings>
 
 #include "CmakeGenerator/cmagegeneratorwidget.h"

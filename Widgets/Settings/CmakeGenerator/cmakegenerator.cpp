@@ -45,7 +45,7 @@ void CmakeGenerator::generateSources(){
 
 
 void CmakeGenerator::generateExecutable(){
-    g_executable = "add_executable(" +  m_name + "${SOURCE_FILES}" + ")";
+    g_executable = "add_executable(" +  m_name + " ${SOURCE_FILES}" + ")";
 }
 
 void CmakeGenerator::generateLibraryPathsList(){
@@ -70,19 +70,20 @@ void CmakeGenerator::createCmakeLists(const std::string &path){
 
     g_buffer += m_minimum_cmake_version + "\n";
     g_buffer += g_name + "\n\n";
-    g_buffer += "set(CMAKE_CXX_COMPILER " + m_compiler + ")";
-    g_buffer += "set(CXX_FLAGS " + m_flags + ")";
+    g_buffer += "set(CMAKE_CXX_COMPILER " + m_compiler + ") \n\n";
+    g_buffer += "set(CXX_FLAGS " + m_flags + ") \n\n";
     g_buffer += m_cmake_code + "\n";    // additional code added by user
+    generateSources();
     g_buffer += g_sources + "\n\n";
-    g_buffer += g_link_libraries + "\n\n";
+    generateExecutable();
+    g_buffer += g_executable + "\n\n";
+    //g_buffer += g_link_libraries + "\n\n";
 
 
     QString cmake_path = QString::fromStdString(path) + "/CMakeLists.txt";
-    QDir dir;
-    if (!dir.exists(cmake_path))
-        dir.mkpath(cmake_path); // creates only dir !!!!!! , come up with other solution to create file fast
 
     QFile file(cmake_path);
-    file.write(g_buffer.c_str());
-
+    if(file.open(QFile::ReadWrite)) {
+        file.write(g_buffer.c_str());
+    }
 }

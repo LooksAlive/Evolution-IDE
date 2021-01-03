@@ -19,12 +19,12 @@ Converter::~Converter(){
 
 QLayout *Converter::BuildForm(){
 
-    QVBoxLayout *layout = new QVBoxLayout();
-    Option = new QComboBox();
-    InputWindow = new QPlainTextEdit();
-    OutputWindow = new QPlainTextEdit();
-    Caption = new QLabel();
-    convert_button = new QPushButton();
+    QVBoxLayout *layout = new QVBoxLayout(this);
+    Option = new QComboBox(this);
+    InputWindow = new QPlainTextEdit(this);
+    OutputWindow = new QPlainTextEdit(this);
+    Caption = new QLabel(this);
+    convert_button = new QPushButton(this);
 
     Option->addItem("Text");
     Option->addItem("Hex");
