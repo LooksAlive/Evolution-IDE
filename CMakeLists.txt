@@ -94,15 +94,15 @@ set(SOURCE_FILES main.cpp
                 filemanager.h
                 Widgets/Settings/CmakeGenerator/cmakegenerator.cpp
                 Widgets/Settings/CmakeGenerator/cmakegenerator.h
-                Widgets/Settings/CmakeGenerator/cmagegeneratorwidget.cpp
-                Widgets/Settings/CmakeGenerator/cmagegeneratorwidget.h
+        Widgets/Settings/CmakeGenerator/cmakegeneratorwidget.cpp
+        Widgets/Settings/CmakeGenerator/cmakegeneratorwidget.h
                 Widgets/Settings/git/gitbridge.cpp
                 Widgets/Settings/git/gitbridge.h
                 Widgets/Settings/git/gitwidget.cpp
                 Widgets/Settings/git/gitwidget.h
                 icons/iconfactory.cpp
                 icons/iconfactory.h
-        )
+        Widgets/Settings/Appearence/AppearenceWidget.cpp Widgets/Settings/Appearence/AppearenceWidget.h)
 
 #set(Qt5Core_DIR "/opt/Qt/5.9.3/gcc_64/lib/cmake/Qt5Core/")
 #set(Qt5Widgets_DIR "/opt/Qt/5.9.3/gcc_64/lib/cmake/Qt5Widgets/")
@@ -118,8 +118,8 @@ set (CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(
         ${CMAKE_CURRENT_BINARY_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
-        #/usr/local/include         # llvm, lldb, clang
-        #/usr/local/include/clangd  # clangd -> indexer, completer, parser etc.
+        /usr/local/include         # llvm, lldb, clang
+        /usr/local/include/clangd  # clangd -> indexer, completer, parser etc.
 )
 
 # required libs by clang ...

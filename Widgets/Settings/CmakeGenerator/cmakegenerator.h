@@ -68,7 +68,6 @@ private:
 
     std::string g_buffer = "";     // final buffer to write into file
 
-
 };
 
 

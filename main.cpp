@@ -2,6 +2,8 @@
 #include <QApplication>
 #include <QFile>
 
+#include "EnvironmentSettings.h"
+
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
     MainWindow window;
@@ -10,7 +12,8 @@ int main(int argc, char *argv[]) {
     if(file.open(QFile::ReadOnly)){
         style = file.readAll();
     }
-    window.setStyleSheet(style);
+    //window.setStyleSheet(style);
+    settings.setDefaultFormat(QSettings::IniFormat);
     window.show();
 
     return app.exec();

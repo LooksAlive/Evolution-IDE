@@ -8,7 +8,6 @@
 
 */
 
-
 #include <QString>
 #include <QList>
 #include <QDir>
@@ -28,6 +27,7 @@ public:
     void getFilesRecursively(const QString &Project_RootDir);
     QString getFileExtension(const QString &filename); // set source_files
     void appendFileExtension();                        // on linux append extensions
+    QString simple_read(const QString &full_file_path);
     QString read(const QString &full_file_path);
     void write(const QString &full_file_path, const char *buffer);
 
@@ -35,6 +35,8 @@ public:
 
     QString current_full_filepath = "";  // /home/user/file.txt
     QString current_file_name = "";       // file.txt
+    QString executable_file_path = "";
+    bool project_cmake_file_exists = false;
 
     QList<QString> all_files;       // filled with absolute paths
     QList<QString> source_files;    // later into cmdexecutor or cmake -> strip front known path or not, however

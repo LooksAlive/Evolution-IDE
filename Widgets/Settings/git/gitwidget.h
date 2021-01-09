@@ -11,6 +11,7 @@ public:
     ~GitWidget();
 
     void loadData();    // loading data from settings
+    void saveData();
 
 signals:
 

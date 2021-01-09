@@ -36,6 +36,7 @@
 #include <QList>
 #include <QUrl>
 #include <QString>
+#include <QPoint>
 
 #include <QToolButton>
 
@@ -169,7 +170,6 @@ private slots:
 
     void SetupSettingsWindow();
     void SetupConverter();
-    void SetFont();
 
     void showEditorView();
     void showHexView();

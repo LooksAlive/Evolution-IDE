@@ -10,8 +10,9 @@
 #include <QPlainTextEdit>
 #include <QSettings>
 
-#include "CmakeGenerator/cmagegeneratorwidget.h"
+#include "CmakeGenerator/cmakegeneratorwidget.h"
 #include "git/gitwidget.h"
+#include "Appearence/AppearenceWidget.h"
 
 class SettingsWindow : public QDialog
 {
@@ -28,8 +29,9 @@ private:
     QHBoxLayout *InnerLayout;
     QVBoxLayout *OuterLayout;
 
-    CmageGeneratorWidget *cmake;
+    CMakeGeneratorWidget *cmake;
     GitWidget *git;
+    AppearenceWidget *appearence;
 
     QWidget *buildButtonBox();
     QLayout *buildForm();
@@ -41,10 +43,10 @@ signals:
 
 
 private slots:
-    /*
-    void saveData();    // every widget save data function is called here [ save button ]
-    void loadData();    // loading data from settings -> all subwidgets load functions [ in constructor init. ]
-    */
+
+    void slotSaveData();    // every widget save data function is called here [ save button ]
+    void slotLoadData();    // loading data from settings -> all subwidgets load functions [ in constructor init. ]
+
 };
 
 #endif // SETTINGSWINDOW_H

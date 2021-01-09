@@ -1,21 +1,31 @@
 # TODO
 
-* binary info, hex view as tab and detect .bin, .hex files -> enable this buttons on toolbar, not active otherwise
-* seach box sometimes not working -> QWidget init error
-* Qt settings -> remember position opened files, path, reopen there, (also) setup open path for dialog to fileexplorer
+* binary info -> after all source and debugger stuffs, use snowman project
+* detect .exe, .bin files and store  them to use in other views
 
+* create bridge in cmd executor for git tools (git, git-diff, ...)
+ -> later use libgit2 : https://github.com/libgit2/libgit2
 
-* cuties_ide arrows to show code between its {}
-* breakpoint are near the linenumber area
+* new class (for linux) - DependencyInstaller -> install tools, libraries,
+  user want to work with
 
-* for git use libgit2 : https://github.com/libgit2/libgit2
+* droping files works only for fileexplorer yet, into text edit it drops absolute address
 
-* allow drag & drop file, dir on both(fileexplorer, textedit) and set up
+* settings for cmake (flags, cores, ...)
+*** QSettings (remember window size, pos, openned files, style, ...)
 
+* vertical toolbar highlite current window
 
-
-* set up completer for text
-* start to dig into clangd -> indexer
+* set up completer for textedit || QDockWidget like completer and info,
+  tracking TextCursor position in text (i personally do not like basic 
+  underline completer)
+  
+* textedit arrows {} hide between + highlite pair (use search functions and 
+  extra selection set, do not forget to remove after cursor move away),
+  breakpoint line place, highlite all selected
+  words in file (extra selection) - almost done, building helper function first
+  
+* clangd has really weird function -> take some of them and create my own
 
 
 # CHANGES
@@ -24,6 +34,10 @@
 * ctrl + mouse wheel increase font size
 * find box added as dockwidget -> tabified widget .... later make show as one in menu
 * settings window buttons works
-* Converter -> small widget with line edit to convert text into different formats(hex, base64 ...)
-* dir can be dropped onto explorer and set as root dir,  text edit drop still do not work
-
+* Converter ->small widget with line edit to convert text into different
+  -> formats(hex, base64 ...)
+* dir can be dropped onto explorer and set as root projevt dir
+* cmake generates code from project files, also possible only terminal execution
+  -> not avoid object files
+* debugger variable window + lldbbridge (basic function, breakpoints, exe info...)
+* window styles (dark, white) -> settings

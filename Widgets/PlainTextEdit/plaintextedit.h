@@ -18,7 +18,7 @@ public:
     QRectF blockBoundingRectProxy(const QTextBlock &block);
     QPointF contentOffsetProxy();
     QTextBlock firstVisibleBlockProxy();
-    void gotoLine(const int no);
+    void setCursorLine(const int &line);
     void moveCursor(const bool end);
     void findInTextEdit(const QString &search, const QTextDocument::FindFlags &find_options);
 

@@ -2,19 +2,23 @@
 
 Parser::Parser()
 {
+
     /*
     using PathRef = llvm::StringRef;
-    llvm::Optional<clang::tooling::CompileCommand>
-    getCompileCommand(PathRef File);
-    GlobalCompilationDatabase CDB;
 
+    database CDB;
     ClangdServer::Options Opts;
-    ThreadsafeFS TFS();
-    TFS.llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> viewImpl();
+    RealThreadsafeFS TFS;
 
-    ClangdServer server(CDB, TFS, Opts);
+    ClangdServer server(CDB, TFS, Opts, nullptr);
     server.addDocument("myfile", "file contents");
-    CodeCompleteOptions complete_opts;
-    server.codeComplete("myfile", 3, complete_opts, callback)
+    clang::clangd::CodeCompleteOptions complete_opts;
+    Callback<CodeCompleteResult> CB;
+
+    Position pos;
+    pos.line = 3;
+    pos.character = 5;
+
+    server.codeComplete("myfile", pos, complete_opts, std::move(CB));
     */
 }

@@ -18,6 +18,20 @@ void FileManager::getFilesRecursively(const QString &Project_RootDir){
     //QStringList dirs;
     while(directories.hasNext()){
         directories.next();
+
+        if(directories.fileName() == "CMakeLists.txt"){
+            project_cmake_file_exists = true;
+        }
+        if(directories.fileInfo().dir().dirName() == "cmake-build"){
+            if(directories.fileInfo().isExecutable()){ // binary file
+                executable_file_path = directories.filePath();
+                break;
+            }
+            else{
+                break; // in build dir -> do not want generated files from here, only executable
+            }
+        }
+
         all_files.push_back(directories.filePath());
         if(getFileExtension(directories.filePath()) == "cpp" |
                 getFileExtension(directories.filePath()) == "h" |
@@ -26,6 +40,9 @@ void FileManager::getFilesRecursively(const QString &Project_RootDir){
                 getFileExtension(directories.filePath()) == "cxx")
         {
             source_files.push_back(directories.filePath());
+        }
+        if(directories.fileInfo().isExecutable()){ // binary file
+            executable_file_path = directories.filePath();
         }
     }
     // qDebug() << source_files;
@@ -60,6 +77,19 @@ void FileManager::appendFileExtension(){
     }
     */
 
+}
+
+QString FileManager::simple_read(const QString &full_file_path){
+    QString buffer;
+
+    QFile file(current_full_filepath);
+
+    if (file.open(QIODevice::ReadOnly)){
+        buffer = file.readAll();
+    }
+    file.close();
+
+    return buffer;
 }
 
 QString FileManager::read(const QString &full_file_path){

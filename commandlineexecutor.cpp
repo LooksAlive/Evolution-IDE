@@ -102,7 +102,7 @@ std::string CommandLineExecutor::Execute(bool cmake){
     std::string output = "";
     if(cmake){
         cmake_exec += executable_path + "/cmake-build/" + executable_name; // ProjectRootDir
-        output = ExecuteCommand(cmake_exec);
+        output = cmake_exec + "\n\n" +  ExecuteCommand(cmake_exec);
     }
     else {
         // string will be returned into console

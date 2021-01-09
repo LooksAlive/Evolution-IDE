@@ -32,10 +32,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     Tabs->currentWidget()->setFocus();
     highlighter = new Highlighter(":/highlights/languages.xml", this);
 
-    QFont font;
-    font.setFamily("Console");
-    font.setWeight(15);
-
 }
 
 MainWindow::~MainWindow() {
@@ -70,8 +66,9 @@ void MainWindow::SetupVerticalBar(){
     vertical_bar->setAcceptDrops(false);
     vertical_bar->setIconSize(QSize(250, 45));
 
-    vertical_bar->setContentsMargins(10,10,10,10);
-    //vertical_bar->setToolButtonStyle();
+    //vertical_bar->setContentsMargins(10,10,10,10);
+    vertical_bar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
+    vertical_bar->setFocusPolicy(Qt::ClickFocus);
 
 
     vertical_stack = new QStackedWidget(this);
@@ -119,21 +116,17 @@ void MainWindow::SetupMenuBar() {
     fileMenu->addAction("Settings", this, SLOT(SetupSettingsWindow()), Qt::CTRL + Qt::Key_P);
     fileMenu->addSeparator();
     fileMenu->addAction("Exit",       this, SLOT(CloseWindow()),   Qt::CTRL + Qt::Key_Q);
-    fileMenu->addSeparator();
-    fileMenu->addAction("Hex View",       this, SLOT(showHexView()));
 
     editMenu->addAction("Cut",        this, SLOT(slotCut()),       Qt::CTRL + Qt::Key_X);
     editMenu->addAction("Copy",       this, SLOT(slotCopy()),      Qt::CTRL + Qt::Key_C);
     editMenu->addAction("Paste",      this, SLOT(slotPaste()),     Qt::CTRL + Qt::Key_V);
     editMenu->addAction("Delete",     this, SLOT(slotClear()),     Qt::CTRL + Qt::Key_Backspace);
     editMenu->addAction("Select All", this, SLOT(slotSelectAll()), Qt::CTRL + Qt::Key_A);
-    editMenu->addSeparator();
-    editMenu->addAction("Change Font", this, SLOT(SetFont()));
 
     viewMenu->addAction(Explorer->toggleViewAction());
     viewMenu->addAction(Docker->toggleViewAction());
     viewMenu->addAction(ConsoleOutput->toggleViewAction());
-    viewMenu->addAction(find_replace->toggleViewAction()); // or simply setvisible(true)
+    viewMenu->addAction(find_replace->toggleViewAction());
     viewMenu->addAction("Converter", this, SLOT(SetupConverter()));
 
     /* replace ui; decide if use namespace or just MainWindow->declared int .h as private pointer  */
@@ -165,22 +158,6 @@ void MainWindow::SetupDockWidgetsLayering(){
     setCorner(Qt::BottomRightCorner, Qt::RightDockWidgetArea);
 }
 
-// edit menu
-void MainWindow::SetFont(){
-    QFont font;
-    font.setFamily("Ubuntu Mono");
-    font.setWeight(15);
-
-    // create font dialog
-    bool ok = true;
-    font = QFontDialog::getFont(&ok, font, this); // without defaultfont also works
-    if(ok){
-        Tabs->setFont(font);
-    }
-
-}
-
-
 // setToolTip: 1 -> created[visible] ;  2 -> created[invisible] ;   "" -> not created
 void MainWindow::showEditorView(){
 
@@ -195,6 +172,10 @@ void MainWindow::showBinaryView(){
 void MainWindow::showDebuggerView(){
 
     vertical_stack->setCurrentWidget(debuggerView);
+
+    // for now, starting with current file, later track    ;  not i only care for line
+    debuggerView->setDebugPosition(file_manager.current_full_filepath, 5);
+    debuggerView->setExecutable(file_manager.executable_file_path.toStdString());
 }
 
 void MainWindow::showHexView(){
@@ -208,7 +189,6 @@ void MainWindow::showHexView(){
 
 void MainWindow::SetupTabWidget() {
     Tabs = new Tab(this);
-    TABS_ACTIVE = true;
     connect(Tabs, SIGNAL(tabCloseRequested(int)), this, SLOT(CloseFile(int)));
 
     connect(Tabs->AddNewTabButton, SIGNAL(clicked()), this, SLOT(CreateFile()));
@@ -262,6 +242,7 @@ void MainWindow::SetupConverter(){
 
 void MainWindow::SetupDebuggerView(){
     debuggerView = new DebuggerWidget(this);
+
 }
 void MainWindow::SetupBinaryView(){
     binaryView = new BinaryView(this);
@@ -269,7 +250,6 @@ void MainWindow::SetupBinaryView(){
 void MainWindow::SetupHexView(){
     hexview = new HexView(this);
 }
-
 void MainWindow::showDecompilerView(){
 
 }
@@ -581,9 +561,10 @@ void MainWindow::slotBuild(){
         generator.createCmakeLists(file_manager.Project_Dir.toStdString());
         executor.ProjectRootDir = file_manager.Project_Dir.toStdString();
 
+        ConsoleOutput->setRawOutput(QString::fromStdString(executor.cmake_build));
         QString raw = QString::fromStdString(executor.Build(cmake));
-        qDebug() << QString::fromStdString(executor.cmake_build);
         ConsoleOutput->setRawOutput(raw);
+        qDebug() << QString::fromStdString(executor.cmake_build);
         qDebug() << raw;
     }
     else{
@@ -620,9 +601,9 @@ void MainWindow::slotRun(){
 
     if(cmake){
         executor.setExecutableName("executable", file_manager.Project_Dir.toStdString());
-        ConsoleOutput->setRawOutput(QString::fromStdString(executor.cmake_exec));
-        qDebug() << QString::fromStdString(executor.cmake_exec);
         ConsoleOutput->setRawOutput(QString::fromStdString(executor.Execute(cmake)));
+        //ConsoleOutput->setRawOutput(QString::fromStdString(executor.cmake_exec));
+        qDebug() << QString::fromStdString(executor.cmake_exec);
     }
     else{
         ConsoleOutput->setRawOutput(QString::fromStdString(executor.exec_args));

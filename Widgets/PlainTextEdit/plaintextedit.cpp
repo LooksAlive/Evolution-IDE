@@ -99,9 +99,9 @@ QTextBlock PlainTextEdit::firstVisibleBlockProxy()
     return firstVisibleBlock();
 }
 
-void PlainTextEdit::gotoLine(const int no)
+void PlainTextEdit::setCursorLine(const int &line)
 {
-    QTextCursor cursor(document()->findBlockByLineNumber(no - 1));
+    QTextCursor cursor(document()->findBlockByLineNumber(line - 1));
     setTextCursor(cursor);
 }
 

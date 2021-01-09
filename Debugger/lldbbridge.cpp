@@ -1,23 +1,24 @@
 #include "lldbbridge.h"
 
-lldbBridge::lldbBridge()
-{
-    SBDebugger::Initialize();
-    Debugger = SBDebugger::Create();
-    Target = Debugger.CreateTarget("filepath");
-}
+lldbBridge::lldbBridge(){}
 
 lldbBridge::~lldbBridge() {
-    kill_process();
+    lldb::pid_t pid = Process.GetProcessID();
+    std::cout << std::string("Killing process ") + char(pid) << std::endl;  // not added pid, bad conversion
+    Process.Kill();
     Debugger.Terminate();
 }
 
 void lldbBridge::init() {
+
+    SBDebugger::Initialize();
+    Debugger = SBDebugger::Create();
+    Target = Debugger.CreateTarget(executable);
+
     // Create a debugger instance so we can create a target
     if (!Debugger.IsValid()){
         std::cout << "error: failed to create a debugger object\n" << std::endl;
     }
-
 
     strm.RedirectToFileHandle(stdout, false);
 
@@ -29,7 +30,7 @@ void lldbBridge::init() {
 // The second argument in the address that we want to lookup
 //lldb::addr_t file_addr = strtoull(addr_cstr, nullptr, 0);
 // Create a target using the executable.
-//SBTarget target = debugger.CreateTarget(exe_file_path, arch, platform,
+//SBTarget target = debugger.CreateTarget(executable, arch, platform,
 //                                       add_dependent_libs, error);
 
     if (!error.Success()) {
@@ -38,9 +39,12 @@ void lldbBridge::init() {
     }
 
     SBModuleSpec module_spec;
-    module_spec.SetFileSpec(SBFileSpec(exe_file_path));
+    module_spec.SetFileSpec(SBFileSpec(executable));
+    if(!module_spec.IsValid()){
+        std::cout <<"Loaded not valid executable, Exiting " << std::endl;
+        exit(1);
+    }
     SBModule module(module_spec);
-
 
     const size_t num_sections = module.GetNumSections();
     for (size_t sect_idx = 0; sect_idx < num_sections; ++sect_idx) {
@@ -52,46 +56,8 @@ void lldbBridge::init() {
         }
     }
 }
-/*
-const size_t num_symbols = module.GetNumSymbols();
-std::cout <<"num " << num_symbols << std::endl;
-SBSymbol symbol;
-for (size_t symbol_idx=0; symbol_idx<num_symbols; ++symbol_idx) {
-    symbol = module.GetSymbolAtIndex(symbol_idx);
-    std::cout <<"section " << symbol_idx << ": " << symbol.GetStartAddress().GetSection().GetName() << std::endl;
-    std::cout <<"section " << symbol_idx << ": " << symbol.GetStartAddress().GetFileAddress() << std::endl;
-}
-*/
 
-//SBSymbol symbol = module.FindSymbol("main");
-
-//std::cout <<"section: " << symbol.GetStartAddress().GetFileAddress() << std::endl;
-//std::cout <<"section: " << symbol.GetDescription(strm) << std::endl;
-
-/*
-const size_t num_cus = module.GetNumCompileUnits();
-std::cout <<"num: " << num_cus << std::endl;
-for (size_t cu_idx=0; cu_idx<num_cus; ++cu_idx) {
-    SBCompileUnit cu = module.GetCompileUnitAtIndex(cu_idx);
-    std::cout <<"cu: " << cu.GetDescription(strm) << std::endl;
-    std::cout <<"file: " << cu.GetFileSpec().GetFilename() << std::endl;
-    std::cout <<"line: " << cu.GetNumLineEntries() << std::endl;
-}
-*/
-
-
-std::string lldbBridge::kill_process() {
-    std::string res;
-    if (Process.IsValid()) {
-        auto err = Process.Kill();
-        if (err.Fail()) {
-            res = "Failed to terminate process"; // "Error Code " + err.GetError() + " Error String " +  err.GetCString();
-            }
-    }
-    return res;
-}
-
-void lldbBridge::setFrame(lldb::SBFrame frame) {
+void lldbBridge::setFrame(SBFrame frame) {
     //clear();
 
     auto vars = frame.GetVariables(true,  // args
@@ -110,6 +76,113 @@ void lldbBridge::setFrame(lldb::SBFrame frame) {
         insertTopLevelItem(0, item);
          */
     }
+}
+
+std::string lldbBridge::setBreakpoint() {
+
+    std::string res;
+
+    // create the breakpoint
+    /*
+    auto breakpoint = Target.BreakpointCreateByLocation(
+            node.module().sourceFilePath().string().c_str(), linenum);
+
+     	// make sure that it's good
+	if (!breakpoint.IsValid()) {
+		res.addEntry("EUKN", "Could not set breakpoint on node",
+		             {{"nodeid", node.stringId()},
+		              {"File Name", node.module().sourceFilePath().string()},
+		              {"Line  Number", linenum}});
+
+		return res;
+	}
+
+    breakpoint.SetEnabled(true);
+
+    */
+    return std::string();
+}
+
+std::string lldbBridge::removeBreakpoint() {
+
+    /*
+    auto iter = mBreakpoints.find();
+    if (iter == mBreakpoints.end()) { return false; }
+
+    return Target.BreakpointDelete(iter->second.GetID());
+    */
+    return std::string();
+}
+
+void lldbBridge::start() {
+    std::string res;
+
+    if (!Target.IsValid()) {
+        res = "Cannot start a debugger process with an invalid target";
+        std::cout << res << std::endl;
+    }
+
+    init();
+    Process = Target.LaunchSimple(nullptr, nullptr, executable);
+}
+
+void lldbBridge::stop() {
+    lldbBridge::~lldbBridge();
+}
+
+
+bool lldbBridge::isRunning() {
+    if(Debugger.IsValid() && Process.IsValid()){
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
+void lldbBridge::recordError() {
+    // when process gen some stop signal --> get generated error, or just implement SBError
+}
+
+
+std::vector<lldbBridge::framedata> lldbBridge::get_var_func_info() {
+    return std::vector<lldbBridge::framedata>();
+}
+
+lldbBridge::framedata lldbBridge::get_var_func_info_update() {
+    return lldbBridge::framedata();
+}
+
+SBThread lldbBridge::getCurrentThread() {
+    if(Process){
+        return Process.GetSelectedThread();
+    }
+}
+
+SBFrame lldbBridge::getCurrentFrame() {
+    SBThread thread = getCurrentThread();
+    if(thread){
+        return thread.GetSelectedFrame();
+    }
+}
+
+std::string lldbBridge::frameDescribeLocation() {
+    SBFrame frame;
+    const char *filename = frame.GetLineEntry().GetFileSpec().GetFilename();
+    SBFunction function = frame.GetFunction();
+    uint32_t line = frame.GetLineEntry().GetLine();
+    std::string description = "location: ";
+    description += std::string("file= ") + filename + " ";
+    description += std::string("line= ") + char(line) + " ";
+    description += std::string("address= ") + char(frame.GetPCAddress().GetOffset()) + " ";
+    description += std::string("function= ") + function.GetDisplayName() + " ";
+
+    return description;
+}
+
+SBValue lldbBridge::findSymbol(const char *name){
+    return Target.FindFirstGlobalVariable(name);
+    // return Target.FindFunctions(name);  .....
 }
 
 std::string lldbBridge::pause() {
@@ -136,52 +209,71 @@ std::string lldbBridge::Continue() {
     return res;
 }
 
-std::string lldbBridge::setBreakpoint() {
-
-    std::string res;
-
-    // create the breakpoint
-    /*
-    auto breakpoint = Target.BreakpointCreateByLocation(
-            node.module().sourceFilePath().string().c_str(), linenum);
-
-     	// make sure that it's good
-	if (!breakpoint.IsValid()) {
-		res.addEntry("EUKN", "Could not set breakpoint on node",
-		             {{"nodeid", node.stringId()},
-		              {"File Name", node.module().sourceFilePath().string()},
-		              {"Line  Number", linenum}});
-
-		return res;
-	}
-
-
-    breakpoint.SetEnabled(true);
-
-
-    */
-    return std::string();
+void lldbBridge::stepOver() {
+    getCurrentThread().StepOver();
+    // plus later use other definition maybe, providing SBError
 }
 
-std::string lldbBridge::removeBreakpoint() {
-
-    /*
-    auto iter = mBreakpoints.find();
-    if (iter == mBreakpoints.end()) { return false; }
-
-    return Target.BreakpointDelete(iter->second.GetID());
-    */
-    return std::string();
+void lldbBridge::stepInto() {
+    getCurrentThread().StepInto();
 }
 
-void lldbBridge::start() {
-    std::string res;
+void lldbBridge::stepOut() {
+    getCurrentThread().StepOut();
+}
 
-    if (!Target.IsValid()) {
-        res = "Cannot start a debugger process with an invalid target";
+void lldbBridge::stepInstruction() {
+    getCurrentThread().StepInstruction(true); // step_over     ; false -> into call instr.
+}
+
+std::string lldbBridge::executeDebuggerCommand(const std::string &args) {
+    SBCommandReturnObject result = SBCommandReturnObject();
+    Debugger.GetCommandInterpreter().HandleCommand(args.c_str(), result);
+
+    std::string output;
+    if(result.Succeeded()){
+        output = result.GetOutput();
+    }else{
+        output += result.GetError() + std::string(" ");
     }
 
-    Process = Target.LaunchSimple(nullptr, nullptr, exe_file_path);
-
-
+    return output;
 }
+
+void lldbBridge::setReport(const char *error) {
+    report += error + std::string("\n");
+}
+
+
+
+
+
+
+
+
+/*
+const size_t num_symbols = module.GetNumSymbols();
+std::cout <<"num " << num_symbols << std::endl;
+SBSymbol symbol;
+for (size_t symbol_idx=0; symbol_idx<num_symbols; ++symbol_idx) {
+    symbol = module.GetSymbolAtIndex(symbol_idx);
+    std::cout <<"section " << symbol_idx << ": " << symbol.GetStartAddress().GetSection().GetName() << std::endl;
+    std::cout <<"section " << symbol_idx << ": " << symbol.GetStartAddress().GetFileAddress() << std::endl;
+}
+*/
+
+//SBSymbol symbol = module.FindSymbol("main");
+
+//std::cout <<"section: " << symbol.GetStartAddress().GetFileAddress() << std::endl;
+//std::cout <<"section: " << symbol.GetDescription(strm) << std::endl;
+
+/*
+const size_t num_cus = module.GetNumCompileUnits();
+std::cout <<"num: " << num_cus << std::endl;
+for (size_t cu_idx=0; cu_idx<num_cus; ++cu_idx) {
+    SBCompileUnit cu = module.GetCompileUnitAtIndex(cu_idx);
+    std::cout <<"cu: " << cu.GetDescription(strm) << std::endl;
+    std::cout <<"file: " << cu.GetFileSpec().GetFilename() << std::endl;
+    std::cout <<"line: " << cu.GetNumLineEntries() << std::endl;
+}
+*/

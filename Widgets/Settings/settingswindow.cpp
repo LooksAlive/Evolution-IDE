@@ -6,7 +6,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QDialog(parent)
 {
     // features
     SettingsWindow::setWindowTitle("Settings");
-    SettingsWindow::setMinimumSize(500, 250);
+    SettingsWindow::setMaximumSize(500, 400);
 
     OuterLayout = new QVBoxLayout(this);
     OuterLayout->addLayout(buildForm());
@@ -15,14 +15,14 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QDialog(parent)
     OuterLayout->setSpacing(2);
     SettingsWindow::setAttribute(Qt::WA_DeleteOnClose);
 
-
-
-
 }
+
+SettingsWindow::~SettingsWindow(){ /* if some changes -> ask to save or not. */}
+
 
 QWidget *SettingsWindow::buildButtonBox()
 {
-    ButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this); // Save
+    ButtonBox = new QDialogButtonBox(QDialogButtonBox::Save | QDialogButtonBox::Cancel, this); // Save
 
     /*
     connect(m_ButtonBox, &QDialogButtonBox::accepted, m_AppearanceSettingsWidget, &AppearanceSettingsWidget::save);
@@ -41,8 +41,9 @@ QLayout *SettingsWindow::buildForm()
     OptionsList = new QListWidget();
     WidgetStack = new QStackedWidget();
 
-    cmake = new CmageGeneratorWidget();
-    git = new GitWidget();
+    cmake = new CMakeGeneratorWidget(this);
+    git = new GitWidget(this);
+    appearence = new AppearenceWidget(this);
 
     InnerLayout->addWidget(OptionsList, 1);
     OptionsList->addItem(new QListWidgetItem("General"));
@@ -57,7 +58,7 @@ QLayout *SettingsWindow::buildForm()
     OptionsList->setMaximumWidth(125);
     InnerLayout->addWidget(WidgetStack);
     WidgetStack->addWidget(new QPlainTextEdit(this));
-    WidgetStack->addWidget(new QPlainTextEdit(this));
+    WidgetStack->addWidget(appearence);
     WidgetStack->addWidget(new QPlainTextEdit(this));
     WidgetStack->addWidget(cmake);
     WidgetStack->addWidget(new QPlainTextEdit(this));
@@ -68,17 +69,15 @@ QLayout *SettingsWindow::buildForm()
     return InnerLayout;
 }
 
+void SettingsWindow::slotSaveData() {
+    cmake->saveData();
+    git->saveData();
+    appearence->saveData();
+}
 
-SettingsWindow::~SettingsWindow(){
-
-    delete ButtonBox;
-    delete OptionsList;
-    delete WidgetStack;
-    delete InnerLayout;
-    delete OuterLayout;
-    //delete cmake;
-    //delete git;
-    // delete buildForm();
-
+void SettingsWindow::slotLoadData() {
+    cmake->loadData();
+    git->loadData();
+    appearence->loadData();
 }
 
