@@ -36,4 +36,8 @@ FileExplorer::FileExplorer(QWidget *parent) : QDockWidget(parent)
 void FileExplorer::setRootDirectory(const QString &path){
     FileView->setRootIndex(FileModel->index(path));
     settings.setValue("Evolution/Project_Root_Dir", path);
+    bool def = settings.value("Evolution/SetDefaultSettings").toBool();
+    if(!def){
+        settings.setValue("Evolution/SetDefaultSettings", true);
+    }
 }

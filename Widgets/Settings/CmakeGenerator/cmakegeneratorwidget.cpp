@@ -2,7 +2,10 @@
 
 CMakeGeneratorWidget::CMakeGeneratorWidget(QWidget *parent) : QWidget(parent){
     createMainWindow();
-    setDefaultSettings();
+    bool def = settings.value("Evolution/SetDefaultSettings").toBool();
+    if(def){
+        setDefaultSettings();
+    }
     manageSourceFiles();
     getCompilerVersion();
 

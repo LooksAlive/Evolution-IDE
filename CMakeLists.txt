@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_COMPILER clang++-10)
-set(BASE_FLAGS "-O0 -g -Wall")
+set(BASE_FLAGS "-O3") # -O0 -g -Wall
 
 # required flags for clang, llvm, lldb
 set(CXX_FLAGS

@@ -6,6 +6,12 @@
 #include "EnvironmentSettings.h"
 
 int main(int argc, char *argv[]) {
+
+    bool def = settings.value("Evolution/SetDefaultSettings").toBool();
+    if(!def){
+        settings.setValue("Evolution/SetDefaultSettings", true);
+    }
+
     QApplication app(argc, argv);
     MainWindow window;
     QFile file("/home/adam/Desktop/sources/Evolution-IDE/stylesheets/Combinear.qss");
@@ -18,7 +24,7 @@ int main(int argc, char *argv[]) {
     //theme = "Dark";
 
     if(theme == "Dark"){
-        //app.setStyleSheet(darktheme);
+        app.setStyleSheet(darktheme);
     }
     window.show();
 

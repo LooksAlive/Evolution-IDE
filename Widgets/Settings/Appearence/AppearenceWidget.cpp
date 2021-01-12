@@ -2,7 +2,10 @@
 
 AppearenceWidget::AppearenceWidget(QWidget *parent) : QWidget(parent){
     createWindow();
-    setDefaultSettings();
+    bool def = settings.value("Evolution/SetDefaultSettings").toBool();
+    if(def){
+        setDefaultSettings();
+    }
 
     setLayout(MainLayout);
     setFixedSize(300, 300);
