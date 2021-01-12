@@ -15,8 +15,9 @@
 #include <QErrorMessage>
 #include <QDebug>
 #include <QDirIterator>
+#include <QStringList>
 
-#include <QSettings>
+#include "EnvironmentSettings.h"
 
 class FileManager
 {
@@ -38,8 +39,8 @@ public:
     QString executable_file_path = "";
     bool project_cmake_file_exists = false;
 
-    QList<QString> all_files;       // filled with absolute paths
-    QList<QString> source_files;    // later into cmdexecutor or cmake -> strip front known path or not, however
+    QStringList all_files;       // filled with absolute paths
+    QStringList source_files;    // later into cmdexecutor or cmake -> strip front known path or not, however
 
 private:
 

@@ -30,11 +30,14 @@ FindReplaceWidget::FindReplaceWidget(Tab *tab, QWidget *parent)
     LineEditFind->setMaximumWidth(400);
     LineEditReplacement->setMaximumWidth(400);
 
+    // track changing files here
+    m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
+    same_file = m_Tab->tabToolTip(m_Tab->currentIndex());
 
-    connect(next, &QPushButton::clicked, this, &FindReplaceWidget::slotNext);
-    connect(next, &QPushButton::clicked, this, &FindReplaceWidget::slotPrevious);
-    connect(replace, &QPushButton::clicked, this, &FindReplaceWidget::slotReplace);
-    connect(replaceall, &QPushButton::clicked, this, &FindReplaceWidget::slotReplaceAll);
+    connect(next, SIGNAL(clicked()), this, SLOT(slotNext()));
+    connect(previous, SIGNAL(clicked()), this, SLOT(slotPrevious()));
+    connect(replace, SIGNAL(clicked()), this, SLOT(slotReplace()));
+    connect(replaceall, SIGNAL(clicked()), this, SLOT(slotReplaceAll()));
 }
 
 FindReplaceWidget::~FindReplaceWidget(){
@@ -110,6 +113,7 @@ void FindReplaceWidget::getOptionsAndTexts()
     LabelText->setText(QString());
     search_text = LineEditFind->text();
     replace_text = LineEditReplacement->text();
+    find_options = NULL;
 
     if (CaseSensitive->isChecked()) {
         find_options |= QTextDocument::FindCaseSensitively;
@@ -118,45 +122,41 @@ void FindReplaceWidget::getOptionsAndTexts()
         find_options |= QTextDocument::FindWholeWords;
     }
     // QTextDocument::FindBackward  ----> previous,  next also do not work(stacked on 1 found)
-
-    m_Edit->findInTextEdit(search_text, find_options);
 }
 
-void FindReplaceWidget::slotNext()
-{
-    m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
+void FindReplaceWidget::slotNext(){
+    if(same_file == m_Tab->tabToolTip(m_Tab->currentIndex())){
+        m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
+    }
     getOptionsAndTexts();
+    m_Edit->findNext(search_text, find_options);
 }
 // figure it out later
 void FindReplaceWidget::slotPrevious(){
-    m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
+    if(same_file == m_Tab->tabToolTip(m_Tab->currentIndex())){
+        m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
+    }
     getOptionsAndTexts();
+    find_options |= QTextDocument::FindBackward;   // here flag for previous search
+    m_Edit->findNext(search_text, find_options);
 }
 
-void FindReplaceWidget::slotReplace()
-{
-    m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
-    getOptionsAndTexts();
-    m_Edit->findInTextEdit(search_text, find_options);
-    if (!m_Edit->isReadOnly()) {
-        if (m_Edit->textCursor().hasSelection()) {
-            m_Edit->textCursor().insertText(replace_text);
-        }
+void FindReplaceWidget::slotReplace(){
+    if(same_file == m_Tab->tabToolTip(m_Tab->currentIndex())){
+        m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
     }
+    getOptionsAndTexts();
+    m_Edit->replace(search_text, replace_text);
 }
 
 void FindReplaceWidget::slotReplaceAll()
 {
-    m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
-    getOptionsAndTexts();
-    if (!m_Edit->isReadOnly()) {
-        int i = 0;
-        while (m_Edit->textCursor().hasSelection()) {
-            m_Edit->textCursor().insertText(replace_text);
-            getOptionsAndTexts();
-            i++;
-        }
-        LabelText->setText(tr("Replace %1 occurrences of the search term.").arg(i));
+    if(same_file == m_Tab->tabToolTip(m_Tab->currentIndex())){
+        m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
     }
+    getOptionsAndTexts();
+
+    int occurrences = m_Edit->replaceAll(search_text, replace_text);
+    LabelText->setText(tr("Replace %1 occurrences of the search term.").arg(occurrences));
 }
 

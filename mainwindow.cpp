@@ -32,6 +32,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     Tabs->currentWidget()->setFocus();
     highlighter = new Highlighter(":/highlights/languages.xml", this);
 
+    LoadRegisters();
 }
 
 MainWindow::~MainWindow() {
@@ -54,6 +55,38 @@ void MainWindow::dropEvent(QDropEvent* drop_event) {
     }
 }
 
+void MainWindow::LoadRegisters(){
+    QRect rect = settings.value("Evolution/MainWindowGeometry").toRect();
+    if(!rect.isEmpty()){
+        setGeometry(rect);
+    }
+
+    /*
+    QStringList tabs = settings.value("Evolution/opened_tabs").toStringList();
+    if(!tabs.isEmpty()){
+        for (int i = 0; i <= tabs.size(); i++) {
+            OpenFile(tabs[i]);
+        }
+    }
+    */
+
+    QString Project_Root_Dir = settings.value("Evolution/Project_Root_Dir").toString();
+    if(!Project_Root_Dir.isEmpty()){
+        Explorer->setRootDirectory(Project_Root_Dir);
+    }
+
+    // visible docks:
+    if(settings.value("Evolution/ExplorerVisibility").toBool()){
+        Explorer->toggleViewAction();
+    }
+    if(settings.value("Evolution/DockerVisibility").toBool()){;
+        Docker->toggleViewAction();
+    }
+    if(settings.value("Evolution/ConsoleOutputVisibility").toBool()){
+        ConsoleOutput->toggleViewAction();
+    }
+
+}
 
 void MainWindow::SetupVerticalBar(){
     vertical_bar = new QToolBar(this);
@@ -122,6 +155,7 @@ void MainWindow::SetupMenuBar() {
     editMenu->addAction("Paste",      this, SLOT(slotPaste()),     Qt::CTRL + Qt::Key_V);
     editMenu->addAction("Delete",     this, SLOT(slotClear()),     Qt::CTRL + Qt::Key_Backspace);
     editMenu->addAction("Select All", this, SLOT(slotSelectAll()), Qt::CTRL + Qt::Key_A);
+    editMenu->addAction("toggle comment", this, SLOT(slotToggleComment()), Qt::CTRL + Qt::SHIFT + Qt::Key_C);
 
     viewMenu->addAction(Explorer->toggleViewAction());
     viewMenu->addAction(Docker->toggleViewAction());
@@ -408,8 +442,7 @@ void MainWindow::SaveAllFiles() {
 void MainWindow::CloseFile(int index_) {
 
     // untitled tab, first ask, before opening savedialog in savefile function
-    if(Tabs->tabText(Tabs->currentIndex()) == NEW_TAB_NAME &&
-            Tabs->tabWhatsThis(Tabs->currentIndex()) != "No changes")
+    if(Tabs->tabText(index_) == NEW_TAB_NAME && Tabs->tabWhatsThis(Tabs->currentIndex()) != "No changes")
     {
         QMessageBox::StandardButton reply;
         reply = QMessageBox::question(this, "Saving changes", "Save changes before closing?",
@@ -417,20 +450,9 @@ void MainWindow::CloseFile(int index_) {
         if (reply == QMessageBox::Yes) {
             SaveFile();
         }
-    }
-
-    if (Tabs->tabWhatsThis(Tabs->currentIndex()) != "No changes") {
+    }else if (Tabs->tabWhatsThis(Tabs->currentIndex()) != "No changes") {
         if(ALWAYS_SAVE){
             SaveFile();
-            // return; // OMG return and what about delete files from tab, file dock ?????
-        }
-        else {
-            QMessageBox::StandardButton reply;
-            reply = QMessageBox::question(this, "Saving changes", "Save changes before closing?",
-                                          QMessageBox::Yes|QMessageBox::No);
-            if (reply == QMessageBox::Yes) {
-                SaveFile();
-            }
         }
     }
 
@@ -475,6 +497,26 @@ void MainWindow::CloseAllFiles() {
 
 /* close all files, prevent memory leak */
 void MainWindow::CloseWindow() {
+    // reopen project not closed tabs later.
+    QStringList openned_tabs;
+    for (int i = 0; i <= Tabs->count(); i++) {
+        openned_tabs.append(Tabs->tabToolTip(i));
+    }
+    settings.setValue("Evolution/opened_tabs", openned_tabs);
+    // save window geometry, load in constructor
+    settings.setValue("Evolution/MainWindowGeometry", geometry());
+
+    // docks visible
+    if(Explorer->isVisible()){
+        settings.setValue("Evolution/ExplorerVisibility", true);
+    }
+    if(Docker->isVisible()){
+        settings.setValue("Evolution/DockerVisibility", true);
+    }
+    if(ConsoleOutput->isVisible()){
+        settings.setValue("Evolution/ConsoleOutputVisibility", true);
+    }
+
     CloseAllFiles();
     QApplication::quit();
 }
@@ -669,4 +711,11 @@ void MainWindow::slotPaste() {
 
 void MainWindow::slotClear() {
     ((PlainTextEdit*)Tabs->currentWidget())->clear();
+}
+
+
+
+// text operations
+void MainWindow::slotToggleComment() {
+    ((PlainTextEdit *) Tabs->currentWidget())->toggleComment();
 }

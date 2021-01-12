@@ -246,7 +246,7 @@ void DebuggerWidget::setDebugPosition(const QString &file_path, const int &line)
     FileManager fmanager;
     QString content = fmanager.simple_read(file_path);  // wants a QString !!!
     source_view->setPlainText(content);
-    source_view->setCursorLine(line);   // later maybe some effect
+    source_view->setCursorAtLine(line);   // later maybe some effect
 }
 
 void DebuggerWidget::setExecutable(const std::string &exe_file_path) {

@@ -12,9 +12,9 @@
 * droping files works only for fileexplorer yet, into text edit it drops absolute address
 
 * settings for cmake (flags, cores, ...)
-*** QSettings (remember window size, pos, openned files, style, ...)
+*** QSettings (remember window size, pos, opened files, style, ...)
 
-* vertical toolbar highlite current window
+* vertical toolbar highlight current window
 
 * set up completer for textedit || QDockWidget like completer and info,
   tracking TextCursor position in text (i personally do not like basic 

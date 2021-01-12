@@ -16,7 +16,7 @@ HexView::~HexView(){
     delete m_HexView;
 }
 
-QString HexView::filePath()
+QString HexView::filePath() const
 {
     return m_FilePath;
 }

@@ -6,6 +6,7 @@
 #include <QDirModel>
 #include <QDir>
 
+#include "EnvironmentSettings.h"
 
 /*
 class:
@@ -21,10 +22,10 @@ class FileExplorer : public QDockWidget
     Q_OBJECT
 public:
     explicit FileExplorer(QWidget *parent = nullptr);
-    ~FileExplorer();
+    ~FileExplorer() = default;
 
-    QDirModel* FileModel;
-    QTreeView* FileView;
+    QDirModel *FileModel;
+    QTreeView *FileView;
 
     void setRootDirectory(const QString &path);
 };

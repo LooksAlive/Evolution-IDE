@@ -152,8 +152,14 @@ private:
     // the way to show DockWidgets in app --> select corners, do not take all bottom, MainWindowLayout for one dock
     void SetupDockWidgetsLayering();
 
+    void LoadRegisters();
+
 
 private slots:
+
+    // PlainTextEdit text operations
+    void slotToggleComment();
+
     void UpdateParameter();
 
     void CreateFile();

@@ -3,12 +3,12 @@
 FileExplorer::FileExplorer(QWidget *parent) : QDockWidget(parent)
 {
 
-    FileModel = new QDirModel; /* explore by directories */
+    FileModel = new QDirModel(this); /* explore by directories */
     FileModel->setSorting(QDir::DirsFirst);
     FileModel->sort(0, Qt::AscendingOrder);
     // FileModel->setFilter(QDir::NoDotAndDotDot | QDir::Executable | QDir::NoSymLinks);
 
-    FileView  = new QTreeView; /* explore by list */
+    FileView  = new QTreeView(this); /* explore by list */
     FileView->setUpdatesEnabled(true);
     FileView->setModel(FileModel); /* set model */
     FileView->setColumnHidden(1, true);
@@ -33,11 +33,7 @@ FileExplorer::FileExplorer(QWidget *parent) : QDockWidget(parent)
     setWidget(FileView);
 }
 
-FileExplorer::~FileExplorer(){
-    delete FileModel;
-    delete FileView;
-}
-
 void FileExplorer::setRootDirectory(const QString &path){
     FileView->setRootIndex(FileModel->index(path));
+    settings.setValue("Evolution/Project_Root_Dir", path);
 }

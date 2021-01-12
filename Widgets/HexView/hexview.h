@@ -14,7 +14,7 @@ public:
     explicit HexView(QWidget *parent = nullptr);
     ~HexView();
 
-    QString filePath();
+    QString filePath() const;
     void open(const QString &path);
     bool save();
 };

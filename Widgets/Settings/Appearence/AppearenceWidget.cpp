@@ -17,8 +17,8 @@ void AppearenceWidget::createWindow() {
     theme_tag = new QLabel(this);
     theme_tag->setText("Theme: ");
     themes = new QComboBox(this);
-    themes->addItem("Dark");
     themes->addItem("White");
+    themes->addItem("Dark");
     theme_layout->addWidget(theme_tag);
     theme_layout->addWidget(themes);
 
@@ -44,15 +44,26 @@ void AppearenceWidget::setDefaultSettings() {
     themes->setCurrentText("Dark");
     QString temp = font.defaultFamily() + " " + font.weight();
     base_font->setText(temp);
+
+    settings.setValue("Evolution/theme", "Dark");
+    settings.setValue("Evolution/font_family", font.defaultFamily());
+    settings.setValue("Evolution/font_weight", font.weight());
 }
 
 
 void AppearenceWidget::saveData() {
-
+    settings.setValue("Evolution/theme", themes->currentText());
+    settings.setValue("Evolution/font_family", font.defaultFamily());
+    settings.setValue("Evolution/font_weight", font.weight());
 }
 
 void AppearenceWidget::loadData() {
-    QString temp = font.family() + " " + font.weight();
+    QString theme = settings.value("Evolution/theme").toString();
+    QString font_family = settings.value("Evolution/font_family").toString();
+    int weight = settings.value("Evolution/font_weight").toInt();
+
+    themes->setCurrentText(theme);
+    base_font->setText(font_family + " " + QString(weight));
 }
 
 void AppearenceWidget::slotChangeFont() {

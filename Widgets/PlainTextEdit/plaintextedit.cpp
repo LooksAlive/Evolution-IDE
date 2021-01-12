@@ -40,14 +40,13 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
     setFont(font);
     setTabChangesFocus(false);
     setWordWrapMode(QTextOption::WordWrap);
-    setSelectedWordstyle();
     setReadOnly(false);
 
 
-    connect(this, &QPlainTextEdit::cursorPositionChanged, this, &PlainTextEdit::handleCursorPositionChanged);
-    connect(this, &QPlainTextEdit::blockCountChanged, this, &PlainTextEdit::handleBlockCountChanged);
-    connect(this, &QPlainTextEdit::textChanged, this, &PlainTextEdit::handleTextChanged);
-    connect(this, &QPlainTextEdit::updateRequest, this, &PlainTextEdit::handleUpdateRequest);
+    connect(this, &QPlainTextEdit::cursorPositionChanged, this, &PlainTextEdit::slotHighlightCurrentLine);
+    connect(this, &QPlainTextEdit::blockCountChanged, this, &PlainTextEdit::slotBlockCountChanged);
+    connect(this, &QPlainTextEdit::textChanged, this, &PlainTextEdit::slotTextChanged);
+    connect(this, &QPlainTextEdit::updateRequest, this, &PlainTextEdit::slotUpdateRequest);
 
     connect(new QShortcut(Qt::CTRL | Qt::Key_U, this), &QShortcut::activated, [=] {
         transformText(true);
@@ -69,14 +68,7 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
 
     setTextCursor(cur);
     */
-
 }
-
-PlainTextEdit::~PlainTextEdit(){}
-
-
-/* helper functoins
-------------------------------------------------------------------------- */
 
 QRectF PlainTextEdit::blockBoundingGeometryProxy(const QTextBlock &block)
 {
@@ -99,80 +91,181 @@ QTextBlock PlainTextEdit::firstVisibleBlockProxy()
     return firstVisibleBlock();
 }
 
-void PlainTextEdit::setCursorLine(const int &line)
+// cursor
+void PlainTextEdit::setCursorPosition(int lineNumber,
+                                     int columnNumber)
 {
-    QTextCursor cursor(document()->findBlockByLineNumber(line - 1));
+    QTextCursor cursor = textCursor();
+    cursor.setPosition(document()->findBlockByNumber(lineNumber).position());
+    cursor.movePosition(QTextCursor::NextCharacter,
+                        QTextCursor::MoveAnchor,
+                        columnNumber);
     setTextCursor(cursor);
 }
 
-void PlainTextEdit::findInTextEdit(const QString &search, const QTextDocument::FindFlags &find_options)
-{
-    bool found = false;
-    QTextCursor cursor;
-
-    cursor = this->document()->find(search, cursor, find_options);
-    found = !cursor.isNull();
-    this->setTextCursor(cursor);
-
-    if(found){
-        // do some stuffs -> count, etc.
-        return;
-    }
-
-    if (!found) {
-        return;
-    }
-
+int PlainTextEdit::getCursorPosition(){
+    QTextCursor cur = textCursor();
+    return cur.position();
 }
 
-
-
-/* slots
- ------------------------------------------------------------------------- */
-
-void PlainTextEdit::handleBlockCountChanged(const int count)
+void PlainTextEdit::setCursorAtLine(const int &line)
 {
-    Q_UNUSED(count)
-    setViewportMargins(LineArea->sizeHint().width(), 0, 0, 0);
+    setCursorPosition(line,0);
 }
 
-void PlainTextEdit::handleCursorPositionChanged()
-{
-    QList<QTextEdit::ExtraSelection> selections;
-    if (!isReadOnly()) {
-        QTextEdit::ExtraSelection selection;
-        static QColor highlight = palette().color(QPalette::Text);
-        highlight.setAlpha(25);
-        selection.format.setBackground(highlight);
-        selection.format.setProperty(QTextCharFormat::FullWidthSelection, true);
-        selection.cursor = textCursor();
-        selection.cursor.clearSelection();
-        selections.append(selection);
+// text manipulation
+void PlainTextEdit::selectLineUnderCursor(){
+    QTextCursor cur = textCursor();
+    cur.select(QTextCursor::LineUnderCursor);
+    setTextCursor(cur);
+}
+
+QString PlainTextEdit::getLineUnderCursor(){
+    selectLineUnderCursor();
+    QTextCursor cur = textCursor();
+    QString line = cur.selectedText();
+    cur.clearSelection();
+    setTextCursor(cur);
+    return line;
+}
+
+void PlainTextEdit::selectWordUnderCursor(){
+    QTextCursor cur = textCursor();
+    cur.select(QTextCursor::WordUnderCursor);
+    setTextCursor(cur);
+}
+
+QString PlainTextEdit::getWordUnderCursor(){
+    selectWordUnderCursor();
+    QTextCursor cur = textCursor();
+    QString word = cur.selectedText();
+    cur.clearSelection();
+    setTextCursor(cur);
+    return word;
+}
+
+void PlainTextEdit::deleteLine(){
+    selectLineUnderCursor();
+    QTextCursor cur = textCursor();
+    if(cur.selectedText() != ""){
+        cur.removeSelectedText();
     }
-    setExtraSelections(selections);
+    setTextCursor(cur);
 }
 
-void PlainTextEdit::handleUpdateRequest(const QRect &rect, const int column)
-{
-    if (column) {
-        LineArea->scroll(0, column);
+void PlainTextEdit::toggleComment(){
+
+    QString file_extension;  // default is cpp
+    QTextCursor cur = textCursor();
+    if (!cur.hasSelection()){
+        selectLineUnderCursor();
     }
-    LineArea->update(0, rect.y(), LineArea->width(), rect.height());
-    if (rect.contains(viewport()->rect())) {
-        handleBlockCountChanged(0);
+
+    int endSelection = cur.selectionEnd();
+    cur.setPosition(cur.selectionStart());
+    cur.movePosition(QTextCursor::StartOfLine, QTextCursor::MoveAnchor);
+    setTextCursor(cur);
+
+    QString line = getLineUnderCursor();
+
+    QString commentStart;
+    QString commentEnd;
+
+    if(file_extension == "html" | file_extension == "css"){
+
+        if(file_extension == "html"){
+            commentStart = "<!--";
+            commentEnd = "-->";
+        }else{
+            commentStart = "/*";
+            commentEnd = "*/";
+        }
+
+        if(line.startsWith(commentStart)){
+            for(int i=0; i < commentStart.length(); i++){
+                cur.deleteChar();
+            }
+            endSelection -= commentStart.length();
+
+            cur.setPosition(endSelection);
+            cur.movePosition(QTextCursor::EndOfLine, QTextCursor::MoveAnchor);
+            setTextCursor(cur);
+            QString line = getLineUnderCursor();
+
+            if(line.endsWith(commentEnd)){
+                for(int i=0; i < commentEnd.length(); i++){
+                    cur.deletePreviousChar();
+                }
+            }
+        }else{
+            cur.insertText(commentStart);
+            endSelection += commentStart.length();
+
+            cur.setPosition(endSelection);
+            cur.movePosition(QTextCursor::EndOfLine, QTextCursor::MoveAnchor);
+            setTextCursor(cur);
+            QString line = getLineUnderCursor();
+
+            if(!line.endsWith(commentEnd)){
+                cur.insertText(commentEnd);
+            }
+        }
+
+    }else{
+        if(file_extension == "py"){
+            commentStart = "#";
+        }else{
+            commentStart = "//";
+        }
+
+        if(line.startsWith(commentStart)){
+            for(int i=0; i < commentStart.length(); i++){
+                cur.deleteChar();
+            }
+            endSelection -= commentStart.length();
+            cur.movePosition(QTextCursor::EndOfLine, QTextCursor::MoveAnchor);
+
+            while(cur.position() < endSelection){
+                cur.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor);
+                setTextCursor(cur);
+                line = getLineUnderCursor();
+
+                if(line.startsWith(commentStart)){
+                    cur.movePosition(QTextCursor::StartOfLine, QTextCursor::MoveAnchor);
+                    for(int i=0; i < commentStart.length(); i++){
+                        cur.deleteChar();
+                    }
+                    endSelection -= commentStart.length();
+
+                }
+                cur.movePosition(QTextCursor::EndOfLine, QTextCursor::MoveAnchor);
+
+            }
+
+        }else{
+            cur.insertText(commentStart);
+            endSelection += commentStart.length();
+            cur.movePosition(QTextCursor::EndOfLine, QTextCursor::MoveAnchor);
+
+            while(cur.position() < endSelection){
+                cur.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor);
+                setTextCursor(cur);
+                line = getLineUnderCursor();
+
+                if(!line.startsWith(commentStart)){
+                    cur.movePosition(QTextCursor::StartOfLine, QTextCursor::MoveAnchor);
+                    cur.insertText(commentStart);
+                    endSelection += commentStart.length();
+                }
+
+                cur.movePosition(QTextCursor::EndOfLine, QTextCursor::MoveAnchor);
+            }
+        }
+
     }
+
+    setTextCursor(cur);
 }
-
-void PlainTextEdit::handleTextChanged()
-{
-    handleCursorPositionChanged();
-    handleBlockCountChanged(0);
-}
-
-
-
-/* text operations
-------------------------------------------------------------------------- */
 
 int PlainTextEdit::indentSize(const QString &text)
 {
@@ -264,7 +357,7 @@ QString PlainTextEdit::indentText(QString text, int count) const
     return text;
 }
 
-void PlainTextEdit::moveCursor(const bool end)
+void PlainTextEdit::moveCursor(const bool &end)
 {
     QTextCursor cursor = textCursor();
     int length = cursor.block().text().length();
@@ -367,17 +460,145 @@ void PlainTextEdit::transformText(const bool upper)
     }
 }
 
-void PlainTextEdit::setSelectedWordstyle(){
+void PlainTextEdit::highlight(QList<QTextEdit::ExtraSelection> &selections, const bool &Background,
+                              const QColor &color)
+{
+    if(!isReadOnly())
+    {
+        QTextEdit::ExtraSelection selection;
+        if(Background){
+            selection.format.setBackground(color);
+        }else{
+            selection.format.setForeground(color);
+        }
+        selection.format.setProperty(QTextFormat::FontWeight, true);
+        selection.cursor=textCursor();
+        selection.cursor.clearSelection();
+        selections.append(selection);
+    }
+}
 
-    /*
-    QTextCursor cursor(document());
-    QTextCharFormat charformat;
-    charformat.setFontWeight(QFont::Bold);
-    charformat.setForeground(Qt::red);
-    cursor.setCharFormat(charformat);
+// search
+void PlainTextEdit::find(const QString &search)
+{
+    QTextCursor cursor = textCursor();
+    cursor = document()->find(search, cursor);
 
-    setTextCursor(cursor);
-    */
+    if(!cursor.isNull()){
+        setTextCursor(cursor);
+    }else{
+        // try to start at start of document in case that are there some occurrences
+        cursor.movePosition(QTextCursor::Start);
+        cursor = document()->find(search, cursor);
+        if(!cursor.isNull()){
+            setTextCursor(cursor);
+        }else{
+            return;   // no occurrences found
+        }
+    }
+}
+
+void PlainTextEdit::findNext(const QString &search, const QTextDocument::FindFlags &find_options)
+{
+    QTextCursor cursor = textCursor();
+    // find_options |= QTextDocument::FindBackward;   // is const now -> auditing in slot in widget
+    cursor = document()->find(search, cursor, find_options);
+
+    //qDebug() << cursor.isNull();
+    if(!cursor.isNull()){
+        setTextCursor(cursor);
+    }else{
+        // try to start at start of document in case that are there some occurrences
+        cursor.movePosition(QTextCursor::Start);
+        cursor = document()->find(search, cursor);
+        if(!cursor.isNull()){
+            setTextCursor(cursor);
+        }else{
+            return;   // no occurrences found
+        }
+    }
+}
+
+void PlainTextEdit::replace(const QString &oldText, const QString &newText)
+{
+    find(oldText);
+    QTextCursor cursor = textCursor();
+
+    if(cursor.hasSelection() && !isReadOnly()/* && cursor.selectedText() == oldText */)
+    {
+        cursor.beginEditBlock();
+        cursor.removeSelectedText();
+        cursor.insertText(newText);
+        cursor.endEditBlock();
+        setTextCursor(cursor);
+    }
+}
+
+void PlainTextEdit::replaceAndFind(const QString &oldText, const QString &newText)
+{
+    find(oldText);
+    replace(oldText,newText);
+}
+
+int PlainTextEdit::replaceAll(const QString &oldText, const QString &newText)
+{
+    int count = 0;
+    textCursor().movePosition(QTextCursor::Start); // on start
+    find(oldText);
+
+    while (textCursor().hasSelection()){
+        replace(oldText, newText);
+        count++;
+    }
+    return count;
+}
+
+
+// other
+void PlainTextEdit::setFileExtension(const QString &extension){
+    file_extension = extension;
+}
+
+/* slots
+ ------------------------------------------------------------------------- */
+
+void PlainTextEdit::slotBlockCountChanged(const int count)
+{
+    Q_UNUSED(count)
+    setViewportMargins(LineArea->sizeHint().width(), 0, 0, 0);
+}
+
+void PlainTextEdit::slotHighlightCurrentLine()
+{
+    QList<QTextEdit::ExtraSelection> selections;
+    if (!isReadOnly()) {
+        QTextEdit::ExtraSelection selection;
+        static QColor highlight = palette().color(QPalette::Text);
+        highlight.setAlpha(25);
+        selection.format.setBackground(highlight);
+        selection.format.setProperty(QTextCharFormat::FullWidthSelection, true);
+        selection.cursor = textCursor();
+        selection.cursor.clearSelection();
+        selections.append(selection);
+    }
+    setExtraSelections(selections);
+}
+
+void PlainTextEdit::slotUpdateRequest(const QRect &rect, const int column)
+{
+    if (column) {
+        LineArea->scroll(0, column);
+    }
+    LineArea->update(0, rect.y(), LineArea->width(), rect.height());
+    if (rect.contains(viewport()->rect())) {
+        slotBlockCountChanged(0);
+    }
+}
+
+void PlainTextEdit::slotTextChanged()
+{
+    slotHighlightCurrentLine();
+    slotBlockCountChanged(0);
 }
 
 
@@ -501,8 +722,6 @@ void PlainTextEdit::keyPressEvent(QKeyEvent *event)
 LineNumberArea::LineNumberArea(PlainTextEdit *edit)
     : QWidget(edit), m_Edit(edit)
 {
-}
-LineNumberArea::~LineNumberArea(){
 }
 
 void LineNumberArea::leaveEvent(QEvent *e)

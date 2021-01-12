@@ -9,7 +9,11 @@
 #include <QCheckBox>
 #include <QWidget>
 #include <QSettings>
+#include <QString>
+#include <QStringList>
 
+
+#include "EnvironmentSettings.h"
 #include "cmakegenerator.h"
 
 /*

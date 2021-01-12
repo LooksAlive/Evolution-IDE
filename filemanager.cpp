@@ -25,6 +25,7 @@ void FileManager::getFilesRecursively(const QString &Project_RootDir){
         if(directories.fileInfo().dir().dirName() == "cmake-build"){
             if(directories.fileInfo().isExecutable()){ // binary file
                 executable_file_path = directories.filePath();
+                settings.setValue("Evolution/executable_path", executable_file_path);
                 break;
             }
             else{
@@ -43,9 +44,10 @@ void FileManager::getFilesRecursively(const QString &Project_RootDir){
         }
         if(directories.fileInfo().isExecutable()){ // binary file
             executable_file_path = directories.filePath();
+            settings.setValue("Evolution/executable_path", executable_file_path);
         }
     }
-    // qDebug() << source_files;
+    settings.setValue("Evolution/sources", source_files);
 }
 
 QString FileManager::getFileExtension(const QString &filename){

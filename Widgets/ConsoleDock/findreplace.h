@@ -40,6 +40,7 @@ private:
 
     Tab *m_Tab = nullptr;
     PlainTextEdit *m_Edit = nullptr;
+    QString same_file;
 
     QWidget *buildButtonBox();
     QLayout *buildForm();

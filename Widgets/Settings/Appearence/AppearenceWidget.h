@@ -12,6 +12,8 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 
+#include "EnvironmentSettings.h"
+
 class AppearenceWidget : public QWidget {
 
 public:

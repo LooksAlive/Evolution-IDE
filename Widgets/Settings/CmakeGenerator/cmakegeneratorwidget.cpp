@@ -78,8 +78,9 @@ void CMakeGeneratorWidget::manageSourceFiles() {
     // here only saving and managing them
     // add 2 buttons: 1. add file with QFileDialog connection, 2. remove - and update list
 
-    for (int i = 0; i <= 15; i++) { // get files from registry
-        source_files_list->addItem(new QListWidgetItem("file from registry"));
+    QStringList sources = settings.value("Evolution/sources").toStringList();
+    for (int i = 0; i < sources.size(); i++) { // get files from registry
+        source_files_list->addItem(new QListWidgetItem(sources[i]));
     }
 }
 
@@ -88,16 +89,21 @@ void CMakeGeneratorWidget::manageSourceFiles() {
 
 
 void CMakeGeneratorWidget::loadData() {
-    QSettings settings("Evolution");
 
-    compiler->setText("clang++-10");
-    compile_flags->setText("-O0 -g -Wall");
-    cpu_cores->setText("3");
+    QString co = settings.value("Evolution/compiler").toString();
+    QString cf = settings.value("Evolution/compile_flags").toString();
+    QString cr = settings.value("Evolution/cpu_cores").toString();
+
+    compiler->setText(co);
+    compile_flags->setText(cf);
+    cpu_cores->setText(cr);
 }
 
 void CMakeGeneratorWidget::saveData() {
-    QSettings settings("Evolution");
-    settings.setValue("flags", "-O0 -g -c ...");
+    settings.setValue("Evolution/compiler", compiler->text());
+    settings.setValue("Evolution/compile_flags", compile_flags->text());
+    settings.setValue("Evolution/cpu_cores", cpu_cores->text());
+    // later maybe file deletion update settings
 }
 
 
