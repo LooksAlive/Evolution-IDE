@@ -23,14 +23,14 @@ public:
     lldbBridge& operator=(const lldbBridge&) = delete;
     lldbBridge& operator=(lldbBridge&&) = delete;
 
-    void setReport(const char *error);   // SBError handling function
+    void setReport(const char *msg);   // SBError handling function
     std::string report; // access outside TODO: how to track if error occurred or not ?
 
-    std::string pause();    // when breakpoint is hit
-    std::string Continue();
+    void pause();    // when breakpoint is hit
+    void Continue();
 
-    std::string setBreakpoint();
-    std::string removeBreakpoint();
+    void setBreakpoint();
+    void removeBreakpoint();
 
     void setFrame(SBFrame frame);
     SBThread getCurrentThread();

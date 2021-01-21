@@ -1,3 +1,5 @@
+#include <QSettings>
+
 #include "debuggerwidget.h"
 
 DebuggerWidget::DebuggerWidget(QWidget *parent) : QWidget(parent)
@@ -154,6 +156,12 @@ void DebuggerWidget::buildDebugVariableWindow() {
     all_variables = new QListWidget(this);
     variable_description = new QListWidget(this);
 
+    for (int i = 0; i <= 5; ++i) {
+        all_variables->addItem("nieco nabuduce");
+        variable_description->addItem("nieco nabuduce");
+    }
+
+
     /*
     auto data = debugger.get_var_func_info();
 
@@ -199,10 +207,18 @@ void DebuggerWidget::buildDebugVariableWindow() {
 
 void DebuggerWidget::slotStartDebug() {
     debugger.start();
+
+    if(debugger.report != ""){
+        debug_output->appendPlainText(debugger.report.c_str());
+    }
 }
 
 void DebuggerWidget::slotStopDebug() {
     debugger.stop();
+
+    if(debugger.report != ""){
+        debug_output->appendPlainText(debugger.report.c_str());
+    }
 }
 
 void DebuggerWidget::slotRunToCursor() {
@@ -212,18 +228,34 @@ void DebuggerWidget::slotRunToCursor() {
 
 void DebuggerWidget::slotStepOver() {
     debugger.stepOver();
+
+    if(debugger.report != ""){
+        debug_output->appendPlainText(debugger.report.c_str());
+    }
 }
 
 void DebuggerWidget::slotStepInto() {
     debugger.stepInto();
+
+    if(debugger.report != ""){
+        debug_output->appendPlainText(debugger.report.c_str());
+    }
 }
 
 void DebuggerWidget::slotStepOut() {
     debugger.stepOut();
+
+    if(debugger.report != ""){
+        debug_output->appendPlainText(debugger.report.c_str());
+    }
 }
 
 void DebuggerWidget::slotStepInstruction() {
     debugger.stepInstruction();
+
+    if(debugger.report != ""){
+        debug_output->appendPlainText(debugger.report.c_str());
+    }
 }
 
 void DebuggerWidget::slotContinue() {
@@ -232,25 +264,38 @@ void DebuggerWidget::slotContinue() {
     }else{
         return;
     }
+    if(debugger.report != ""){
+        debug_output->appendPlainText(debugger.report.c_str());
+    }
 }
 // -----------------------------------------------------------------------------------------
 
 void DebuggerWidget::slotCmdlineExecute() {
-    debugger.executeDebuggerCommand(args_input->text().toStdString());
+    std::string res = debugger.executeDebuggerCommand(args_input->text().toStdString());
+    debug_output->appendPlainText(res.c_str()); // hope QString takes a C string and no implicit conversion is needed
+    args_input->clear();
 }
 // -----------------------------------------------------------------------------------------
 
 
 
-void DebuggerWidget::setDebugPosition(const QString &file_path, const int &line) {
+void DebuggerWidget::setStartFilePosition(const QString &file_path, const int &line) {
     FileManager fmanager;
     QString content = fmanager.simple_read(file_path);  // wants a QString !!!
     source_view->setPlainText(content);
     source_view->setCursorAtLine(line);   // later maybe some effect
 }
 
+void DebuggerWidget::setFilePosition(){
+
+}
+
 void DebuggerWidget::setExecutable(const std::string &exe_file_path) {
     debugger.executable = exe_file_path.c_str();
+    qDebug() << debugger.executable;
+    //QSettings settings("Evolution");
+    //debugger.executable = settings.value("Evolution/executable_path").toString().toStdString().c_str();
+    //qDebug() << debugger.executable;
 }
 
 

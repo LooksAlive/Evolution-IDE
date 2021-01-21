@@ -15,6 +15,7 @@
 #include <fstream>
 #include <QFile>
 #include <QDir>
+#include <QSettings>
 
 #include "cmakegenerator.h"
 

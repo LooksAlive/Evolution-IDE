@@ -37,6 +37,7 @@
 #include <QUrl>
 #include <QString>
 #include <QPoint>
+#include <QSettings>
 
 #include <QToolButton>
 
@@ -46,8 +47,9 @@
 #include "Widgets/Tab/tab.h"
 #include "Widgets/Settings/settingswindow.h"
 
-#include "Widgets/ConsoleDock/findreplace.h"
+#include "Widgets/FindReplace/findreplace.h"
 #include "Widgets/ConsoleDock/consoledock.h"
+#include "Widgets/CodeInfoDock/CodeInfoDock.h"
 
 #include "EnvironmentSettings.h"
 #include "highlighter.h"
@@ -127,6 +129,9 @@ private:
     ConsoleDock *ConsoleOutput;
     FindReplaceWidget *find_replace;
 
+    /* code info related stuffs dock */
+    CodeInfoDock *codeInfoDock;
+
     /* Converter - small widget */
     Converter *converter;
 
@@ -140,6 +145,7 @@ private:
     void SetupFileExplorer();
     void SetupFileDocker();
     void SetupCompileDock();
+    void SetupCodeInfoDock();
 
     void SetupVerticalBar();
     void SetupHexView();
@@ -207,6 +213,8 @@ private slots:
     void slotPaste();
     void slotSelectAll();
     void slotClear();
+
+    void slotFullScreen();
 };
 
 

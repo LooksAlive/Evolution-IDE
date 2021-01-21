@@ -1,80 +1,86 @@
+#include <QSettings>
+
 #include "AppearenceWidget.h"
 
 AppearenceWidget::AppearenceWidget(QWidget *parent) : QWidget(parent){
     createWindow();
+    QSettings settings("Evolution");
     bool def = settings.value("Evolution/SetDefaultSettings").toBool();
     if(def){
         setDefaultSettings();
     }
 
-    setLayout(MainLayout);
-    setFixedSize(300, 300);
+    //setLayout(MainLayout); // layout
+    //setFixedSize(300, 300);
 }
 
 
 void AppearenceWidget::createWindow() {
 
-    MainLayout = new QVBoxLayout(this);
-
+    Main_Layout = new QFormLayout();
     theme_layout = new QHBoxLayout();
-    theme_tag = new QLabel(this);
-    theme_tag->setText("Theme: ");
-    themes = new QComboBox(this);
-    themes->addItem("White");
-    themes->addItem("Dark");
-    theme_layout->addWidget(theme_tag);
-    theme_layout->addWidget(themes);
 
-    font_layout = new QHBoxLayout();
-    base_font_tag = new QLabel(this);
-    base_font_tag->setText("Font: ");
-    base_font = new QLabel(this);
-    font_layout->addWidget(base_font_tag);
-    font_layout->addWidget(base_font);
+    comboFont = new QFontComboBox(this);
+    spinFontSize = new QSpinBox(this);
+    checkShowWhitespaces = new QCheckBox(this);
+    radioThemeDark = new QRadioButton("Dark", this);
+    radio_ThemeLight = new QRadioButton("Light", this);
 
-    btn_change_font = new QToolButton(this);
-    btn_change_font->setText("Change");
-    font_layout->addWidget(btn_change_font);
-    connect(btn_change_font, SIGNAL(clicked()), this, SLOT(slotChangeFont()));
+    spinFontSize->setMinimum(10);
+    spinFontSize->setSingleStep(1);
 
-    MainLayout->setContentsMargins(0, 0, 0, 0);
-    MainLayout->setSpacing(2);
-    MainLayout->addLayout(theme_layout);
-    MainLayout->addLayout(font_layout);
+    theme_layout->addWidget(radio_ThemeLight);
+    theme_layout->addWidget(radioThemeDark);
+
+    Main_Layout->addRow("Theme", theme_layout);
+    Main_Layout->addRow("Editor Font", comboFont);
+    Main_Layout->addRow("Editor Font Size", spinFontSize);
+    Main_Layout->addRow("Show Whitespaces?", checkShowWhitespaces);
+
+    setLayout(Main_Layout);
 }
 
 void AppearenceWidget::setDefaultSettings() {
-    themes->setCurrentText("Dark");
-    QString temp = font.defaultFamily() + " " + font.weight();
-    base_font->setText(temp);
+    comboFont->setCurrentText(font.defaultFamily());
+    spinFontSize->setValue(10);
+    radio_ThemeLight->setChecked(true);
+    // add WhiteSpaces
 
-    settings.setValue("Evolution/theme", "Dark");
+    QSettings settings("Evolution");
+    settings.setValue("Evolution/theme", "White"); // default theme
     settings.setValue("Evolution/font_family", font.defaultFamily());
     settings.setValue("Evolution/font_weight", font.weight());
 }
 
 
 void AppearenceWidget::saveData() {
-    settings.setValue("Evolution/theme", themes->currentText());
-    settings.setValue("Evolution/font_family", font.defaultFamily());
-    settings.setValue("Evolution/font_weight", font.weight());
+    QSettings settings("Evolution");
+
+    if (radioThemeDark->isChecked()) {
+        settings.setValue("Evolution/theme", "Dark");
+    } else {
+        settings.setValue("Evolution/theme", "White");
+    }
+    settings.setValue("Evolution/font_family", comboFont->currentText());
+    settings.setValue("Evolution/font_weight", spinFontSize->value());
+    // add WhiteSpaces
 }
 
 void AppearenceWidget::loadData() {
+    QSettings settings("Evolution");
     QString theme = settings.value("Evolution/theme").toString();
     QString font_family = settings.value("Evolution/font_family").toString();
     int weight = settings.value("Evolution/font_weight").toInt();
 
-    themes->setCurrentText(theme);
-    base_font->setText(font_family + " " + QString(weight));
-}
+    comboFont->setCurrentText(font_family);
+    spinFontSize->setValue(weight);
 
-void AppearenceWidget::slotChangeFont() {
-    bool ok;
-    font = QFontDialog::getFont(&ok, this);
-    if(ok){
-        saveData();
+    if (theme == "Dark") {
+        radioThemeDark->setChecked(true);
+    } else {
+        radio_ThemeLight->setChecked(true);
     }
+    // add WhiteSpaces
 }
 
 

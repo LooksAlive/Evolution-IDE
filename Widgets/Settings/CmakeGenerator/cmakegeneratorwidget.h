@@ -3,6 +3,7 @@
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QFormLayout>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QLabel>
@@ -49,22 +50,13 @@ private:
     void manageSourceFiles();
     void getCompilerVersion();
 
-    CmakeGenerator generator;
+    // CmakeGenerator generator;
 
-    QVBoxLayout *MainLayout;
+    QFormLayout *MainLayout;
 
-    QHBoxLayout *compiler_layout;
-    QLabel *compiler_tag;
     QLineEdit *compiler;
-    QHBoxLayout *compile_flags_layout;
-    QLabel *compile_flags_tag;
     QLineEdit *compile_flags;
-    QHBoxLayout *cpu_cores_layout;
-    QLabel *cpu_cores_tag;
     QLineEdit *cpu_cores;
-
-    QHBoxLayout *source_files_layout;
-    QLabel *source_files_tag;
     QListWidget *source_files_list;
 
     /*

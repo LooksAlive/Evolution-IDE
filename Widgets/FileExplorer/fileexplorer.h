@@ -3,10 +3,13 @@
 
 #include <QDockWidget>
 #include <QTreeView>
-#include <QDirModel>
+#include <QFileSystemModel>
 #include <QDir>
 
-#include "EnvironmentSettings.h"
+#include <QToolButton>
+
+
+#include "NewWindow.h"
 
 /*
 class:
@@ -24,10 +27,28 @@ public:
     explicit FileExplorer(QWidget *parent = nullptr);
     ~FileExplorer() = default;
 
-    QDirModel *FileModel;
+    QFileSystemModel *FileModel;
     QTreeView *FileView;
 
     void setRootDirectory(const QString &path);
+
+private:
+    NewWindow *window;
+
+    // button above the tree view
+    QToolButton *collapseAll;
+    QToolButton *expandAll;
+    QToolButton *New;
+
+    void newWindow();
+
+private slots:
+    // right click menu slots
+    void slotExpand();
+    void slotCollapse();
+    void slotNew();
+
+
 };
 
 #endif // FILEEXPLORER_H

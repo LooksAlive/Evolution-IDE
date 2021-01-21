@@ -41,6 +41,7 @@ FindReplaceWidget::FindReplaceWidget(Tab *tab, QWidget *parent)
 }
 
 FindReplaceWidget::~FindReplaceWidget(){
+    /*
     delete next;
     delete previous;
     delete replace;
@@ -51,6 +52,7 @@ FindReplaceWidget::~FindReplaceWidget(){
     delete LineEditFind;
     delete LineEditReplacement;
     delete LabelText;
+     */
 }
 
 /* next, previous, replce, replace all buttons */
@@ -59,12 +61,13 @@ QWidget *FindReplaceWidget::buildButtonBox()
     QGroupBox *button_box = new QGroupBox();
     QVBoxLayout *layout = new QVBoxLayout();
 
-    next = new QPushButton();
-    previous = new QPushButton();
-    replace = new QPushButton();
-    replaceall = new QPushButton();
+    next = new QPushButton(this);
+    previous = new QPushButton(this);
+    replace = new QPushButton(this);
+    replaceall = new QPushButton(this);
 
     next->setText("Next");
+    next->setIcon(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/search.svg"));
     previous->setText("Previous");
     replace->setText("Replace");
     replaceall->setText("Replace All");
@@ -82,13 +85,13 @@ QWidget *FindReplaceWidget::buildButtonBox()
 QLayout *FindReplaceWidget::buildForm()
 {
     QVBoxLayout *flags = new QVBoxLayout();
-    QFormLayout *form = new QFormLayout;
-    CaseSensitive = new QCheckBox("Case Sensitive");
-    WholeWords = new QCheckBox("Whole Text");
-    RegularExpression = new QCheckBox("Use Regexp");
-    LineEditFind = new QLineEdit();
-    LineEditReplacement = new QLineEdit();
-    LabelText = new QLabel("0/0"); // 0/0 -> x/z results
+    QFormLayout *form = new QFormLayout();
+    CaseSensitive = new QCheckBox("Case Sensitive", this);
+    WholeWords = new QCheckBox("Whole Text", this);
+    RegularExpression = new QCheckBox("Use Regexp", this);
+    LineEditFind = new QLineEdit(this);
+    LineEditReplacement = new QLineEdit(this);
+    LabelText = new QLabel("0/0", this); // 0/0 -> x/z results
 
 
     flags->addWidget(CaseSensitive);
@@ -125,16 +128,19 @@ void FindReplaceWidget::getOptionsAndTexts()
 }
 
 void FindReplaceWidget::slotNext(){
-    if(same_file == m_Tab->tabToolTip(m_Tab->currentIndex())){
+    /* same_file == ""  --> means that file has no filepath yet (blank) */
+    if(same_file != m_Tab->tabToolTip(m_Tab->currentIndex()) || same_file == ""){
         m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
+        same_file = m_Tab->tabToolTip(m_Tab->currentIndex());
     }
     getOptionsAndTexts();
     m_Edit->findNext(search_text, find_options);
 }
 // figure it out later
 void FindReplaceWidget::slotPrevious(){
-    if(same_file == m_Tab->tabToolTip(m_Tab->currentIndex())){
+    if(same_file != m_Tab->tabToolTip(m_Tab->currentIndex()) || same_file == ""){
         m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
+        same_file = m_Tab->tabToolTip(m_Tab->currentIndex());
     }
     getOptionsAndTexts();
     find_options |= QTextDocument::FindBackward;   // here flag for previous search
@@ -142,8 +148,9 @@ void FindReplaceWidget::slotPrevious(){
 }
 
 void FindReplaceWidget::slotReplace(){
-    if(same_file == m_Tab->tabToolTip(m_Tab->currentIndex())){
+    if(same_file != m_Tab->tabToolTip(m_Tab->currentIndex()) || same_file == ""){
         m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
+        same_file = m_Tab->tabToolTip(m_Tab->currentIndex());
     }
     getOptionsAndTexts();
     m_Edit->replace(search_text, replace_text);
@@ -151,8 +158,9 @@ void FindReplaceWidget::slotReplace(){
 
 void FindReplaceWidget::slotReplaceAll()
 {
-    if(same_file == m_Tab->tabToolTip(m_Tab->currentIndex())){
+    if(same_file != m_Tab->tabToolTip(m_Tab->currentIndex()) || same_file == ""){
         m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
+        same_file = m_Tab->tabToolTip(m_Tab->currentIndex());
     }
     getOptionsAndTexts();
 

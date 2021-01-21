@@ -34,9 +34,9 @@ public:
 
     QString Project_Dir = QDir::homePath();   // QSettings, if new root dir is set up ... new files, new session
 
-    QString current_full_filepath = "";  // /home/user/file.txt
-    QString current_file_name = "";       // file.txt
-    QString executable_file_path = "";
+    QString current_full_filepath;  // /home/user/file.txt
+    QString current_file_name;       // file.txt
+    QString executable_file_path;
     bool project_cmake_file_exists = false;
 
     QStringList all_files;       // filled with absolute paths

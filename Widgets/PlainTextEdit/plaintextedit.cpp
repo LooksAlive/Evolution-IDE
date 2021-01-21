@@ -15,6 +15,9 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
     : QPlainTextEdit(parent)
 {
     LineArea = new LineNumberArea(this);
+    // textinfoarea = new TextInfoArea(this);
+
+    //setCornerWidget(reinterpret_cast<QWidget*>(textinfoarea));
     QSettings settings;
     QFont font;
 #ifdef Q_OS_WIN
@@ -60,14 +63,14 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
     connect(new QShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Down, this), &QShortcut::activated, [=] {
         moveSelection(false);
     });
+    connect(new QShortcut(Qt::CTRL | Qt::Key_Plus, this), &QShortcut::activated, [=] {
+        zoomIn();
+    });
+    connect(new QShortcut(Qt::CTRL | Qt::Key_Minus, this), &QShortcut::activated, [=] {
+        zoomOut();
+    });
 
-    /*
-    QTextCursor cur;
-    cur.movePosition(QTextCursor::Start);
-    cur.setPosition(0);
-
-    setTextCursor(cur);
-    */
+    ensureCursorVisible();
 }
 
 QRectF PlainTextEdit::blockBoundingGeometryProxy(const QTextBlock &block)
@@ -92,20 +95,24 @@ QTextBlock PlainTextEdit::firstVisibleBlockProxy()
 }
 
 // cursor
-void PlainTextEdit::setCursorPosition(int lineNumber,
-                                     int columnNumber)
+void PlainTextEdit::setCursorPosition(const int &row, const int &col)
 {
-    QTextCursor cursor = textCursor();
-    cursor.setPosition(document()->findBlockByNumber(lineNumber).position());
-    cursor.movePosition(QTextCursor::NextCharacter,
-                        QTextCursor::MoveAnchor,
-                        columnNumber);
-    setTextCursor(cursor);
+    const QTextBlock block = document()->findBlockByLineNumber(row); // -1
+    if(block.isValid())
+    {
+        QTextCursor cursor = textCursor();
+        cursor.setPosition(block.position()+col); // -1
+        setTextCursor(cursor);
+        ensureCursorVisible();
+    }
 }
 
-int PlainTextEdit::getCursorPosition(){
-    QTextCursor cur = textCursor();
-    return cur.position();
+QPoint PlainTextEdit::getCursorPosition(){
+    QTextCursor cursor = textCursor();
+    int row = cursor.blockNumber() + 1;     // +1
+    int col = cursor.columnNumber() + 1;    // +1 , ending position
+
+    return QPoint(row, col);
 }
 
 void PlainTextEdit::setCursorAtLine(const int &line)
@@ -116,8 +123,10 @@ void PlainTextEdit::setCursorAtLine(const int &line)
 // text manipulation
 void PlainTextEdit::selectLineUnderCursor(){
     QTextCursor cur = textCursor();
-    cur.select(QTextCursor::LineUnderCursor);
+    cur.movePosition(QTextCursor::StartOfLine, QTextCursor::MoveAnchor);
+    cur.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
     setTextCursor(cur);
+    ensureCursorVisible();
 }
 
 QString PlainTextEdit::getLineUnderCursor(){
@@ -126,13 +135,16 @@ QString PlainTextEdit::getLineUnderCursor(){
     QString line = cur.selectedText();
     cur.clearSelection();
     setTextCursor(cur);
+    ensureCursorVisible();
     return line;
 }
 
 void PlainTextEdit::selectWordUnderCursor(){
     QTextCursor cur = textCursor();
-    cur.select(QTextCursor::WordUnderCursor);
+    cur.movePosition(QTextCursor::StartOfWord, QTextCursor::MoveAnchor);
+    cur.movePosition(QTextCursor::EndOfWord, QTextCursor::KeepAnchor);
     setTextCursor(cur);
+    ensureCursorVisible();
 }
 
 QString PlainTextEdit::getWordUnderCursor(){
@@ -142,6 +154,16 @@ QString PlainTextEdit::getWordUnderCursor(){
     cur.clearSelection();
     setTextCursor(cur);
     return word;
+}
+
+void PlainTextEdit::selectWord(const int &line, const int &column){
+    QTextEdit::ExtraSelection selection;
+    //selection.cursor.setPosition(document()->findBlockByNumber(line).position());
+    setCursorPosition(line, column);
+    selection.cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, column);
+    selectWordUnderCursor();
+    search_selections.append(selection);
+    setExtraSelections(search_selections);
 }
 
 void PlainTextEdit::deleteLine(){
@@ -155,7 +177,7 @@ void PlainTextEdit::deleteLine(){
 
 void PlainTextEdit::toggleComment(){
 
-    QString file_extension;  // default is cpp
+    //QString file_extension;  // default is cpp
     QTextCursor cur = textCursor();
     if (!cur.hasSelection()){
         selectLineUnderCursor();
@@ -460,6 +482,39 @@ void PlainTextEdit::transformText(const bool upper)
     }
 }
 
+QList<QPoint> PlainTextEdit::getParenthessesPairPositions(){
+    QTextCursor cursor = textCursor();
+
+    cursor = document()->find("{", cursor);
+    QPoint first(cursor.blockNumber(), cursor.columnNumber());
+
+    cursor = document()->find("}", cursor);
+    QPoint second(cursor.blockNumber(), cursor.columnNumber());
+
+    // case nested parenthesses { { } } ; if { is before second / }
+    cursor.setPosition(first.x() + 1);   // return to first to look between them
+    cursor = document()->find("{", cursor);
+    QPoint temp(cursor.blockNumber(), cursor.columnNumber());
+    int nested = 0;
+    while(true){
+        nested++;
+        if(temp.x() < second.x() && temp.y() < second.y()){
+            // reset second and search again
+            cursor = document()->find("}", cursor);
+            second.setX(cursor.blockNumber());
+            second.setY(cursor.columnNumber());
+            cursor.setPosition(first.x() + 1);   // jump over found }
+        }
+        else{break;}
+    }
+
+    QList<QPoint> positions;
+    positions.append(first);
+    positions.append(second);
+
+    return positions;
+}
+
 void PlainTextEdit::highlight(QList<QTextEdit::ExtraSelection> &selections, const bool &Background,
                               const QColor &color)
 {
@@ -479,27 +534,53 @@ void PlainTextEdit::highlight(QList<QTextEdit::ExtraSelection> &selections, cons
 }
 
 // search
-void PlainTextEdit::find(const QString &search)
+void PlainTextEdit::findStoreAndSelectAll(const QString &search, const QTextDocument::FindFlags &find_options)
+{
+    //search_selections.clear();
+
+    while(find(search, find_options)){
+        QTextEdit::ExtraSelection selection;
+        selection.cursor.movePosition(QTextCursor::Start);
+        QColor highlight = palette().color(QPalette::Dark);
+        highlight.setAlpha(25);
+        selection.format.setBackground(highlight);
+        selection.format.setProperty(QTextCharFormat::FullWidthSelection, true);
+        //selection.cursor = textCursor();
+        selection.cursor = document()->find(search, selection.cursor, find_options);
+        //selection.cursor.select(QTextCursor::WordUnderCursor);
+        search_selections.push_back(selection);
+        selection.cursor.clearSelection();
+
+        search_results_positions.push_back(selection.cursor.position());
+        selection.cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, 1);
+        // later search_results for multifile search
+    }
+    /*
+    for (int i = 0; i < search_selections.size(); ++i) {
+        qDebug() << search_selections[i].cursor.selectedText();
+    }
+    */
+    if(!search_selections.isEmpty()){
+        setExtraSelections(search_selections);
+    }
+}
+
+bool PlainTextEdit::find(const QString &search, const QTextDocument::FindFlags &find_options)
 {
     QTextCursor cursor = textCursor();
-    cursor = document()->find(search, cursor);
+    cursor = document()->find(search, cursor, find_options);
 
     if(!cursor.isNull()){
-        setTextCursor(cursor);
+        return true;
     }else{
-        // try to start at start of document in case that are there some occurrences
-        cursor.movePosition(QTextCursor::Start);
-        cursor = document()->find(search, cursor);
-        if(!cursor.isNull()){
-            setTextCursor(cursor);
-        }else{
-            return;   // no occurrences found
-        }
+        return false;   // no occurrences found
     }
 }
 
 void PlainTextEdit::findNext(const QString &search, const QTextDocument::FindFlags &find_options)
 {
+    // findStoreAndSelectAll(search, find_options); // find all results and select them first
+
     QTextCursor cursor = textCursor();
     // find_options |= QTextDocument::FindBackward;   // is const now -> auditing in slot in widget
     cursor = document()->find(search, cursor, find_options);
@@ -519,9 +600,9 @@ void PlainTextEdit::findNext(const QString &search, const QTextDocument::FindFla
     }
 }
 
-void PlainTextEdit::replace(const QString &oldText, const QString &newText)
+void PlainTextEdit::replace(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options)
 {
-    find(oldText);
+    findNext(oldText, find_options);
     QTextCursor cursor = textCursor();
 
     if(cursor.hasSelection() && !isReadOnly()/* && cursor.selectedText() == oldText */)
@@ -534,20 +615,20 @@ void PlainTextEdit::replace(const QString &oldText, const QString &newText)
     }
 }
 
-void PlainTextEdit::replaceAndFind(const QString &oldText, const QString &newText)
+void PlainTextEdit::replaceAndFind(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options)
 {
-    find(oldText);
-    replace(oldText,newText);
+    if(find(oldText, find_options)){
+        replace(oldText, newText, find_options);
+    }
 }
 
-int PlainTextEdit::replaceAll(const QString &oldText, const QString &newText)
+int PlainTextEdit::replaceAll(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options)
 {
     int count = 0;
     textCursor().movePosition(QTextCursor::Start); // on start
-    find(oldText);
 
-    while (textCursor().hasSelection()){
-        replace(oldText, newText);
+    while(find(oldText, find_options)){
+        replace(oldText, newText, find_options);
         count++;
     }
     return count;
@@ -557,6 +638,10 @@ int PlainTextEdit::replaceAll(const QString &oldText, const QString &newText)
 // other
 void PlainTextEdit::setFileExtension(const QString &extension){
     file_extension = extension;
+}
+
+void PlainTextEdit::setFilePath(const QString &file_path) {
+    file = file_path;
 }
 
 /* slots
@@ -610,6 +695,22 @@ void PlainTextEdit::dropEvent(QDropEvent *e){
     QPlainTextEdit::dropEvent(e);
 }
 
+void PlainTextEdit::mousePressEvent(QMouseEvent *e){
+    if(getWordUnderCursor() == "{"){
+        QList<QPoint> points = getParenthessesPairPositions();
+        selectWord(points[0].x(), points[0].y());
+        selectWord(points[1].x(), points[1].y());
+    }
+
+
+    //selectWordUnderCursor();
+
+
+    //qDebug() << getCursorPosition();
+    //qDebug() << getWordUnderCursor();
+    QPlainTextEdit::mousePressEvent(e);
+}
+
 void PlainTextEdit::wheelEvent(QWheelEvent *event)
 {
     if (event->modifiers() & Qt::ControlModifier) {
@@ -651,70 +752,98 @@ void PlainTextEdit::keyPressEvent(QKeyEvent *event)
 {
     QTextCursor cursor = textCursor();
     switch (event->key()) {
-    case Qt::Key_Backtab:
-    case Qt::Key_Tab: {
-        bool forward = !QApplication::keyboardModifiers().testFlag(Qt::ShiftModifier);
-        if (indentText(forward)) {
-            event->accept();
-            return;
-        } else if (forward) {
-            QString text = TABS_TO_SPACES ? QString(TAB_STOP_WIDTH, ' ') : QChar('\t');
-            QTextCursor cursor = textCursor();
-            cursor.insertText(text);
-            setTextCursor(cursor);
-            event->accept();
-            return;
-        }
-        break;
-    }
-    case Qt::Key_Enter:
-    case Qt::Key_Return:
-        break;
-    case Qt::Key_Down:
-    case Qt::Key_Up:
-        if (QApplication::keyboardModifiers().testFlag(Qt::ControlModifier))  {
-            if (event->key() == Qt::Key_Down) {
-                verticalScrollBar()->triggerAction(QAbstractSlider::SliderSingleStepAdd);
-            } else {
-                verticalScrollBar()->triggerAction(QAbstractSlider::SliderSingleStepSub);
+        case Qt::Key_Backtab:
+        case Qt::Key_Tab: {
+            bool forward = !QApplication::keyboardModifiers().testFlag(Qt::ShiftModifier);
+            if (indentText(forward)) {
+                event->accept();
+                return;
+            } else if (forward) {
+                QString text = TABS_TO_SPACES ? QString(TAB_STOP_WIDTH, ' ') : QChar('\t');
+                QTextCursor cursor = textCursor();
+                cursor.insertText(text);
+                setTextCursor(cursor);
+                event->accept();
+                return;
             }
-            event->accept();
+            break;
         }
-        break;
-    case Qt::Key_Escape:
-        if (cursor.hasSelection()) {
-            cursor.clearSelection();
-            setTextCursor(cursor);
-            event->accept();
-        }
-        break;
-    case Qt::Key_Home:
-    case Qt::Key_End:
-        if (!QApplication::keyboardModifiers().testFlag(Qt::ControlModifier)) {
-            moveCursor(event->key() != Qt::Key_Home);
-            event->accept();
-        }
-        return;
-    case Qt::Key_PageDown:
-    case Qt::Key_PageUp:
-        if (QApplication::keyboardModifiers().testFlag(Qt::ControlModifier)) {
-            if (event->key() == Qt::Key_Down) {
-                verticalScrollBar()->triggerAction(QAbstractSlider::SliderPageStepAdd);
-            } else {
-                verticalScrollBar()->triggerAction(QAbstractSlider::SliderPageStepSub);
+        case Qt::Key_Enter:
+        case Qt::Key_Return:
+            break;
+        case Qt::Key_Down:
+        case Qt::Key_Up:
+            if (QApplication::keyboardModifiers().testFlag(Qt::ControlModifier))  {
+                if (event->key() == Qt::Key_Down) {
+                    verticalScrollBar()->triggerAction(QAbstractSlider::SliderSingleStepAdd);
+                } else {
+                    verticalScrollBar()->triggerAction(QAbstractSlider::SliderSingleStepSub);
+                }
+                event->accept();
             }
-            event->accept();
-        }
-        break;
-    default:
-        break;
+            break;
+        case Qt::Key_Escape:
+            if (cursor.hasSelection()) {
+                cursor.clearSelection();
+                setTextCursor(cursor);
+                event->accept();
+            }
+            break;
+        case Qt::Key_Home:
+        case Qt::Key_End:
+            if (!QApplication::keyboardModifiers().testFlag(Qt::ControlModifier)) {
+                moveCursor(event->key() != Qt::Key_Home);
+                event->accept();
+            }
+            break; // return
+        case Qt::Key_PageDown:
+        case Qt::Key_PageUp:
+            if (QApplication::keyboardModifiers().testFlag(Qt::ControlModifier)) {
+                if (event->key() == Qt::Key_Down) {
+                    verticalScrollBar()->triggerAction(QAbstractSlider::SliderPageStepAdd);
+                } else {
+                    verticalScrollBar()->triggerAction(QAbstractSlider::SliderPageStepSub);
+                }
+                event->accept();
+            }
+            break;
+            /* // solved by connect shortcut
+            case Qt::Key_Plus:
+            case Qt::Key_Minus:
+                if (QApplication::keyboardModifiers().testFlag(Qt::ControlModifier)){
+                    if (event->key() == Qt::Key_Plus){
+                        // setReadOnly(true);
+                        zoomIn();
+                    }
+                    if(event->key() == Qt::Key_Minus){
+                        // setReadOnly(true);
+                        zoomOut();
+                    }
+                    event->accept();
+                }
+                break;
+                */
+            // automatic type braces
+        case Qt::Key_BracketLeft:
+            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
+            cursor.insertText("]");
+            break;
+        case Qt::Key_BraceLeft:
+            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
+            cursor.insertText("}");
+            break;
+        case Qt::Key_QuoteLeft:
+            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
+            cursor.insertText("'");
+            break;
+        case Qt::Key_QuoteDbl: // how to do this ? oppossite job does not work, bad conversion
+            break;
+
+        default:
+            break;
     }
     QPlainTextEdit::keyPressEvent(event);
 }
-
-
-
-
 
 /* LineNumberArea widget
 ------------------------------------------------------------------------- */
@@ -811,4 +940,19 @@ QSize LineNumberArea::sizeHint() const
 void LineNumberArea::wheelEvent(QWheelEvent *e)
 {
     QApplication::sendEvent(m_Edit->viewport(), e);
+}
+
+/* TextInfoArea widget
+------------------------------------------------------------------------- */
+
+TextInfoArea::TextInfoArea(PlainTextEdit *edit) : QWidget(edit), m_Edit(edit)
+{
+    buildTextInfoArea();
+}
+
+void TextInfoArea::buildTextInfoArea() {
+    position = new QLabel(this);
+    QPoint poss = m_Edit->getCursorPosition();
+    QString pos = "row: " + QString::number(poss.x()) + " col: " + QString::number(poss.y());
+    position->setText(pos);
 }

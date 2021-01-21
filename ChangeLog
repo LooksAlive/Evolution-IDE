@@ -1,7 +1,6 @@
 # TODO
 
-* binary info -> after all source and debugger stuffs, use snowman project
-* detect .exe, .bin files and store  them to use in other views
+* binary info -> after all source and debugger stuffs, use snowman or retdec
 
 * create bridge in cmd executor for git tools (git, git-diff, ...)
  -> later use libgit2 : https://github.com/libgit2/libgit2
@@ -10,9 +9,6 @@
   user want to work with
 
 * droping files works only for fileexplorer yet, into text edit it drops absolute address
-
-* settings for cmake (flags, cores, ...)
-*** QSettings (remember window size, pos, opened files, style, ...)
 
 * vertical toolbar highlight current window
 
@@ -26,6 +22,8 @@
   words in file (extra selection) - almost done, building helper function first
   
 * clangd has really weird function -> take some of them and create my own
+
+* select and highlight all find results first (frozen app !! :( )
 
 
 # CHANGES
@@ -41,3 +39,5 @@
   -> not avoid object files
 * debugger variable window + lldbbridge (basic function, breakpoints, exe info...)
 * window styles (dark, white) -> settings
+* automatic parenthesses
+* file explorer changed to QFilySystem...

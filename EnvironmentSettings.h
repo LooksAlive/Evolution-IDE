@@ -23,7 +23,7 @@ static bool CHANGES_IN_PROJECT = false;
 static bool ALWAYS_SAVE = false;         // set later in settings with one window message or in settings!!
 
 
-static QSettings settings("Evolution");
+//static QSettings settings("Evolution");
 
 // C++ template examples to insert into code: check clangd
     /*

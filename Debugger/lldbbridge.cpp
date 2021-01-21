@@ -5,6 +5,7 @@ lldbBridge::lldbBridge(){}
 lldbBridge::~lldbBridge() {
     lldb::pid_t pid = Process.GetProcessID();
     std::cout << std::string("Killing process ") + char(pid) << std::endl;  // not added pid, bad conversion
+    setReport("Killing process ");
     Process.Kill();
     Debugger.Terminate();
 }
@@ -17,14 +18,14 @@ void lldbBridge::init() {
 
     // Create a debugger instance so we can create a target
     if (!Debugger.IsValid()){
-        std::cout << "error: failed to create a debugger object\n" << std::endl;
+        setReport("error: failed to create a debugger object\n");
     }
 
     strm.RedirectToFileHandle(stdout, false);
 
 
     if(addr_cstr == nullptr) {
-        std::cout <<"empty address";
+        setReport("empty address");
         exit(1);
     }
 // The second argument in the address that we want to lookup
@@ -78,7 +79,7 @@ void lldbBridge::setFrame(SBFrame frame) {
     }
 }
 
-std::string lldbBridge::setBreakpoint() {
+void lldbBridge::setBreakpoint() {
 
     std::string res;
 
@@ -100,10 +101,9 @@ std::string lldbBridge::setBreakpoint() {
     breakpoint.SetEnabled(true);
 
     */
-    return std::string();
 }
 
-std::string lldbBridge::removeBreakpoint() {
+void lldbBridge::removeBreakpoint() {
 
     /*
     auto iter = mBreakpoints.find();
@@ -111,18 +111,15 @@ std::string lldbBridge::removeBreakpoint() {
 
     return Target.BreakpointDelete(iter->second.GetID());
     */
-    return std::string();
 }
 
 void lldbBridge::start() {
-    std::string res;
+    init();
 
     if (!Target.IsValid()) {
-        res = "Cannot start a debugger process with an invalid target";
-        std::cout << res << std::endl;
+        setReport("Cannot start a debugger process with an invalid target");
     }
 
-    init();
     Process = Target.LaunchSimple(nullptr, nullptr, executable);
 }
 
@@ -185,28 +182,24 @@ SBValue lldbBridge::findSymbol(const char *name){
     // return Target.FindFunctions(name);  .....
 }
 
-std::string lldbBridge::pause() {
-    std::string res;
+void lldbBridge::pause() {
 
     if (Process.IsValid()) {
         auto err = Process.Stop();
         if (err.Fail()) {
-            res = "Failed to pause process"; // {{"Error Code", err.GetError()}, {"Error String", err.GetCString()}};
+            setReport("Failed to pause process"); // {{"Error Code", err.GetError()}, {"Error String", err.GetCString()}};
         }
     }
-    return res;
 }
 
-std::string lldbBridge::Continue() {
-    std::string res;
+void lldbBridge::Continue() {
 
     if (Process.IsValid()) {
         auto err = Process.Continue();
         if (err.Fail()) {
-            res = "Failed to pause process"; // {{"Error Code", err.GetError()}, {"Error String", err.GetCString()}};
+            setReport("Failed to pause process"); // {{"Error Code", err.GetError()}, {"Error String", err.GetCString()}};
         }
     }
-    return res;
 }
 
 void lldbBridge::stepOver() {
@@ -240,8 +233,8 @@ std::string lldbBridge::executeDebuggerCommand(const std::string &args) {
     return output;
 }
 
-void lldbBridge::setReport(const char *error) {
-    report += error + std::string("\n");
+void lldbBridge::setReport(const char *msg) {
+    report += msg + std::string("\n");
 }
 
 

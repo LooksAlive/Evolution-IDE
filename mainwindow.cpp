@@ -17,6 +17,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     SetupFileExplorer();
     SetupFileDocker();
     SetupCompileDock();
+    SetupCodeInfoDock();
     SetupMenuBar();
     SetupToolBar();
 
@@ -37,7 +38,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
 MainWindow::~MainWindow() {
     delete ui;
-    delete converter;
 }
 
 /* drag and drop functions for file into window as it would be openned */
@@ -56,6 +56,8 @@ void MainWindow::dropEvent(QDropEvent* drop_event) {
 }
 
 void MainWindow::LoadRegisters(){
+    QSettings settings("Evolution");
+
     QRect rect = settings.value("Evolution/MainWindowGeometry").toRect();
     if(!rect.isEmpty()){
         setGeometry(rect);
@@ -63,9 +65,11 @@ void MainWindow::LoadRegisters(){
 
     /*
     QStringList tabs = settings.value("Evolution/opened_tabs").toStringList();
+    auto positions = settings.value("Evolution/opened_tabs_cursor_positions").toList();
     if(!tabs.isEmpty()){
-        for (int i = 0; i <= tabs.size(); i++) {
+        for (int i = 0; i < tabs.size(); i++) { // one error, default tab has no path
             OpenFile(tabs[i]);
+            (qobject_cast<PlainTextEdit *>(Tabs->widget(i)))->textCursor().setPosition(positions[i].toInt());
         }
     }
     */
@@ -75,15 +79,20 @@ void MainWindow::LoadRegisters(){
         Explorer->setRootDirectory(Project_Root_Dir);
     }
 
+    bool visible = false;
+
     // visible docks:
-    if(settings.value("Evolution/ExplorerVisibility").toBool()){
-        Explorer->toggleViewAction();
+    visible = settings.value("Evolution/ExplorerVisibility").toBool();
+    if(visible){
+        Explorer->setVisible(true);
     }
-    if(settings.value("Evolution/DockerVisibility").toBool()){;
-        Docker->toggleViewAction();
+    visible = settings.value("Evolution/DockerVisibility").toBool();
+    if(visible){
+        Docker->setVisible(true);
     }
-    if(settings.value("Evolution/ConsoleOutputVisibility").toBool()){
-        ConsoleOutput->toggleViewAction();
+    visible = settings.value("Evolution/ConsoleOutputVisibility").toBool();
+    if(visible){
+        ConsoleOutput->setVisible(true);
     }
 
 }
@@ -139,28 +148,31 @@ void MainWindow::SetupMenuBar() {
     fileMenu->addAction("New File",   this, SLOT(CreateFile()),    Qt::CTRL + Qt::Key_N);
     fileMenu->addAction("Open File",  this, SLOT(OpenFile()),      Qt::CTRL + Qt::Key_O);
     fileMenu->addSeparator();
-    fileMenu->addAction("Save File",  this, SLOT(SaveFile()),      Qt::CTRL + Qt::Key_S);
+    fileMenu->addAction("Save",  this, SLOT(SaveFile()),      Qt::CTRL + Qt::Key_S);
     fileMenu->addAction("Save As...", this, SLOT(SaveFileAs()),    Qt::SHIFT + Qt::CTRL + Qt::Key_S);
     fileMenu->addAction("Save All",   this, SLOT(SaveAllFiles()));
     fileMenu->addSeparator();
     fileMenu->addAction("Close File", this, SLOT(CloseFile()),     Qt::CTRL + Qt::Key_W);
     fileMenu->addAction("Close All",  this, SLOT(CloseAllFiles()), Qt::SHIFT + Qt::CTRL + Qt::Key_W);
     fileMenu->addSeparator();
-    fileMenu->addAction("Settings", this, SLOT(SetupSettingsWindow()), Qt::CTRL + Qt::Key_P);
+    fileMenu->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/settings.svg"), "Settings", this, SLOT(SetupSettingsWindow()), Qt::CTRL + Qt::Key_P);
     fileMenu->addSeparator();
-    fileMenu->addAction("Exit",       this, SLOT(CloseWindow()),   Qt::CTRL + Qt::Key_Q);
+    fileMenu->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/shutdown.svg"),"Exit", this, SLOT(CloseWindow()), Qt::CTRL + Qt::Key_Q);
 
     editMenu->addAction("Cut",        this, SLOT(slotCut()),       Qt::CTRL + Qt::Key_X);
     editMenu->addAction("Copy",       this, SLOT(slotCopy()),      Qt::CTRL + Qt::Key_C);
     editMenu->addAction("Paste",      this, SLOT(slotPaste()),     Qt::CTRL + Qt::Key_V);
     editMenu->addAction("Delete",     this, SLOT(slotClear()),     Qt::CTRL + Qt::Key_Backspace);
     editMenu->addAction("Select All", this, SLOT(slotSelectAll()), Qt::CTRL + Qt::Key_A);
-    editMenu->addAction("toggle comment", this, SLOT(slotToggleComment()), Qt::CTRL + Qt::SHIFT + Qt::Key_C);
+    editMenu->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/comment.png"),"toggle comment", this, SLOT(slotToggleComment()), Qt::CTRL + Qt::SHIFT + Qt::Key_C);
 
     viewMenu->addAction(Explorer->toggleViewAction());
     viewMenu->addAction(Docker->toggleViewAction());
     viewMenu->addAction(ConsoleOutput->toggleViewAction());
     viewMenu->addAction(find_replace->toggleViewAction());
+    viewMenu->addAction(codeInfoDock->toggleViewAction());
+    viewMenu->addSeparator();
+    viewMenu->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/fullscreen.svg"), "Full Screen", this, SLOT(slotFullScreen()));
     viewMenu->addAction("Converter", this, SLOT(SetupConverter()));
 
     /* replace ui; decide if use namespace or just MainWindow->declared int .h as private pointer  */
@@ -170,15 +182,18 @@ void MainWindow::SetupMenuBar() {
 }
 
 void MainWindow::SetupToolBar() {
-    ui->mainToolBar->addAction(QIcon(":/icons/new_file.png"),       "Create New File", this, SLOT(CreateFile()));
-    ui->mainToolBar->addAction(QIcon(":/icons/open_file.png"),      "Open File",       this, SLOT(OpenFile()));
-    ui->mainToolBar->addAction(QIcon(":/icons/save_file.png"),      "Save File",       this, SLOT(SaveFile()));
+    // ":/icons/new_file.png"
+    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/new_file.svg"),       "Create New File", this, SLOT(CreateFile()));
+    // ":/icons/open_file.png"
+    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/open_file.svg"),      "Open File",       this, SLOT(OpenFile()));
+    // ":/icons/save_file.png"
+    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/save_file.svg"),      "Save File",       this, SLOT(SaveFile()));
     ui->mainToolBar->addAction(QIcon(":/icons/save_all_files.png"), "Save All Files",  this, SLOT(SaveAllFiles()));
-    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/undo.png"), "undo", this, SLOT(slotUndo()));
-    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/redo.png"), "redo", this, SLOT(slotRedo()));
+    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/undo.svg"), "undo", this, SLOT(slotUndo()));
+    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/redo.svg"), "redo", this, SLOT(slotRedo()));
 
-    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/build.png"), "Build", this, SLOT(slotBuild()));
-    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/run.png"), "Run", this, SLOT(slotRun()));
+    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/build.svg"), "Build", this, SLOT(slotBuild()));
+    ui->mainToolBar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/run.svg"), "Run", this, SLOT(slotRun()));
 
 }
 
@@ -207,8 +222,11 @@ void MainWindow::showDebuggerView(){
 
     vertical_stack->setCurrentWidget(debuggerView);
 
+    QString path = Tabs->tabToolTip(Tabs->currentIndex());
+    PlainTextEdit *edit = ((PlainTextEdit*)Tabs->currentWidget());
     // for now, starting with current file, later track    ;  not i only care for line
-    debuggerView->setDebugPosition(file_manager.current_full_filepath, 5);
+    // file_manager.current_full_filepath, 0
+    debuggerView->setStartFilePosition(path, edit->getCursorPosition().y());
     debuggerView->setExecutable(file_manager.executable_file_path.toStdString());
 }
 
@@ -258,6 +276,12 @@ void MainWindow::SetupCompileDock(){
     addDockWidget(Qt::BottomDockWidgetArea, find_replace);
 
     tabifyDockWidget(ConsoleOutput, find_replace);
+}
+
+void MainWindow::SetupCodeInfoDock() {
+    codeInfoDock = new CodeInfoDock(this);
+    addDockWidget(Qt::BottomDockWidgetArea, codeInfoDock);
+    tabifyDockWidget(ConsoleOutput, codeInfoDock);
 }
 
 
@@ -318,10 +342,12 @@ void MainWindow::CreateFile() {
 void MainWindow::OpenFile() {
     // #TODO:  do not work yet << setfilemode, to set dir into explorer from dialog
     QFileDialog *dialog = new QFileDialog(this);
+    dialog->setFileMode(QFileDialog::ExistingFiles);
+    dialog->setFileMode(QFileDialog::Directory);
+
     //QString filepath = dialog->getOpenFileName(this, "Open file", QDir::homePath());
     QString filepath = dialog->getExistingDirectory(this, "Open directory", QDir::homePath());
-    //dialog->setFileMode(QFileDialog::ExistingFiles);
-    //dialog->setFileMode(QFileDialog::Directory);
+
 
     if (filepath.isEmpty())
         return;
@@ -342,6 +368,7 @@ void MainWindow::OpenFile(const QString& filepath) {
 
     PlainTextEdit* new_text_edit = new PlainTextEdit();
     new_text_edit->appendPlainText(file_manager.read(filepath));
+    new_text_edit->setFileExtension(file_manager.getFileExtension(file_manager.current_file_name));
 
     /* checks for duplicate file-openning and prevents it by opening identical tab twice */
 
@@ -352,7 +379,6 @@ void MainWindow::OpenFile(const QString& filepath) {
         }
 
     // ????????????????????????????????????????????????????????
-
     PlainTextEdit *temp_text = (PlainTextEdit*)Tabs->currentWidget();
     if (temp_text->document()->isEmpty() &&
             Tabs->tabToolTip(Tabs->currentIndex()) == "" &&
@@ -430,7 +456,7 @@ void MainWindow::SaveFileAs() {
 
 void MainWindow::SaveAllFiles() {
     int current_index = Tabs->currentIndex();
-    for (int i = 0; i < Tabs->count(); ++i) { // QTabWidget guarantees the consistency of indices?
+    for (int i = 0; i <= Tabs->count(); i++) { // QTabWidget guarantees the consistency of indices?
         Tabs->setCurrentIndex(i);
         if (Tabs->tabWhatsThis(Tabs->currentIndex()) != "No changes")
             SaveFile();
@@ -442,7 +468,7 @@ void MainWindow::SaveAllFiles() {
 void MainWindow::CloseFile(int index_) {
 
     // untitled tab, first ask, before opening savedialog in savefile function
-    if(Tabs->tabText(index_) == NEW_TAB_NAME && Tabs->tabWhatsThis(Tabs->currentIndex()) != "No changes")
+    if(Tabs->tabText(index_) == NEW_TAB_NAME && Tabs->tabWhatsThis(index_) != "No changes")
     {
         QMessageBox::StandardButton reply;
         reply = QMessageBox::question(this, "Saving changes", "Save changes before closing?",
@@ -450,7 +476,7 @@ void MainWindow::CloseFile(int index_) {
         if (reply == QMessageBox::Yes) {
             SaveFile();
         }
-    }else if (Tabs->tabWhatsThis(Tabs->currentIndex()) != "No changes") {
+    }else if (Tabs->tabWhatsThis(index_) != "No changes") {
         if(ALWAYS_SAVE){
             SaveFile();
         }
@@ -470,7 +496,7 @@ void MainWindow::CloseFile() {
 
 void MainWindow::CloseAllFiles() {
     bool some_changes = false;
-    for (int i = 0; i < Tabs->count(); ++i) { // QTabWidget guarantees the consistency of indices?
+    for (int i = 0; i <= Tabs->count(); i++) { // QTabWidget guarantees the consistency of indices?
         if (Tabs->tabWhatsThis(i) != "No changes") {
             some_changes = true;
             break;
@@ -498,24 +524,24 @@ void MainWindow::CloseAllFiles() {
 /* close all files, prevent memory leak */
 void MainWindow::CloseWindow() {
     // reopen project not closed tabs later.
-    QStringList openned_tabs;
+    QStringList opened_tabs;
+    QList <int> tabs_cursor_positions;
     for (int i = 0; i <= Tabs->count(); i++) {
-        openned_tabs.append(Tabs->tabToolTip(i));
+        if(Tabs->tabText(i) != "untitled"){   // default tab has no path, since is not saved
+            opened_tabs.push_back(Tabs->tabToolTip(i));
+            //tabs_cursor_positions.push_back(qobject_cast<PlainTextEdit*>(Tabs->widget(i))->textCursor().position());
+        }
     }
-    settings.setValue("Evolution/opened_tabs", openned_tabs);
+    QSettings settings("Evolution");
+    settings.setValue("Evolution/opened_tabs", opened_tabs);
+    //settings.setValue("Evolution/opened_tabs_cursor_positions", QVariant::fromValue(tabs_cursor_positions));
     // save window geometry, load in constructor
     settings.setValue("Evolution/MainWindowGeometry", geometry());
 
     // docks visible
-    if(Explorer->isVisible()){
-        settings.setValue("Evolution/ExplorerVisibility", true);
-    }
-    if(Docker->isVisible()){
-        settings.setValue("Evolution/DockerVisibility", true);
-    }
-    if(ConsoleOutput->isVisible()){
-        settings.setValue("Evolution/ConsoleOutputVisibility", true);
-    }
+    settings.setValue("Evolution/ExplorerVisibility", Explorer->isVisible());
+    settings.setValue("Evolution/DockerVisibility", Docker->isVisible());
+    settings.setValue("Evolution/ConsoleOutputVisibility", ConsoleOutput->isVisible());
 
     CloseAllFiles();
     QApplication::quit();
@@ -718,4 +744,14 @@ void MainWindow::slotClear() {
 // text operations
 void MainWindow::slotToggleComment() {
     ((PlainTextEdit *) Tabs->currentWidget())->toggleComment();
+}
+
+void MainWindow::slotFullScreen() {
+    if(isFullScreen()){
+        showNormal();
+    }
+    else{
+        showFullScreen();
+    }
+    // exit also with ESC
 }

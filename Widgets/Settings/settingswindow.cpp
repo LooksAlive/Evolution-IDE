@@ -6,15 +6,14 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QDialog(parent)
 {
     // features
     SettingsWindow::setWindowTitle("Settings");
-    SettingsWindow::setMaximumSize(500, 400);
+    SettingsWindow::setMinimumSize(500, 400);
 
     OuterLayout = new QVBoxLayout(this);
     OuterLayout->addLayout(buildForm());
     OuterLayout->addWidget(buildButtonBox());
     OuterLayout->setContentsMargins(4, 4, 4, 4);
     OuterLayout->setSpacing(2);
-    SettingsWindow::setAttribute(Qt::WA_DeleteOnClose);
-
+    setAttribute(Qt::WA_DeleteOnClose);
 }
 
 SettingsWindow::~SettingsWindow(){ /* if some changes -> ask to save or not. */}
@@ -46,9 +45,7 @@ QLayout *SettingsWindow::buildForm()
     appearence = new AppearenceWidget(this);
 
     InnerLayout->addWidget(OptionsList, 1);
-    OptionsList->addItem(new QListWidgetItem("General"));
     OptionsList->addItem(new QListWidgetItem("Appearance"));
-    OptionsList->addItem(new QListWidgetItem("Compiler"));
     OptionsList->addItem(new QListWidgetItem("Cmake"));
     OptionsList->addItem(new QListWidgetItem("Debugger"));
     OptionsList->addItem(new QListWidgetItem("Formater"));
@@ -57,9 +54,8 @@ QLayout *SettingsWindow::buildForm()
     OptionsList->setCurrentRow(0);
     OptionsList->setMaximumWidth(125);
     InnerLayout->addWidget(WidgetStack);
-    WidgetStack->addWidget(new QPlainTextEdit(this));
+
     WidgetStack->addWidget(appearence);
-    WidgetStack->addWidget(new QPlainTextEdit(this));
     WidgetStack->addWidget(cmake);
     WidgetStack->addWidget(new QPlainTextEdit(this));
     WidgetStack->addWidget(new QPlainTextEdit(this));

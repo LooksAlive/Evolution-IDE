@@ -1,5 +1,6 @@
 #include "filemanager.h"
 #include <QDebug>
+#include <QSettings>
 
 FileManager::FileManager()
 {
@@ -9,6 +10,7 @@ FileManager::FileManager()
 // run on new thread
 void FileManager::getFilesRecursively(const QString &Project_RootDir){
 
+    QSettings settings("Evolution");
     Project_Dir = Project_RootDir;
     all_files.reserve(128);
     source_files.reserve(128);
@@ -23,6 +25,7 @@ void FileManager::getFilesRecursively(const QString &Project_RootDir){
             project_cmake_file_exists = true;
         }
         if(directories.fileInfo().dir().dirName() == "cmake-build"){
+            break;
             if(directories.fileInfo().isExecutable()){ // binary file
                 executable_file_path = directories.filePath();
                 settings.setValue("Evolution/executable_path", executable_file_path);
@@ -43,7 +46,8 @@ void FileManager::getFilesRecursively(const QString &Project_RootDir){
             source_files.push_back(directories.filePath());
         }
         if(directories.fileInfo().isExecutable()){ // binary file
-            executable_file_path = directories.filePath();
+            qDebug() << directories.filePath();
+            executable_file_path = directories.filePath(); // here it takes all executables in cmake dir
             settings.setValue("Evolution/executable_path", executable_file_path);
         }
     }

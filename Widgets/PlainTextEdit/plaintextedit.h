@@ -1,12 +1,26 @@
 #ifndef SOURCECODEEDIT_H
 #define SOURCECODEEDIT_H
 
-#include <QPlainTextEdit>
-#include <QDebug>
+/*
+ * make 1 QTextCursor and init him in constructor, not every time initializing, it takes time
+ *
+ *
+ *
+*/
 
+
+#include <QPlainTextEdit>
+#include <QTextCursor>
+#include <QDebug>
+#include <QLabel>
+
+#include <iostream>
+#include <vector>
+#include <unordered_map>
 #include "completer.h"
 
 class LineNumberArea;
+class TextInfoArea;
 
 class PlainTextEdit : public QPlainTextEdit
 {
@@ -20,16 +34,21 @@ public:
     QPointF contentOffsetProxy();
     QTextBlock firstVisibleBlockProxy();
     void moveCursor(const bool &end);
+
     // search
-    void find(const QString &search);
-    void findNext(const QString &search, const QTextDocument::FindFlags &find_options);
-    void replace(const QString &oldText, const QString &newText);
-    void replaceAndFind(const QString &oldText, const QString &newText);
-    int replaceAll(const QString &oldText, const QString &newText);
+    std::unordered_map<QString, int> search_results;
+    std::vector<int> search_results_positions;
+    void findStoreAndSelectAll(const QString &search, const QTextDocument::FindFlags &find_options = QTextDocument::FindWholeWords);
+    // find() does not set text cursor, findNext() does
+    bool find(const QString &search, const QTextDocument::FindFlags &find_options = QTextDocument::FindWholeWords);
+    void findNext(const QString &search, const QTextDocument::FindFlags &find_options = QTextDocument::FindWholeWords);
+    void replace(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options = QTextDocument::FindWholeWords);
+    void replaceAndFind(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options = QTextDocument::FindWholeWords);
+    int replaceAll(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options = QTextDocument::FindWholeWords);
 
     // cursor
-    void setCursorPosition(int lineNumber, int columnNumber);
-    int getCursorPosition();
+    void setCursorPosition(const int &row, const int &col);
+    QPoint getCursorPosition();
     void setCursorAtLine(const int &line);
 
     // text manipulation
@@ -37,17 +56,21 @@ public:
     QString getLineUnderCursor();
     void selectWordUnderCursor();
     QString getWordUnderCursor();
+    void selectWord(const int &line, const int &column);
     // missing selected text for return -> no use for now
     void deleteLine();
     void highlight(QList<QTextEdit::ExtraSelection> &selections, const bool &Background,
                    const QColor &color = QColor::fromRgb(0, 255, 0));
     void toggleComment();
+    QList<QPoint> getParenthessesPairPositions();   // set cursor selection on them in update request
 
     // other
     void setFileExtension(const QString &extension = "cpp");
+    void setFilePath(const QString &file_path);
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
+    void mousePressEvent(QMouseEvent *e) override;
     void paintEvent(QPaintEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
@@ -55,6 +78,8 @@ protected:
 
 private:
     LineNumberArea *LineArea;
+    TextInfoArea *textinfoarea;
+
     int indentSize(const QString &text);
     bool indentText(const bool forward);
     QString indentText(QString text, int count) const;
@@ -62,6 +87,8 @@ private:
     void transformText(const bool upper);
 
     QString file_extension;
+    QString file;
+    QList<QTextEdit::ExtraSelection> search_selections;  // pairs identical words
 
 private slots:
     void slotBlockCountChanged(const int count);
@@ -91,6 +118,32 @@ protected:
 
 private:
     PlainTextEdit *m_Edit;
+};
+
+class TextInfoArea : public QWidget
+{
+Q_OBJECT
+public:
+    explicit TextInfoArea(PlainTextEdit *edit);
+    ~TextInfoArea() = default;
+    //QSize sizeHint() const override;
+    void buildTextInfoArea();
+
+    QLabel *position;
+
+private:
+    PlainTextEdit *m_Edit;
+
+    /*
+protected:
+    void leaveEvent(QEvent *event) override;
+    void mouseEvent(QMouseEvent *event);
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
+     */
 };
 
 #endif // SOURCECODEEDIT_H

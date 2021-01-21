@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_COMPILER clang++-10)
-set(BASE_FLAGS "-O3") # -O0 -g -Wall
+set(BASE_FLAGS "-O0 -g -Wall") # -O3
 
 # required flags for clang, llvm, lldb
 set(CXX_FLAGS
@@ -52,7 +52,13 @@ set(SOURCE_FILES main.cpp
                 mainwindow.h
                 customtabstyle.h
                 EnvironmentSettings.h
+                DependencyInstaller.cpp
+                DependencyInstaller.h
                 mainwindow.ui
+
+                Qt-Frameless-Window-DarkStyle/DarkStyle.h
+                Qt-Frameless-Window-DarkStyle/DarkStyle.cpp
+
                 Widgets/PlainTextEdit/plaintextedit.cpp
                 Widgets/PlainTextEdit/plaintextedit.h
                 Widgets/PlainTextEdit/completer.cpp
@@ -67,8 +73,8 @@ set(SOURCE_FILES main.cpp
                 Widgets/Settings/settingswindow.h
                 Widgets/ConsoleDock/consoledock.cpp
                 Widgets/ConsoleDock/consoledock.h
-                Widgets/ConsoleDock/findreplace.cpp
-                Widgets/ConsoleDock/findreplace.h
+        Widgets/FindReplace/findreplace.cpp
+        Widgets/FindReplace/findreplace.h
                 Widgets/BinaryInfo/binaryview.cpp
                 Widgets/BinaryInfo/binaryview.h
                 ${HEX_VIEW}
@@ -83,8 +89,8 @@ set(SOURCE_FILES main.cpp
                 Debugger/debuggerwidget.h
                 Clang/indexer.cpp
                 Clang/indexer.h
-                Clang/parser.cpp
-                Clang/parser.h
+                #Clang/parser.cpp
+                #Clang/parser.h
                 llvm/llvmbridge.cpp
                 llvm/llvmbridge.h
 
@@ -103,7 +109,11 @@ set(SOURCE_FILES main.cpp
                 icons/iconfactory.cpp
                 icons/iconfactory.h
                 Widgets/Settings/Appearence/AppearenceWidget.cpp
-                Widgets/Settings/Appearence/AppearenceWidget.h)
+                Widgets/Settings/Appearence/AppearenceWidget.h
+                Widgets/CodeInfoDock/CodeInfoDock.cpp
+                Widgets/CodeInfoDock/CodeInfoDock.h
+                Widgets/FileExplorer/NewWindow.cpp
+                Widgets/FileExplorer/NewWindow.h)
 
 
 

@@ -39,9 +39,9 @@ public:
     explicit DebuggerWidget(QWidget *parent = nullptr);
     ~DebuggerWidget();
 
-    void setDebugPosition(const QString &file_path, const int &line);
+    // outside function only for duplicating current opened file
+    void setStartFilePosition(const QString &file_path, const int &line);
     void setExecutable(const std::string &exe_file_path);
-
 
 private:
 
@@ -79,6 +79,9 @@ private:
     void buildDebugVariableWindow();
 
     lldbBridge debugger;
+
+    // managed by breakpoints, position will be gathered from debug symbols
+    void setFilePosition();
 
 private slots:
 

@@ -2,11 +2,13 @@
 #include <QApplication>
 #include <QFile>
 #include <QDebug>
-
-#include "EnvironmentSettings.h"
+#include "Qt-Frameless-Window-DarkStyle/DarkStyle.h"
+#include "Qt-Frameless-Window-DarkStyle/framelesswindow/framelesswindow.h"
+#include <QSettings>
 
 int main(int argc, char *argv[]) {
 
+    QSettings settings("Evolution");
     bool def = settings.value("Evolution/SetDefaultSettings").toBool();
     if(!def){
         settings.setValue("Evolution/SetDefaultSettings", true);
@@ -24,7 +26,10 @@ int main(int argc, char *argv[]) {
     //theme = "Dark";
 
     if(theme == "Dark"){
-        app.setStyleSheet(darktheme);
+        // app.setStyleSheet(darktheme);
+        //DarkStyle *style = new DarkStyle();
+        //app.setStyle(style);
+        //style->polish(&app);
     }
     window.show();
 
