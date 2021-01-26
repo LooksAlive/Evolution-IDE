@@ -16,5 +16,3 @@ Tab::Tab(QWidget *parent) : QTabWidget(parent)
     Tab::setCornerWidget(AddNewTabButton, Qt::TopRightCorner);/* button position */
     AddNewTabButton->setText("+");
 }
-
-Tab::~Tab(){}

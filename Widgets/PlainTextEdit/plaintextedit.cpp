@@ -6,6 +6,8 @@
 #include <QShortcut>
 #include <QTextBlock>
 #include <QTextStream>
+
+#include "icons/IconFactory.h"
 #include "plaintextedit.h"
 
 const int TAB_STOP_WIDTH = 4;
@@ -70,6 +72,7 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
         zoomOut();
     });
 
+    createMenu();
     ensureCursorVisible();
 }
 
@@ -97,11 +100,11 @@ QTextBlock PlainTextEdit::firstVisibleBlockProxy()
 // cursor
 void PlainTextEdit::setCursorPosition(const int &row, const int &col)
 {
-    const QTextBlock block = document()->findBlockByLineNumber(row); // -1
+    const QTextBlock block = document()->findBlockByLineNumber(row - 1);
     if(block.isValid())
     {
         QTextCursor cursor = textCursor();
-        cursor.setPosition(block.position()+col); // -1
+        cursor.setPosition(block.position() + col - 1);
         setTextCursor(cursor);
         ensureCursorVisible();
     }
@@ -117,7 +120,7 @@ QPoint PlainTextEdit::getCursorPosition(){
 
 void PlainTextEdit::setCursorAtLine(const int &line)
 {
-    setCursorPosition(line,0);
+    setCursorPosition(line - 1,0);
 }
 
 // text manipulation
@@ -636,6 +639,29 @@ int PlainTextEdit::replaceAll(const QString &oldText, const QString &newText, co
 
 
 // other
+void PlainTextEdit::createMenu() {
+    viewMenu = new QMenu(this);
+
+    viewMenu->addAction(QIcon(IconFactory::Copy), "Copy", this, SLOT(copy()), Qt::CTRL + Qt::Key_C);
+    viewMenu->addAction(QIcon(IconFactory::Paste), "Paste", this, SLOT(paste()), Qt::CTRL + Qt::Key_V);
+    viewMenu->addAction(QIcon(IconFactory::Cut), "Cut", this, SLOT(cut()), Qt::CTRL + Qt::Key_X);
+    viewMenu->addAction(QIcon(IconFactory::Undo), "Undo", this, SLOT(undo()), Qt::CTRL + Qt::Key_Z);
+    viewMenu->addAction(QIcon(IconFactory::Redo), "Redo", this, SLOT(redo()), Qt::CTRL + Qt::SHIFT + Qt::Key_X);
+    viewMenu->addAction(QIcon(IconFactory::SelectAll), "Select All", this, SLOT(selectAll()), Qt::CTRL + Qt::Key_A);
+    viewMenu->addAction(QIcon(IconFactory::Collapse), "Collapse", this, SLOT(collapse()));
+    viewMenu->addAction(QIcon(IconFactory::Expand), "Expand", this, SLOT(expand()));
+    viewMenu->addSeparator();
+    viewMenu->addAction(QIcon(IconFactory::Comment), "Comment Code", this, SLOT(toggleComment()), Qt::CTRL + Qt::SHIFT + Qt::Key_C);
+    /*
+    viewMenu->addAction("Format File", this, SLOT(formatFile()), Qt::CTRL + Qt::SHIFT + Qt::Key_F);
+    viewMenu->addAction("Go to Definition", this, SLOT(slotGoToDefinition()), Qt::CTRL + Qt::SHIFT + Qt::Key_D);
+    viewMenu->addAction("Find References", this, SLOT(slotFindReferences()), Qt::CTRL + Qt::SHIFT + Qt::Key_F);
+    */
+
+    setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(this, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(slotShowMenu(const QPoint&)));
+}
+
 void PlainTextEdit::setFileExtension(const QString &extension){
     file_extension = extension;
 }
@@ -647,6 +673,22 @@ void PlainTextEdit::setFilePath(const QString &file_path) {
 /* slots
  ------------------------------------------------------------------------- */
 
+void PlainTextEdit::slotShowMenu(const QPoint &pos) {
+    viewMenu->exec(viewport()->mapToGlobal(pos));
+}
+
+void PlainTextEdit::formatFile() {
+
+}
+
+void PlainTextEdit::expand(){
+    indentText(true);
+}
+
+void PlainTextEdit::collapse(){
+    indentText(false);
+}
+
 void PlainTextEdit::slotBlockCountChanged(const int count)
 {
     Q_UNUSED(count)
@@ -655,6 +697,8 @@ void PlainTextEdit::slotBlockCountChanged(const int count)
 
 void PlainTextEdit::slotHighlightCurrentLine()
 {
+    // for tracking outside
+    emit cursorPositionHasChanged();
     QList<QTextEdit::ExtraSelection> selections;
     if (!isReadOnly()) {
         QTextEdit::ExtraSelection selection;
@@ -695,20 +739,21 @@ void PlainTextEdit::dropEvent(QDropEvent *e){
     QPlainTextEdit::dropEvent(e);
 }
 
-void PlainTextEdit::mousePressEvent(QMouseEvent *e){
+void PlainTextEdit::mouseReleaseEvent(QMouseEvent *e){
+    /*
     if(getWordUnderCursor() == "{"){
         QList<QPoint> points = getParenthessesPairPositions();
         selectWord(points[0].x(), points[0].y());
         selectWord(points[1].x(), points[1].y());
     }
-
+    */
 
     //selectWordUnderCursor();
 
 
     //qDebug() << getCursorPosition();
     //qDebug() << getWordUnderCursor();
-    QPlainTextEdit::mousePressEvent(e);
+    QPlainTextEdit::mouseReleaseEvent(e);
 }
 
 void PlainTextEdit::wheelEvent(QWheelEvent *event)
@@ -748,9 +793,10 @@ void PlainTextEdit::resizeEvent(QResizeEvent *event)
     LineArea->setGeometry(QRect(rect.left(), rect.top(), LineArea->sizeHint().width(), rect.height()));
 }
 
-void PlainTextEdit::keyPressEvent(QKeyEvent *event)
+void PlainTextEdit::keyReleaseEvent(QKeyEvent *event)
 {
     QTextCursor cursor = textCursor();
+
     switch (event->key()) {
         case Qt::Key_Backtab:
         case Qt::Key_Tab: {
@@ -832,17 +878,32 @@ void PlainTextEdit::keyPressEvent(QKeyEvent *event)
             cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
             cursor.insertText("}");
             break;
+        case Qt::Key_ParenLeft:
+            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
+            cursor.insertText(")");
+            break;
+        case Qt::Key_Less:
+            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
+            cursor.insertText("> ");
+            break;
+        case Qt::Key_Slash:     // kind a stupid idea.
+            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
+            cursor.insertText("/");
+            break;
+        case Qt::Key_Backslash:     // kind a stupid idea.
+            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
+            cursor.insertText("\\");
+            break;
+        case Qt::Key_QuoteDbl:
         case Qt::Key_QuoteLeft:
             cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
             cursor.insertText("'");
-            break;
-        case Qt::Key_QuoteDbl: // how to do this ? oppossite job does not work, bad conversion
             break;
 
         default:
             break;
     }
-    QPlainTextEdit::keyPressEvent(event);
+    QPlainTextEdit::keyReleaseEvent(event);
 }
 
 /* LineNumberArea widget

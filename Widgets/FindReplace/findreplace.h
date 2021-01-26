@@ -19,7 +19,7 @@ class FindReplaceWidget : public QDockWidget
     Q_OBJECT
 public:
     explicit FindReplaceWidget(Tab *tab, QWidget *parent = nullptr);
-    ~FindReplaceWidget();
+    ~FindReplaceWidget() = default;
 
 private:
     QGroupBox *button_box;

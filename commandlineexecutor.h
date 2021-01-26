@@ -28,6 +28,8 @@ public:
     void setLibraryPaths(const std::vector<std::string> &library_paths);
     std::string Build(bool cmake);
     std::string Execute(bool cmake);
+    int getPid();
+    void killProcess();
 
     std::string ClangFormat(const std::vector<std::string> &sources);
     std::string ClangTidy(const std::vector<std::string> &sources);
@@ -54,6 +56,7 @@ private:
     std::string flags = "";
 
     std::string executable_name = "a.out";   //    executable.elf
+    int proc_id;
     std::string executable_path = "";        //    /home/adam/Desktop/SKUSKA/
 
 };

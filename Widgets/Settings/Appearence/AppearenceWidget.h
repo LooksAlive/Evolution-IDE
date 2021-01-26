@@ -18,7 +18,7 @@
 #include <QHBoxLayout>
 
 class AppearenceWidget : public QWidget {
-
+    Q_OBJECT
 public:
     explicit AppearenceWidget(QWidget *parent = nullptr);
     ~AppearenceWidget() = default;

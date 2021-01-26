@@ -13,8 +13,6 @@
 #include <QString>
 #include <QStringList>
 
-
-#include "EnvironmentSettings.h"
 #include "cmakegenerator.h"
 
 /*

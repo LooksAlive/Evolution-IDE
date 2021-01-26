@@ -14,6 +14,8 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QDialog(parent)
     OuterLayout->setContentsMargins(4, 4, 4, 4);
     OuterLayout->setSpacing(2);
     setAttribute(Qt::WA_DeleteOnClose);
+
+    slotLoadData();
 }
 
 SettingsWindow::~SettingsWindow(){ /* if some changes -> ask to save or not. */}
@@ -43,6 +45,7 @@ QLayout *SettingsWindow::buildForm()
     cmake = new CMakeGeneratorWidget(this);
     git = new GitWidget(this);
     appearence = new AppearenceWidget(this);
+    debugger = new DebuggerSettings(this);
 
     InnerLayout->addWidget(OptionsList, 1);
     OptionsList->addItem(new QListWidgetItem("Appearance"));
@@ -57,7 +60,7 @@ QLayout *SettingsWindow::buildForm()
 
     WidgetStack->addWidget(appearence);
     WidgetStack->addWidget(cmake);
-    WidgetStack->addWidget(new QPlainTextEdit(this));
+    WidgetStack->addWidget(debugger);
     WidgetStack->addWidget(new QPlainTextEdit(this));
     WidgetStack->addWidget(git);
     connect(OptionsList, &QListWidget::currentRowChanged, WidgetStack, &QStackedWidget::setCurrentIndex);
@@ -69,11 +72,13 @@ void SettingsWindow::slotSaveData() {
     cmake->saveData();
     git->saveData();
     appearence->saveData();
+    debugger->saveData();
 }
 
 void SettingsWindow::slotLoadData() {
     cmake->loadData();
     git->loadData();
     appearence->loadData();
+    debugger->loadData();
 }
 

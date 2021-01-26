@@ -18,7 +18,7 @@ class Tab : public QTabWidget
     Q_OBJECT
 public:
     explicit Tab(QWidget *parent = nullptr);
-    ~Tab();
+    ~Tab() = default;
 
     QToolButton *AddNewTabButton;
 };

@@ -10,7 +10,6 @@ FindReplaceWidget::FindReplaceWidget(Tab *tab, QWidget *parent)
     : QDockWidget(parent), m_Tab(tab)
 {
     QHBoxLayout *layout = new QHBoxLayout();
-    layout->minimumSize();
     layout->addLayout(buildForm());
     layout->addWidget(buildButtonBox());
     layout->setContentsMargins(4, 4, 4, 4);
@@ -18,8 +17,8 @@ FindReplaceWidget::FindReplaceWidget(Tab *tab, QWidget *parent)
 
     base = new QWidget(this);
     base->setLayout(layout);
-    FindReplaceWidget::setWidget(base);
-    FindReplaceWidget::setVisible(false);
+    setWidget(base);
+    setVisible(false);
 
     base->setMaximumSize(550, base->maximumHeight()); // needed to not expand more etc.
     //FindReplaceWidget::setMaximumSize(base->maximumWidth(), base->maximumHeight());
@@ -38,21 +37,6 @@ FindReplaceWidget::FindReplaceWidget(Tab *tab, QWidget *parent)
     connect(previous, SIGNAL(clicked()), this, SLOT(slotPrevious()));
     connect(replace, SIGNAL(clicked()), this, SLOT(slotReplace()));
     connect(replaceall, SIGNAL(clicked()), this, SLOT(slotReplaceAll()));
-}
-
-FindReplaceWidget::~FindReplaceWidget(){
-    /*
-    delete next;
-    delete previous;
-    delete replace;
-    delete replaceall;
-    delete CaseSensitive;
-    delete RegularExpression;
-    delete WholeWords;
-    delete LineEditFind;
-    delete LineEditReplacement;
-    delete LabelText;
-     */
 }
 
 /* next, previous, replce, replace all buttons */

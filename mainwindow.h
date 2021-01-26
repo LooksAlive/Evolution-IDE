@@ -40,8 +40,10 @@
 #include <QSettings>
 
 #include <QToolButton>
+#include <QPlainTextEdit>
 
 #include "Widgets/PlainTextEdit/plaintextedit.h"
+#include "Widgets/PlainTextEdit/GoToLineColumn.h"     // will be used in main window
 #include "Widgets/FileExplorer/fileexplorer.h"
 #include "Widgets/FileDock/filedock.h"
 #include "Widgets/Tab/tab.h"
@@ -58,6 +60,7 @@
 #include "Widgets/Settings/CmakeGenerator/cmakegenerator.h"
 #include "commandlineexecutor.h"
 
+#include "Widgets/NodeView/NodeView.h"
 #include "Widgets/HexView/hexview.h"
 #include "Debugger/debuggerwidget.h"
 #include "Widgets/BinaryInfo/binaryview.h"
@@ -96,6 +99,9 @@ public:
     
 private:
 
+    // top menu bar
+    QMenuBar *menuBar;
+
     /* vertical_bar stack  */
     QStackedWidget *vertical_stack;
 
@@ -103,20 +109,31 @@ private:
     /* base tab widget for plaintext */
     Highlighter* highlighter;
 
+    // top tool bar
+    QToolBar *topToolBar;
+
     /* toolbar -> views */
     QToolBar *vertical_bar;     // all kind of views: hex, binary, debugger, decompiler ---> widgets
-
     // editorView are Tabs
     HexView *hexview;
+    NodeView *nodeview;
     DebuggerWidget *debuggerView;
     BinaryView *binaryView;
     // Decompiler *decompilerView;
+
+    // Bottom Tool Bar
+    QToolBar *BottomToolBar;
+    QToolButton *btn_position;
+    QToolButton *btn_encoding;
 
     /* settings window */
     SettingsWindow *Settings;
 
     /* Tab widget stuffs */
     Tab* Tabs;
+    // tracking current Tab widget for many other actions on it
+    // connected when new file is created and tab changed, disconnected when deleted
+    PlainTextEdit *currentWidget;
     /* file manager */
     FileManager file_manager;
 
@@ -126,7 +143,7 @@ private:
     FileDock *Docker;
 
     /* Compile dock stuffs */
-    ConsoleDock *ConsoleOutput;
+    ConsoleDock *console_dock;
     FindReplaceWidget *find_replace;
 
     /* code info related stuffs dock */
@@ -142,12 +159,14 @@ private:
     void SetupTabWidget();
     void SetupMenuBar();
     void SetupToolBar();
+    void SetupBottomToolBar();
     void SetupFileExplorer();
     void SetupFileDocker();
     void SetupCompileDock();
     void SetupCodeInfoDock();
 
     void SetupVerticalBar();
+    void SetupNodeView();
     void SetupHexView();
     void SetupDebuggerView();
     void SetupBinaryView();
@@ -155,11 +174,14 @@ private:
 
     void closeEvent(QCloseEvent*) override;
 
-    // the way to show DockWidgets in app --> select corners, do not take all bottom, MainWindowLayout for one dock
+    // when switching views, make sure not necessary widget are hidden and if returned -> again shown
     void SetupDockWidgetsLayering();
+    void HideAllDockWidgets();
+    bool explorer_visible = false, docker_visible = false, console_dock_visible = false,
+            find_replace_visible = false, code_info_dock_visible = false;
+    void ShowHiddenDockWidgets();
 
     void LoadRegisters();
-
 
 private slots:
 
@@ -184,6 +206,7 @@ private slots:
     void SetupConverter();
 
     void showEditorView();
+    void showNodeView();
     void showHexView();
     void showDebuggerView();
     void showBinaryView();
@@ -212,9 +235,21 @@ private slots:
     void slotRedo();
     void slotPaste();
     void slotSelectAll();
-    void slotClear();
+    void slotRemoveAll();
 
+    void slotAbout();
     void slotFullScreen();
+
+    void slotGoToLine();
+
+    void slotStopProcess();
+    void slotTextPositionChanged();
+
+private:
+    // files operation variables
+    bool CHANGES_IN_PROJECT = false;
+    bool ALWAYS_SAVE = false;
+
 };
 
 

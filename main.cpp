@@ -23,15 +23,15 @@ int main(int argc, char *argv[]) {
     }
 
     QString theme = settings.value("Evolution/theme").toString();
-    //theme = "Dark";
-
+    /*
+    theme = "Dark";
     if(theme == "Dark"){
         // app.setStyleSheet(darktheme);
-        //DarkStyle *style = new DarkStyle();
-        //app.setStyle(style);
-        //style->polish(&app);
+        DarkStyle *style = new DarkStyle();
+        app.setStyle(style);
     }
-    window.show();
+    */
 
+    window.show();
     return app.exec();
 }

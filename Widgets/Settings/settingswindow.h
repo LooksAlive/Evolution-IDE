@@ -13,6 +13,7 @@
 #include "CmakeGenerator/cmakegeneratorwidget.h"
 #include "git/gitwidget.h"
 #include "Appearence/AppearenceWidget.h"
+#include "Debugger/DebuggerSettings.h"
 
 class SettingsWindow : public QDialog
 {
@@ -32,6 +33,7 @@ private:
     CMakeGeneratorWidget *cmake;
     GitWidget *git;
     AppearenceWidget *appearence;
+    DebuggerSettings *debugger;
 
     QWidget *buildButtonBox();
     QLayout *buildForm();

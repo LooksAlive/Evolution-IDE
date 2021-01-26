@@ -1,5 +1,7 @@
 #include "commandlineexecutor.h"
+#include <signal.h>
 #include <QString>
+#include <QSettings>
 
 CommandLineExecutor::CommandLineExecutor()
 {
@@ -169,4 +171,18 @@ std::string CommandLineExecutor::Valgrind(){
 
 void CommandLineExecutor::OpenGdbGui(){
     ExecuteCommand("/usr/bin/gdbgui ./" + executable_name);
+}
+
+int CommandLineExecutor::getPid() {
+    if(executable_name.empty()){
+        QSettings settings("Evolution");
+        executable_name = settings.value("Evolution/executable").toString().toStdString();
+    }
+    std::string my_pid = ExecuteCommand("pidof -s " + executable_name);
+    proc_id = strtoul(my_pid.c_str(), NULL, 10);
+    return proc_id;
+}
+
+void CommandLineExecutor::killProcess() {
+    kill(proc_id, SIGKILL);
 }

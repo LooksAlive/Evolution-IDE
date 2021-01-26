@@ -73,8 +73,8 @@ set(SOURCE_FILES main.cpp
                 Widgets/Settings/settingswindow.h
                 Widgets/ConsoleDock/consoledock.cpp
                 Widgets/ConsoleDock/consoledock.h
-        Widgets/FindReplace/findreplace.cpp
-        Widgets/FindReplace/findreplace.h
+                Widgets/FindReplace/findreplace.cpp
+                Widgets/FindReplace/findreplace.h
                 Widgets/BinaryInfo/binaryview.cpp
                 Widgets/BinaryInfo/binaryview.h
                 ${HEX_VIEW}
@@ -89,8 +89,8 @@ set(SOURCE_FILES main.cpp
                 Debugger/debuggerwidget.h
                 Clang/indexer.cpp
                 Clang/indexer.h
-                #Clang/parser.cpp
-                #Clang/parser.h
+                Clang/parser.cpp
+                Clang/parser.h
                 llvm/llvmbridge.cpp
                 llvm/llvmbridge.h
 
@@ -106,14 +106,13 @@ set(SOURCE_FILES main.cpp
                 Widgets/Settings/git/gitbridge.h
                 Widgets/Settings/git/gitwidget.cpp
                 Widgets/Settings/git/gitwidget.h
-                icons/iconfactory.cpp
-                icons/iconfactory.h
+        icons/IconFactory.h
                 Widgets/Settings/Appearence/AppearenceWidget.cpp
                 Widgets/Settings/Appearence/AppearenceWidget.h
                 Widgets/CodeInfoDock/CodeInfoDock.cpp
                 Widgets/CodeInfoDock/CodeInfoDock.h
                 Widgets/FileExplorer/NewWindow.cpp
-                Widgets/FileExplorer/NewWindow.h)
+                Widgets/FileExplorer/NewWindow.h Widgets/Settings/Debugger/DebuggerSettings.cpp Widgets/Settings/Debugger/DebuggerSettings.h Widgets/FileExplorer/SourceTemplates.h Widgets/NodeView/NodeView.cpp Widgets/NodeView/NodeView.h Widgets/PlainTextEdit/GoToLineColumn.cpp Widgets/PlainTextEdit/GoToLineColumn.h)
 
 
 
@@ -134,16 +133,22 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}
         /usr/local/include         # llvm, lldb, clang
         /usr/local/include/clangd  # clangd -> indexer, completer, parser etc.
+        /usr/local/include/clangd/support
 )
 
 # required libs by clang ...
 set(SYSTEM_LIBS rt dl tinfo pthread m z)
 
-set(LLDB_LIBS lldb) # one shared lib
+set(LLDB_LIBS_SHARED lldb) # one shared lib
 
 # clang libraries; also added manually:
 # clangd has no shared libs, so if i want to use clang shared lib in the future and recompile clang by in this manner
 # i would need to go deep into clangd and extract, what i need -> so yes later
+
+set(CLANG_LIBS_SHARED   clang
+                        #clang-cpp  # -> does not work combined with clang.
+        )
+
 set(CLANG_LIBS
         clangAnalysis clangApplyReplacements clangARCMigrate
         clangAST clangASTMatchers clangBasic
@@ -176,6 +181,12 @@ set(CLANG_LIBS
         )
 
 # LLVM libraries: `llvm-config -ibs $(LLVM_MODULES)`;LLVM_MODULES = all engine
+set(LLVM_LIBS_SHARED    Polly
+                        LTO
+                        LLVM #llvm -> in /usr/lib/llvm11
+                        )
+
+
 set(LLVM_LIBS
         LLVMXRay LLVMWindowsManifest LLVMTableGen LLVMSymbolize
         LLVMDebugInfoPDB LLVMOrcJIT LLVMOrcError LLVMJITLink
@@ -221,6 +232,8 @@ set(LLVM_LIBS
 
 
 link_directories(/usr/local/lib)
+#link_directories(/usr/lib/llvm-11)
+
 
 add_executable(editor ${SOURCE_FILES} resources.qrc)
 
@@ -245,4 +258,4 @@ find_package( Qt5 REQUIRED
 set_target_properties(Qt5::Core PROPERTIES MAP_IMPORTED_CONFIG_COVERAGE "DEBUG")
 
 target_link_libraries(editor Qt5::Widgets Qt5::Gui Qt5::Core Qt5::Xml Qt5::PrintSupport
-        -Wl,--start-group ${SYSTEM_LIBS} ${LLVM_LIBS} ${CLANG_LIBS} ${LLDB_LIBS} -Wl,--end-group)
+        -Wl,--start-group ${SYSTEM_LIBS} ${LLVM_LIBS_SHARED} ${CLANG_LIBS_SHARED} ${LLDB_LIBS_SHARED} -Wl,--end-group)

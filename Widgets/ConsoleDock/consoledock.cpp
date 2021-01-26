@@ -9,7 +9,7 @@
 ConsoleDock::ConsoleDock(QWidget *parent) : QDockWidget(parent)
 {
     /* QDockWidget inherited functions */
-    setWindowTitle("Compile Output");
+    setWindowTitle("Console");
     setVisible(false);
     setFeatures(AllDockWidgetFeatures);
     // setAllowedAreas(Qt::BottomDockWidgetArea);

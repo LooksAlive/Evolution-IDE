@@ -19,7 +19,7 @@ Converter::~Converter(){
 
 QLayout *Converter::BuildForm(){
 
-    QVBoxLayout *layout = new QVBoxLayout(this);
+    QVBoxLayout *layout = new QVBoxLayout();
     Option = new QComboBox(this);
     InputWindow = new QPlainTextEdit(this);
     OutputWindow = new QPlainTextEdit(this);

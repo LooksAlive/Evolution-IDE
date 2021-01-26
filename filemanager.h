@@ -17,8 +17,6 @@
 #include <QDirIterator>
 #include <QStringList>
 
-#include "EnvironmentSettings.h"
-
 class FileManager
 {
 public:
@@ -31,12 +29,15 @@ public:
     QString simple_read(const QString &full_file_path);
     QString read(const QString &full_file_path);
     void write(const QString &full_file_path, const char *buffer);
+    void rename(const QString &old_path, const QString &new_name);
+    void duplicate(const QString &file_path);
+    void move(const QString &old_path, const QString &new_path);
 
     QString Project_Dir = QDir::homePath();   // QSettings, if new root dir is set up ... new files, new session
 
     QString current_full_filepath;  // /home/user/file.txt
-    QString current_file_name;       // file.txt
-    QString executable_file_path;
+    QString current_file_name;      // file.txt
+    QString executable_file_path;   // executable for debugger
     bool project_cmake_file_exists = false;
 
     QStringList all_files;       // filled with absolute paths

@@ -17,6 +17,7 @@ public:
     QString filePath() const;
     void open(const QString &path);
     bool save();
+    void setText(const QByteArray &data);
 };
 
 #endif // HEXEDIT_H

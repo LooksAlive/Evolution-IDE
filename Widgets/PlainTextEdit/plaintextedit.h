@@ -13,6 +13,7 @@
 #include <QTextCursor>
 #include <QDebug>
 #include <QLabel>
+#include <QMenu>
 
 #include <iostream>
 #include <vector>
@@ -61,16 +62,24 @@ public:
     void deleteLine();
     void highlight(QList<QTextEdit::ExtraSelection> &selections, const bool &Background,
                    const QColor &color = QColor::fromRgb(0, 255, 0));
-    void toggleComment();
     QList<QPoint> getParenthessesPairPositions();   // set cursor selection on them in update request
 
     // other
     void setFileExtension(const QString &extension = "cpp");
     void setFilePath(const QString &file_path);
 
+public slots:
+    void toggleComment();
+    void formatFile();
+    void expand();
+    void collapse();
+
+signals:
+    void cursorPositionHasChanged();
+
 protected:
-    void keyPressEvent(QKeyEvent *event) override;
-    void mousePressEvent(QMouseEvent *e) override;
+    void keyReleaseEvent(QKeyEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *e) override;
     void paintEvent(QPaintEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
@@ -79,6 +88,9 @@ protected:
 private:
     LineNumberArea *LineArea;
     TextInfoArea *textinfoarea;
+
+    QMenu *viewMenu;
+    void createMenu();
 
     int indentSize(const QString &text);
     bool indentText(const bool forward);
@@ -91,6 +103,7 @@ private:
     QList<QTextEdit::ExtraSelection> search_selections;  // pairs identical words
 
 private slots:
+    void slotShowMenu(const QPoint &pos);
     void slotBlockCountChanged(const int count);
     void slotHighlightCurrentLine(); // cursor position changed
     void slotUpdateRequest(const QRect &rect, const int column);

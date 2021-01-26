@@ -38,3 +38,8 @@ bool HexView::save()
     }
     return false;
 }
+
+void HexView::setText(const QByteArray &data) {
+    auto document = QHexDocument::fromMemory<QMemoryBuffer>(data);
+    m_HexView->setDocument(document);
+}

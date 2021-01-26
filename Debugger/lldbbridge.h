@@ -61,14 +61,13 @@ public:
 
 
     bool isRunning();
-    void recordError();
 
     void start();   // process initialization
     void stop();    // destructor called here
 
 
     // The first argument is the file path we want to look something up in
-    const char *executable = "/home/adam/Desktop/SKUSKA/Parser";
+    const char *executable = "/home/adam/Desktop/SKUSKA/executable";   // "/home/adam/Desktop/SKK/cmake-build/executable"
     const char *addr_cstr = "#address_to_lookup";
     const bool add_dependent_libs = false;
     const char *arch = nullptr;

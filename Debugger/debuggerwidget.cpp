@@ -1,5 +1,6 @@
 #include <QSettings>
 
+#include "icons/IconFactory.h"
 #include "debuggerwidget.h"
 
 DebuggerWidget::DebuggerWidget(QWidget *parent) : QWidget(parent)
@@ -42,6 +43,7 @@ void DebuggerWidget::buildConsole(){
     args_input = new QLineEdit(this);
     completer = new QCompleter(this);
 
+    debug_output->setReadOnly(true);
     completer->setCaseSensitivity(Qt::CaseInsensitive);
     // TODO: set data to completer somehow
     args_input->setCompleter(completer);
@@ -74,20 +76,20 @@ void DebuggerWidget::createToolBar()
     DebugToolBar->setContentsMargins(0,0,0,0);
 
     btn_StartDebug=new QToolButton(this);
-    btn_StartDebug->setIcon(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/StartDebug.png"));
+    btn_StartDebug->setIcon(QIcon(IconFactory::StartDebug));
     btn_StartDebug->setFixedSize(26, 26);
     connect(btn_StartDebug, SIGNAL(clicked()), this, SLOT(slotStartDebug()));
     DebugToolBar->addWidget(btn_StartDebug);
 
     btn_StopDebug=new QToolButton(this);
-    btn_StopDebug->setIcon(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/StopDebug.png"));
+    btn_StopDebug->setIcon(QIcon(IconFactory::StopDebug));
     btn_StopDebug->setFixedSize(26, 26);
     connect(btn_StopDebug, SIGNAL(clicked()), this, SLOT(slotStopDebug()));
     DebugToolBar->addWidget(btn_StopDebug);
     DebugToolBar->addSeparator();
 
     btn_RunToCursor=new QToolButton(this);
-    btn_RunToCursor->setIcon(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/RunToCursor.png"));
+    btn_RunToCursor->setIcon(QIcon(IconFactory::RunToCursor));
     btn_RunToCursor->setFixedSize(26, 26);
     connect(btn_RunToCursor, SIGNAL(clicked()), this, SLOT(slotRunToCursor()));
     DebugToolBar->addWidget(btn_RunToCursor);
@@ -105,7 +107,7 @@ void DebuggerWidget::createControlPanel()
 
     btn_StepOver=new QToolButton(this);
     btn_StepOver->setText(" Step Over");
-    btn_StepOver->setIcon(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/NextStep.png"));
+    btn_StepOver->setIcon(QIcon(IconFactory::NextLine));
     btn_StepOver->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     btn_StepOver->setFixedSize(160, 30);
     connect(btn_StepOver, SIGNAL(clicked()), this, SLOT(slotStepOver()));
@@ -113,7 +115,7 @@ void DebuggerWidget::createControlPanel()
 
     btn_StepInto=new QToolButton(this);
     btn_StepInto->setText(" Step Into");
-    btn_StepInto->setIcon(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/NextLine.png"));
+    btn_StepInto->setIcon(QIcon(IconFactory::StepInto));
     btn_StepInto->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     btn_StepInto->setFixedSize(160, 30);
     connect(btn_StepInto, SIGNAL(clicked()), this, SLOT(slotStepInto()));
@@ -121,7 +123,7 @@ void DebuggerWidget::createControlPanel()
 
     btn_StepOut=new QToolButton(this);
     btn_StepOut->setText(" Step Out");
-    btn_StepOut->setIcon(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/GetOutOfFunction.png"));
+    btn_StepOut->setIcon(QIcon(IconFactory::GetOutOfFunction));
     btn_StepOut->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     btn_StepOut->setFixedSize(160, 30);
     connect(btn_StepOut, SIGNAL(clicked()), this, SLOT(slotStepOut()));
@@ -129,7 +131,7 @@ void DebuggerWidget::createControlPanel()
 
     btn_StepInstruction=new QToolButton(this);
     btn_StepInstruction->setText(" Next Instruction");
-    btn_StepInstruction->setIcon(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/JumpFunction.png"));
+    btn_StepInstruction->setIcon(QIcon(IconFactory::NextInstruction));
     btn_StepInstruction->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     btn_StepInstruction->setFixedSize(160, 30);
     connect(btn_StepInstruction, SIGNAL(clicked()), this, SLOT(slotStepInstruction()));
@@ -137,7 +139,7 @@ void DebuggerWidget::createControlPanel()
 
     btn_Continue=new QToolButton(this);
     btn_Continue->setText(" Continue");
-    btn_Continue->setIcon(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/Continue.png"));
+    btn_Continue->setIcon(QIcon(IconFactory::Resume));
     btn_Continue->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     btn_Continue->setFixedSize(160, 30);
     connect(btn_Continue, SIGNAL(clicked()), this, SLOT(slotContinue()));
@@ -292,7 +294,7 @@ void DebuggerWidget::setFilePosition(){
 
 void DebuggerWidget::setExecutable(const std::string &exe_file_path) {
     debugger.executable = exe_file_path.c_str();
-    qDebug() << debugger.executable;
+    qDebug() << exe_file_path.c_str();
     //QSettings settings("Evolution");
     //debugger.executable = settings.value("Evolution/executable_path").toString().toStdString().c_str();
     //qDebug() << debugger.executable;

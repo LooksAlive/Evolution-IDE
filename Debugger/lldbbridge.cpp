@@ -7,19 +7,24 @@ lldbBridge::~lldbBridge() {
     std::cout << std::string("Killing process ") + char(pid) << std::endl;  // not added pid, bad conversion
     setReport("Killing process ");
     Process.Kill();
-    Debugger.Terminate();
+    SBDebugger::Terminate();
 }
 
 void lldbBridge::init() {
 
     SBDebugger::Initialize();
-    Debugger = SBDebugger::Create();
-    Target = Debugger.CreateTarget(executable);
-
+    Debugger = SBDebugger::Create(true);
     // Create a debugger instance so we can create a target
     if (!Debugger.IsValid()){
-        setReport("error: failed to create a debugger object\n");
+        setReport("Error: failed to create a debugger object\n");
+        SBStream str;
+        Debugger.GetDescription(str);
+        setReport(str.GetData());
+        return;
     }
+
+    Target = Debugger.CreateTarget(executable);
+
 
     strm.RedirectToFileHandle(stdout, false);
 
@@ -36,7 +41,7 @@ void lldbBridge::init() {
 
     if (!error.Success()) {
         std::cout <<"error: " << error.GetDescription(strm) << std::endl;
-        exit(1);
+        return;
     }
 
     SBModuleSpec module_spec;
@@ -117,14 +122,16 @@ void lldbBridge::start() {
     init();
 
     if (!Target.IsValid()) {
-        setReport("Cannot start a debugger process with an invalid target");
+        setReport("Cannot start a debugger process with an invalid target: ");
+        setReport(executable);
+        return;
     }
 
     Process = Target.LaunchSimple(nullptr, nullptr, executable);
 }
 
 void lldbBridge::stop() {
-    lldbBridge::~lldbBridge();
+    Process.Stop();
 }
 
 
@@ -136,11 +143,6 @@ bool lldbBridge::isRunning() {
         return false;
     }
 }
-
-void lldbBridge::recordError() {
-    // when process gen some stop signal --> get generated error, or just implement SBError
-}
-
 
 std::vector<lldbBridge::framedata> lldbBridge::get_var_func_info() {
     return std::vector<lldbBridge::framedata>();

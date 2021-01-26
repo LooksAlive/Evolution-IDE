@@ -13,6 +13,10 @@ public:
 
     void buildCodeInfo();
 
+private:
+    QWidget *MainWidget;
+
+
 private slots:
 
 };
