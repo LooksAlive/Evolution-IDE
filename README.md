@@ -16,6 +16,7 @@ Text:
 
 * line highlight
 * CTRL+SHIFT+C                  -> toggle comment
+* CTRL+F                        -> search
 * tab selected text
 * escape function
 * CTRL+SHIFT+UP/DOWN            -> moving selected between lines
@@ -25,14 +26,15 @@ Text:
 * cursor remembers x position when up/down arrow moves
 * line number click selects whole line
 * CTRL+Wheel                    -> increase, decrease size (CTRL +-  also)
-* CTRL+UP/DOWN                  -> like srcolling action
+* CTRL+UP/DOWN                  -> like scrolling  action
 * CTRL+LEFT/RIGHT               -> moving to start of next words
+* automatic insertions like  () [] {} <> "" ''
 
 
-Overal:
+Overall:
 
 * ctrl + wheel -> amplify font
-* syntax highligting
+* syntax highlighting
 * Terminal output
 * different text Formats converter, small widget
 * settings window
@@ -44,9 +46,21 @@ Overal:
 * lldb debugger                 -> stepping, manual commands, frame views
 * gdbgui possible to launch
 
+File Explorer:
+
+* creating, files, dirs
+* removing, renaming, copying(different things from tree)
+* custom menu, tool bars
+
+Debugger:
+
+* frame view
+* variable view
+* manual console input
+
 Future:
 
-* clang indexer, completer, refractoring
+* clang indexer, completer, refactoring
 * clang fix it
 * clang-tidy
 * clang-move

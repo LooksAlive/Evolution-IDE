@@ -45,6 +45,7 @@ FileExplorer::FileExplorer(QWidget *parent) : QDockWidget(parent)
     bar_buttons->addAction(QIcon(IconFactory::DefaultDir), "Set Default Dir",  this, SLOT(slotSetDefaultDir()));
     bar_buttons->addAction(QIcon(IconFactory::Collapse), "Collapse All",  this, SLOT(slotCollapse()));
     bar_buttons->addAction(QIcon(IconFactory::Expand), "Expand All",  this, SLOT(slotExpand()));
+    bar_buttons->addAction(QIcon(IconFactory::Remove), "Close Explorer",  this, SLOT(hide()));
 
     /*
     MainLayout->addWidget(searchBox, 0, Qt::AlignLeft);
@@ -61,13 +62,18 @@ FileExplorer::FileExplorer(QWidget *parent) : QDockWidget(parent)
 
 void FileExplorer::createMenu() {
     viewMenu = new QMenu(this);
+    copyMenu = new QMenu("Copy", this);
+
+    copyMenu->addAction(QIcon(IconFactory::Copy), "Copy File Content", this, SLOT(slotCopyFileContent()));
+    copyMenu->addAction("Copy File Path", this, SLOT(slotCopyFilePath()));
+    copyMenu->addAction("Copy File Name", this, SLOT(slotCopyFileName()));
 
     viewMenu->addAction(QIcon(IconFactory::NewDirectory), "New Directory", this, SLOT(slotNewDir()));
     viewMenu->addAction(QIcon(IconFactory::NewFile), "New File", this, SLOT(slotNewFile()));
     viewMenu->addAction("New Class", this, SLOT(slotNewC_CPP_CLASS()));
     viewMenu->addAction(QIcon(IconFactory::Copy), "Duplicate", this, SLOT(slotDuplicate()));
     viewMenu->addAction(QIcon(IconFactory::Remove), "Remove", this, SLOT(slotRemove()), Qt::Key_Delete);
-    viewMenu->addAction(QIcon(IconFactory::Copy), "Copy", this, SLOT(slotCopy()));
+    viewMenu->addMenu(copyMenu);
     viewMenu->addAction("Rename", this, SLOT(slotRename()));
     viewMenu->addAction(QIcon(IconFactory::Expand), "Expand All", this, SLOT(slotExpand()));
     viewMenu->addAction(QIcon(IconFactory::Collapse), "Collapse All", this, SLOT(slotCollapse()));
@@ -79,12 +85,15 @@ void FileExplorer::createMenu() {
 void FileExplorer::createSearchBox() {
     searchBox = new QLineEdit(this);
     searchBox->setToolTip("Search");
-    searchBox->setFixedWidth(100);
+    // searchBox->setFixedWidth(130);
+
+    connect(searchBox, SIGNAL(returnPressed()), this, SLOT(slotTreeSearch()));
+
     // later set completer etc.
-    completer = new QCompleter(this);
-    completer->setCompletionMode(QCompleter::PopupCompletion);
-    completer->setModel(FileModel);
-    searchBox->setCompleter(completer);
+    //completer = new QCompleter(this);
+    //completer->setCompletionMode(QCompleter::PopupCompletion);
+    //completer->setModel(FileModel);
+    //searchBox->setCompleter(completer);
 }
 
 void FileExplorer::setRootDirectory(const QString &path){
@@ -236,3 +245,28 @@ void FileExplorer::slotSetDefaultDir() {
         setRootDirectory(info.dir().absolutePath());
     }
 }
+
+// on enter
+void FileExplorer::slotTreeSearch() {
+    /*
+    QSettings settings("Evolution");
+    QStringList sources = settings.value("Evolution/sources").toStringList();
+    QStringList other_files = settings.value("Evolution/other_files").toStringList();
+    */
+
+    // FileView->findChild<QString>(searchBox->text());
+}
+
+void FileExplorer::slotCopyFileContent() {
+
+}
+
+void FileExplorer::slotCopyFilePath() {
+
+}
+
+void FileExplorer::slotCopyFileName() {
+
+}
+
+

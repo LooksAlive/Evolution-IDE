@@ -22,7 +22,6 @@ void lldbBridge::init() {
         setReport(str.GetData());
         return;
     }
-
     Target = Debugger.CreateTarget(executable);
 
 
@@ -66,56 +65,67 @@ void lldbBridge::init() {
 void lldbBridge::setFrame(SBFrame frame) {
     //clear();
 
-    auto vars = frame.GetVariables(true,  // args
+    auto FrameList = frame.GetVariables(true,  // args
                                    true,  // locals
                                    true,  // statics
                                    true   // in scope only
     );
 
-    for (uint32_t idx = 0; idx < vars.GetSize(); ++idx) {
-        auto val = vars.GetValueAtIndex(idx);
-        /*
-        auto item = new QTreeWidgetItem(QStringList() << val.GetName() << val.GetDisplayTypeName()
-                                                      << val.GetSummary() << val.GetValue()
-                                                      << val.GetObjectDescription());
-
-        insertTopLevelItem(0, item);
-         */
+    for (uint32_t idx = 0; idx < FrameList.GetSize(); ++idx) {
+        auto value = FrameList.GetValueAtIndex(idx);
+        framedata data;
+        data.name = value.GetDisplayTypeName();
+        data.type = value.GetType().GetName();
+        data.value = value.GetValue();
+        data.description = value.GetObjectDescription();
+        //value.GetSummary();
+        //value.GetThread();
     }
 }
 
-void lldbBridge::setBreakpoint() {
+void lldbBridge::setBreakpoint(const char *file_name, const int &line) {
 
     std::string res;
 
     // create the breakpoint
-    /*
-    auto breakpoint = Target.BreakpointCreateByLocation(
-            node.module().sourceFilePath().string().c_str(), linenum);
+    filespec.SetFilename("some starting file path");
+
+    SBBreakpoint breakpoint = Target.BreakpointCreateByLocation(
+            filespec, line);
 
      	// make sure that it's good
 	if (!breakpoint.IsValid()) {
-		res.addEntry("EUKN", "Could not set breakpoint on node",
-		             {{"nodeid", node.stringId()},
-		              {"File Name", node.module().sourceFilePath().string()},
-		              {"Line  Number", linenum}});
-
-		return res;
+	    setReport("Breakpoint is not valid:  filename: ");
+	    setReport(file_name);
+        setReport((char*)line);
+        return;
 	}
 
     breakpoint.SetEnabled(true);
 
-    */
+
+    BreakPointData data{breakpoint.GetID(), file_name, line};
+    BreakPointList.push_back(data);
 }
 
-void lldbBridge::removeBreakpoint() {
+void lldbBridge::removeBreakpoint(const break_id_t &id) {
+    if(!Target.BreakpointDelete(id)){
+        setReport("Breakpoint was not deleted !");
+    }
+}
 
-    /*
-    auto iter = mBreakpoints.find();
-    if (iter == mBreakpoints.end()) { return false; }
+void lldbBridge::removeBreakpoint(const char *file_name, const int &line) {
 
-    return Target.BreakpointDelete(iter->second.GetID());
-    */
+    break_id_t ID;
+    for (int i = 0; i < BreakPointList.size(); i++) {
+        if(BreakPointList[i].filename == file_name && BreakPointList[i].line == line){
+            ID = BreakPointList[i].break_id;
+        }
+    }
+    if(!Target.BreakpointDelete(ID)){
+        setReport("Breakpoint was not deleted !");
+    }
+
 }
 
 void lldbBridge::start() {
@@ -144,11 +154,11 @@ bool lldbBridge::isRunning() {
     }
 }
 
-std::vector<lldbBridge::framedata> lldbBridge::get_var_func_info() {
+std::vector<lldbBridge::framedata> get_var_func_info() {
     return std::vector<lldbBridge::framedata>();
 }
 
-lldbBridge::framedata lldbBridge::get_var_func_info_update() {
+lldbBridge::framedata get_var_func_info_update() {
     return lldbBridge::framedata();
 }
 

@@ -1,5 +1,5 @@
 #include "NodeView.h"
 
-NodeView::NodeView(QWidget *parent) : QWidget(parent){
+NodeView::NodeView(QWidget *parent) : QGraphicsView(parent){
 
 }

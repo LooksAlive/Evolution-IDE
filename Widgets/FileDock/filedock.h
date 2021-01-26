@@ -9,7 +9,7 @@ class FileDock : public QDockWidget
     Q_OBJECT
 public:
     explicit FileDock(QWidget *parent = nullptr);
-    ~FileDock();
+    ~FileDock() = default;
 
     QListWidget *DockerFileList;
 };

@@ -8,9 +8,8 @@ FileDock::FileDock(QWidget *parent) : QDockWidget(parent)
     FileDock::setWindowTitle("Opened files");
     FileDock::setVisible(false);
     FileDock::setFeatures(AllDockWidgetFeatures);
+    // DockerFileList->setViewMode(QListView::IconMode);
+
     FileDock::setWidget(DockerFileList);
 }
 
-FileDock::~FileDock(){
-    delete DockerFileList;
-}

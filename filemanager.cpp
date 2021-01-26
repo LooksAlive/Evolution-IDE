@@ -13,7 +13,7 @@ void FileManager::getFilesRecursively(const QString &Project_RootDir){
     QSettings settings("Evolution");
     settings.setValue("Evolution/Project_Root_Dir", Project_RootDir);
     Project_Dir = Project_RootDir;
-    all_files.reserve(128);
+    other_files.reserve(128);
     source_files.reserve(128);
 
     // FileExplorer_RootDir;
@@ -45,7 +45,7 @@ void FileManager::getFilesRecursively(const QString &Project_RootDir){
             */
         }
 
-        all_files.push_back(directories.filePath());
+
         if(getFileExtension(directories.filePath()) == "cpp" |
                 getFileExtension(directories.filePath()) == "h" |
                 getFileExtension(directories.filePath()) == "hpp" |
@@ -54,12 +54,16 @@ void FileManager::getFilesRecursively(const QString &Project_RootDir){
         {
             source_files.push_back(directories.filePath());
         }
+        else{
+            other_files.push_back(directories.filePath());
+        }
         if(directories.fileInfo().isExecutable()){ // binary file
             qDebug() << directories.filePath();
             executable_file_path = directories.filePath(); // here it takes all executables in cmake dir
             settings.setValue("Evolution/executable_path", executable_file_path);
         }
     }
+    settings.setValue("Evolution/other_files", other_files);
     settings.setValue("Evolution/sources", source_files);
 }
 

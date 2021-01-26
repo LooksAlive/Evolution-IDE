@@ -7,8 +7,10 @@
 #include <QLineEdit>
 #include <QPointer>
 #include <QPushButton>
+#include <QToolButton>
 #include <QGroupBox>
 #include <QDockWidget>
+#include <QFormLayout>
 
 
 #include "Widgets/PlainTextEdit/plaintextedit.h"
@@ -21,8 +23,13 @@ public:
     explicit FindReplaceWidget(Tab *tab, QWidget *parent = nullptr);
     ~FindReplaceWidget() = default;
 
+    QLineEdit *LineEditFind;
+
 private:
-    QGroupBox *button_box;
+    QHBoxLayout *MainLayout;
+    QFormLayout *input_layout;
+    QVBoxLayout *flags_layout;
+
     QPushButton *next;
     QPushButton *previous;
     QPushButton *replace;
@@ -32,7 +39,6 @@ private:
     QCheckBox *RegularExpression;
     QCheckBox *WholeWords;
 
-    QLineEdit *LineEditFind;
     QLineEdit *LineEditReplacement;
 
     QLabel *LabelText;
@@ -42,8 +48,8 @@ private:
     PlainTextEdit *m_Edit = nullptr;
     QString same_file;
 
-    QWidget *buildButtonBox();
-    QLayout *buildForm();
+    void createWindow();
+
     void getOptionsAndTexts();
 
     QTextDocument::FindFlags find_options;

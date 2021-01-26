@@ -39,7 +39,7 @@ public:
 
 private:
     QMenu *viewMenu;
-    QMenu *OutsideMenu;
+    QMenu *copyMenu;
     NewWindow *window;
 
     QVBoxLayout *MainLayout;
@@ -67,10 +67,15 @@ private slots:
     void slotNewFile(); // ordinary file ( .txt, ... )
     void slotNewC_CPP_CLASS();
 
+    void slotCopyFileContent();
+    void slotCopyFilePath();
+    void slotCopyFileName();
+
     void slotCreate();  // private variables, used for all operations
 
     void slotBack();
     void slotSetDefaultDir();
+    void slotTreeSearch();
 
 };
 

@@ -29,7 +29,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     SetupVerticalBar();
 
     CreateFile();
-    SetupBottomToolBar();
+    SetupStatusBar();
 
     SetupDockWidgetsLayering();
 
@@ -146,29 +146,22 @@ void MainWindow::SetupVerticalBar(){
     addToolBar(Qt::LeftToolBarArea, vertical_bar);
 }
 
-void MainWindow::SetupBottomToolBar() {
-    BottomToolBar = new QToolBar(this);
+void MainWindow::SetupStatusBar() {
+    statusbar = new QStatusBar(this);
     btn_encoding = new QToolButton(this);
     btn_position = new QToolButton(this);
 
-    BottomToolBar->setWindowTitle("Bottom ToolBar");
-    BottomToolBar->setContentsMargins(0, 0, 0, 0);
-    BottomToolBar->setOrientation(Qt::Horizontal);
-    BottomToolBar->setFixedHeight(35);
-    BottomToolBar->setFloatable(false);
-    BottomToolBar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
-    BottomToolBar->setMouseTracking(true);
-    BottomToolBar->setMovable(false);
-    BottomToolBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    statusbar->setFixedHeight(30);
+    statusbar->setMouseTracking(true);
     btn_encoding->setText("UTF-8");
     btn_encoding->setFixedWidth(50);
     btn_position->setFixedWidth(70);
     connect(btn_position, SIGNAL(clicked()), this, SLOT(slotGoToLine()));
 
-    BottomToolBar->addWidget(btn_position);
-    BottomToolBar->addWidget(btn_encoding);
 
-    addToolBar(Qt::BottomToolBarArea, BottomToolBar);
+    statusbar->addWidget(btn_position);
+    statusbar->addWidget(btn_encoding);
+    setStatusBar(statusbar);
 }
 
 void MainWindow::slotTextPositionChanged(){
@@ -305,18 +298,19 @@ void MainWindow::showDebuggerView(){
 
     vertical_stack->setCurrentWidget(debuggerView);
 
-    QString path = Tabs->tabToolTip(Tabs->currentIndex());
+    QString path = currentWidget->getFilePath();
     // for now, starting with current file, later track    ;  not i only care for line
     // file_manager.current_full_filepath, 0
     file_manager.executable_file_path = "/home/adam/Desktop/SKK/cmake-build/executable";
-    debuggerView->setStartFilePosition(path, currentWidget->getCursorPosition().x());
+    debuggerView->setStartFilePosition(path, currentWidget->getCursorPosition().y());   // ???
     debuggerView->setExecutable(file_manager.executable_file_path.toStdString());
 }
 
 void MainWindow::showHexView(){
     HideAllDockWidgets();
 
-    QString path = Tabs->tabToolTip(Tabs->currentIndex());
+    // Tabs->tabToolTip(Tabs->currentIndex());
+    QString path = currentWidget->getFilePath();
     if(path != ""){
         hexview->open(path);
         vertical_stack->setCurrentWidget(hexview);
@@ -402,10 +396,25 @@ void MainWindow::SetupCompileDock(){
     console_dock = new ConsoleDock(this);
     find_replace = new FindReplaceWidget(Tabs, this);
 
+    connect(new QShortcut(Qt::CTRL + Qt::Key_F, this), &QShortcut::activated, [=] {slotFind();});
+
     addDockWidget(Qt::BottomDockWidgetArea, console_dock);
     addDockWidget(Qt::BottomDockWidgetArea, find_replace);
 
     tabifyDockWidget(console_dock, find_replace);
+}
+
+void MainWindow::slotFind(){
+    find_replace->toggleViewAction();
+    find_replace->LineEditFind->setFocus();
+    QString text = currentWidget->textCursor().selectedText();
+    if(!text.isEmpty()){
+        find_replace->LineEditFind->setText(text);
+    }
+    else{
+        text = currentWidget->getWordUnderCursor();
+        find_replace->LineEditFind->setText(text);
+    }
 }
 
 void MainWindow::SetupCodeInfoDock() {
@@ -455,6 +464,7 @@ void MainWindow::CreateFile() {
     // tab
     PlainTextEdit* NewPlainText = new PlainTextEdit;
     int index = Tabs->addTab(NewPlainText, NEW_TAB_NAME);
+    NewPlainText->setFilePath("");
     Tabs->setCurrentIndex(index);
     Tabs->setTabToolTip(index, "");
     Tabs->setTabWhatsThis(index, "No changes");
@@ -467,6 +477,7 @@ void MainWindow::CreateFile() {
     QListWidgetItem* new_item = new QListWidgetItem;
     new_item->setText(Tabs->tabText(index));
     new_item->setToolTip(Tabs->tabToolTip(index));
+    // new_item->setIcon(QIcon(IconFactory::Remove));
     Docker->DockerFileList->addItem(new_item);
 
     UpdateCurrentIndex(index);
@@ -505,6 +516,7 @@ void MainWindow::OpenFile(const QString& filepath) {
 
     PlainTextEdit* new_text_edit = new PlainTextEdit();
     new_text_edit->appendPlainText(file_manager.read(filepath));
+    new_text_edit->setFilePath(filepath);
     new_text_edit->setFileExtension(file_manager.getFileExtension(file_manager.current_file_name));
 
     /* checks for duplicate file-openning and prevents it by opening identical tab twice */
@@ -536,6 +548,7 @@ void MainWindow::OpenFile(const QString& filepath) {
     QListWidgetItem* new_item = new QListWidgetItem();
     new_item->setText(Tabs->tabText(index));
     new_item->setToolTip(Tabs->tabToolTip(index));
+    // new_item->setIcon(QIcon(IconFactory::Remove));
     Docker->DockerFileList->addItem(new_item);
 
     // setting up highlight
@@ -552,6 +565,7 @@ void MainWindow::OpenFile(const QString& filepath) {
 void MainWindow::SaveFile() {
     // new file created, but not saved yet
     if (Tabs->tabToolTip(Tabs->currentIndex()) == "") {
+        // empty file, saving as
         CHANGES_IN_PROJECT = true;
         SaveFileAs();
         return;
@@ -580,6 +594,8 @@ void MainWindow::SaveFileAs() {
 
     Tabs->tabBar()->setTabText(Tabs->currentIndex(), file_manager.current_file_name);
     Tabs->tabBar()->setTabToolTip(Tabs->currentIndex(), filepath);
+    currentWidget->setFilePath(filepath);
+    currentWidget->setFileExtension(file_manager.getFileExtension(file_manager.current_file_name));
 
     // setting up highlight
     if (highlighter->setExtension(file_manager.getFileExtension(file_manager.current_file_name))) {

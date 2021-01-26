@@ -40,7 +40,7 @@ public:
     QString executable_file_path;   // executable for debugger
     bool project_cmake_file_exists = false;
 
-    QStringList all_files;       // filled with absolute paths
+    QStringList other_files;       // filled with absolute paths
     QStringList source_files;    // later into cmdexecutor or cmake -> strip front known path or not, however
 
 private:

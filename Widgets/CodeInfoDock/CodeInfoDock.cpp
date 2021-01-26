@@ -4,14 +4,15 @@ CodeInfoDock::CodeInfoDock(QWidget *parent) : QDockWidget(parent){
     setWindowTitle("Code Informations");
     setFeatures(AllDockWidgetFeatures);
     setVisible(false);
+    createWindow();
 
     MainWidget = new QWidget(this);
-    setMinimumHeight(250);
+    setMinimumHeight(150);
 
     setWidget(MainWidget);
 }
 
-void CodeInfoDock::buildCodeInfo() {
+void CodeInfoDock::createWindow() {
 
 }
 

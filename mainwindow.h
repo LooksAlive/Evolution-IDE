@@ -24,6 +24,7 @@
 #include <QModelIndex>
 #include <QToolBar>
 #include <QTabBar>
+#include <QStatusBar>
 
 #include <QAction>
 #include <QToolButton>
@@ -38,6 +39,7 @@
 #include <QString>
 #include <QPoint>
 #include <QSettings>
+#include <QShortcut>
 
 #include <QToolButton>
 #include <QPlainTextEdit>
@@ -121,8 +123,8 @@ private:
     BinaryView *binaryView;
     // Decompiler *decompilerView;
 
-    // Bottom Tool Bar
-    QToolBar *BottomToolBar;
+    // Status Bar
+    QStatusBar *statusbar;
     QToolButton *btn_position;
     QToolButton *btn_encoding;
 
@@ -159,7 +161,7 @@ private:
     void SetupTabWidget();
     void SetupMenuBar();
     void SetupToolBar();
-    void SetupBottomToolBar();
+    void SetupStatusBar();
     void SetupFileExplorer();
     void SetupFileDocker();
     void SetupCompileDock();
@@ -241,6 +243,7 @@ private slots:
     void slotFullScreen();
 
     void slotGoToLine();
+    void slotFind();
 
     void slotStopProcess();
     void slotTextPositionChanged();

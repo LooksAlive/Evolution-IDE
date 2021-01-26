@@ -104,7 +104,7 @@ void PlainTextEdit::setCursorPosition(const int &row, const int &col)
     if(block.isValid())
     {
         QTextCursor cursor = textCursor();
-        cursor.setPosition(block.position() + col - 1);
+        cursor.setPosition(block.position() + col + 1);
         setTextCursor(cursor);
         ensureCursorVisible();
     }
@@ -120,7 +120,7 @@ QPoint PlainTextEdit::getCursorPosition(){
 
 void PlainTextEdit::setCursorAtLine(const int &line)
 {
-    setCursorPosition(line - 1,0);
+    setCursorPosition(line + 1, 0);   // yet no idea how ? jumps as it wants
 }
 
 // text manipulation
@@ -668,6 +668,10 @@ void PlainTextEdit::setFileExtension(const QString &extension){
 
 void PlainTextEdit::setFilePath(const QString &file_path) {
     file = file_path;
+}
+
+QString PlainTextEdit::getFilePath(){
+    return file;
 }
 
 /* slots

@@ -22,6 +22,7 @@ int main(int argc, char *argv[]) {
         darktheme = file.readAll();
     }
 
+
     QString theme = settings.value("Evolution/theme").toString();
     /*
     theme = "Dark";

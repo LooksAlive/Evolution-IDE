@@ -3,6 +3,10 @@
 
 #include <QDockWidget>
 #include <QWidget>
+#include <QFormLayout>
+#include <QFormLayout>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
 
 class CodeInfoDock : public QDockWidget{
     Q_OBJECT
@@ -11,10 +15,11 @@ public:
     explicit CodeInfoDock(QWidget *parent = nullptr);
     ~CodeInfoDock() = default;
 
-    void buildCodeInfo();
 
 private:
     QWidget *MainWidget;
+
+    void createWindow();
 
 
 private slots:

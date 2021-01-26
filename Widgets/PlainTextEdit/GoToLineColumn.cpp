@@ -10,7 +10,7 @@ void GoToLineColumn::createWindow() {
     MainLayout = new QFormLayout();
     line_input = new QLineEdit(this);
     line_input->setText("1");   // get current pos here by constructor
-    MainLayout->addRow("[Line]  ", line_input);
+    MainLayout->addRow("Line  ", line_input);
     connect(line_input, SIGNAL(returnPressed()), this, SLOT(storeData()));
     setLayout(MainLayout);
 }

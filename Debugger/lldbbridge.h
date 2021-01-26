@@ -29,8 +29,9 @@ public:
     void pause();    // when breakpoint is hit
     void Continue();
 
-    void setBreakpoint();
-    void removeBreakpoint();
+    void setBreakpoint(const char *file_name, const int &line);
+    void removeBreakpoint(const char *file_name, const int &line);
+    void removeBreakpoint(const break_id_t &id);
 
     void setFrame(SBFrame frame);
     SBThread getCurrentThread();
@@ -51,14 +52,20 @@ public:
     struct framedata{
         std::string type;
         std::string name;
-        std::vector<std::string> values;
+        std::string value;
+        std::string description;
     };
     // get num of frames in project -> return some data struct vector, this would need to be updated or collected at
     // once
     std::vector<framedata> get_var_func_info();         // get names, values and insert into variable widget
-
     framedata get_var_func_info_update();         // step by step updating
 
+    struct BreakPointData{
+        break_id_t break_id;
+        const char *filename;
+        int line;
+    };
+    std::vector<BreakPointData> BreakPointList;
 
     bool isRunning();
 
@@ -79,6 +86,7 @@ private:
 
     SBError error;
     SBStream strm;
+    SBFileSpec filespec;
 
 
     SBDebugger Debugger;

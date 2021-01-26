@@ -67,6 +67,7 @@ public:
     // other
     void setFileExtension(const QString &extension = "cpp");
     void setFilePath(const QString &file_path);
+    QString getFilePath();
 
 public slots:
     void toggleComment();

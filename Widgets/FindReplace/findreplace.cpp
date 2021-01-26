@@ -4,94 +4,77 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
+#include "icons/IconFactory.h"
 #include "findreplace.h"
 
 FindReplaceWidget::FindReplaceWidget(Tab *tab, QWidget *parent)
     : QDockWidget(parent), m_Tab(tab)
 {
-    QHBoxLayout *layout = new QHBoxLayout();
-    layout->addLayout(buildForm());
-    layout->addWidget(buildButtonBox());
-    layout->setContentsMargins(4, 4, 4, 4);
-    layout->setSpacing(2);
+    createWindow();
+    MainLayout->setContentsMargins(0, 0, 0, 0);
+    MainLayout->setSpacing(2);
 
     base = new QWidget(this);
-    base->setLayout(layout);
+    base->setLayout(MainLayout);
+    base->setContentsMargins(0, 0, 0, 0);
     setWidget(base);
     setVisible(false);
 
-    base->setMaximumSize(550, base->maximumHeight()); // needed to not expand more etc.
-    //FindReplaceWidget::setMaximumSize(base->maximumWidth(), base->maximumHeight());
-    // setWindowIcon(QIcon(replace ? ":/icons/fugue/edit-replace.png" : ":/icons/fugue/binocular.png"));
-
     setWindowTitle("Find & Replace");
-    LineEditFind->setFocus();
-    LineEditFind->setMaximumWidth(400);
-    LineEditReplacement->setMaximumWidth(400);
 
-    // track changing files here
-    m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
-    same_file = m_Tab->tabToolTip(m_Tab->currentIndex());
-
-    connect(next, SIGNAL(clicked()), this, SLOT(slotNext()));
-    connect(previous, SIGNAL(clicked()), this, SLOT(slotPrevious()));
-    connect(replace, SIGNAL(clicked()), this, SLOT(slotReplace()));
-    connect(replaceall, SIGNAL(clicked()), this, SLOT(slotReplaceAll()));
+    /*
+    QToolButton *btn = new QToolButton(this);
+    btn->setIcon(QIcon(IconFactory::Remove));
+    btn->setFixedWidth(30);
+    connect(btn, SIGNAL(clicked()), this, SLOT(close()));
+    setTitleBarWidget(btn);
+    */
 }
 
-/* next, previous, replce, replace all buttons */
-QWidget *FindReplaceWidget::buildButtonBox()
-{
-    QGroupBox *button_box = new QGroupBox();
-    QVBoxLayout *layout = new QVBoxLayout();
-
-    next = new QPushButton(this);
-    previous = new QPushButton(this);
-    replace = new QPushButton(this);
-    replaceall = new QPushButton(this);
-
-    next->setText("Next");
-    next->setIcon(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/search.svg"));
-    previous->setText("Previous");
-    replace->setText("Replace");
-    replaceall->setText("Replace All");
-
-    layout->addWidget(next);
-    layout->addWidget(previous);
-    layout->addWidget(replace);
-    layout->addWidget(replaceall);
-    button_box->setLayout(layout);
-
-    return button_box;
-}
-
-/* check boxes, line edit, labels */
-QLayout *FindReplaceWidget::buildForm()
-{
-    QVBoxLayout *flags = new QVBoxLayout();
-    QFormLayout *form = new QFormLayout();
+void FindReplaceWidget::createWindow() {
+    MainLayout = new QHBoxLayout();
+    input_layout = new QFormLayout();
+    flags_layout = new QVBoxLayout();
     CaseSensitive = new QCheckBox("Case Sensitive", this);
     WholeWords = new QCheckBox("Whole Text", this);
     RegularExpression = new QCheckBox("Use Regexp", this);
     LineEditFind = new QLineEdit(this);
     LineEditReplacement = new QLineEdit(this);
     LabelText = new QLabel("0/0", this); // 0/0 -> x/z results
-
-
-    flags->addWidget(CaseSensitive);
-    flags->addWidget(WholeWords);
-    flags->addWidget(RegularExpression);
-    form->addRow("Find:  ", LineEditFind);
-    form->addRow("Replace:  ", LineEditReplacement);
-
-    QVBoxLayout *layout = new QVBoxLayout();
-    layout->addLayout(form);
-    layout->addLayout(flags);
-    layout->addWidget(LabelText);
-    LabelText->setAlignment(Qt::AlignTop | Qt::AlignRight);
+    LineEditFind->setFocus();
+    LineEditFind->setMaximumWidth(400);
+    LineEditReplacement->setMaximumWidth(400);
+    LabelText->setAlignment(Qt::AlignBottom | Qt::AlignLeft);
     LabelText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    return layout;
+
+    next = new QPushButton("Next", this);
+    previous = new QPushButton("Previous", this);
+    replace = new QPushButton("Replace", this);
+    replaceall = new QPushButton("Replace All", this);
+    next->setIcon(QIcon(IconFactory::Search));
+
+    // enter shortcut
+    connect(LineEditFind, SIGNAL(returnPressed()), this, SLOT(slotNext()));
+    connect(next, SIGNAL(clicked()), this, SLOT(slotNext()));
+    connect(previous, SIGNAL(clicked()), this, SLOT(slotPrevious()));
+    connect(replace, SIGNAL(clicked()), this, SLOT(slotReplace()));
+    connect(replaceall, SIGNAL(clicked()), this, SLOT(slotReplaceAll()));
+
+    flags_layout->addWidget(CaseSensitive);
+    flags_layout->addWidget(WholeWords);
+    flags_layout->addWidget(RegularExpression);
+
+    input_layout->addRow("Find:  ", LineEditFind);
+    input_layout->addRow("Replace:  ", LineEditReplacement);
+    input_layout->addWidget(LabelText);
+
+    MainLayout->addLayout(input_layout);
+    MainLayout->addWidget(next);
+    MainLayout->addWidget(previous);
+    MainLayout->addWidget(replace);
+    MainLayout->addWidget(replaceall);
+    MainLayout->addLayout(flags_layout);
 }
 
 /* needs to be called everytime in case of changes */
