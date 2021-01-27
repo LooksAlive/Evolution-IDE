@@ -17,11 +17,11 @@
 #include <QDirIterator>
 #include <QStringList>
 
-class FileManager
+class FileDirManager
 {
 public:
-    FileManager();
-    ~FileManager() = default;
+    FileDirManager();
+    ~FileDirManager() = default;
 
     void getFilesRecursively(const QString &Project_RootDir);
     QString getFileExtension(const QString &filename); // set source_files

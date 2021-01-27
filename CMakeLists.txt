@@ -89,8 +89,8 @@ set(SOURCE_FILES main.cpp
                 Debugger/debuggerwidget.h
                 Clang/indexer.cpp
                 Clang/indexer.h
-                Clang/parser.cpp
-                Clang/parser.h
+        Clang/ClangBridge.cpp
+        Clang/ClangBridge.h
                 llvm/llvmbridge.cpp
                 llvm/llvmbridge.h
 
@@ -112,7 +112,7 @@ set(SOURCE_FILES main.cpp
                 Widgets/CodeInfoDock/CodeInfoDock.cpp
                 Widgets/CodeInfoDock/CodeInfoDock.h
                 Widgets/FileExplorer/NewWindow.cpp
-                Widgets/FileExplorer/NewWindow.h Widgets/Settings/Debugger/DebuggerSettings.cpp Widgets/Settings/Debugger/DebuggerSettings.h Widgets/FileExplorer/SourceTemplates.h Widgets/NodeView/NodeView.cpp Widgets/NodeView/NodeView.h Widgets/PlainTextEdit/GoToLineColumn.cpp Widgets/PlainTextEdit/GoToLineColumn.h)
+                Widgets/FileExplorer/NewWindow.h Widgets/Settings/Debugger/DebuggerSettings.cpp Widgets/Settings/Debugger/DebuggerSettings.h Widgets/FileExplorer/SourceTemplates.h Widgets/NodeView/NodeView.cpp Widgets/NodeView/NodeView.h Widgets/PlainTextEdit/GoToLineColumn.cpp Widgets/PlainTextEdit/GoToLineColumn.h Widgets/ProgressBar/ProgressBar.cpp Widgets/ProgressBar/ProgressBar.h)
 
 
 

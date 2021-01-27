@@ -2,13 +2,13 @@
 #include <QDebug>
 #include <QSettings>
 
-FileManager::FileManager()
+FileDirManager::FileDirManager()
 {
     // QSettings settings;
 }
 
 // run on new thread
-void FileManager::getFilesRecursively(const QString &Project_RootDir){
+void FileDirManager::getFilesRecursively(const QString &Project_RootDir){
 
     QSettings settings("Evolution");
     settings.setValue("Evolution/Project_Root_Dir", Project_RootDir);
@@ -67,12 +67,12 @@ void FileManager::getFilesRecursively(const QString &Project_RootDir){
     settings.setValue("Evolution/sources", source_files);
 }
 
-QString FileManager::getFileExtension(const QString &filename){
+QString FileDirManager::getFileExtension(const QString &filename){
 
     return QFileInfo(filename).suffix();
 }
 
-void FileManager::appendFileExtension(){
+void FileDirManager::appendFileExtension(){
 
     if (QFileInfo(current_file_name).suffix().isEmpty()){
         current_file_name.append(".txt");
@@ -98,7 +98,7 @@ void FileManager::appendFileExtension(){
 
 }
 
-QString FileManager::simple_read(const QString &full_file_path){
+QString FileDirManager::simple_read(const QString &full_file_path){
     QString buffer;
 
     current_full_filepath = full_file_path;
@@ -112,7 +112,7 @@ QString FileManager::simple_read(const QString &full_file_path){
     return buffer;
 }
 
-QString FileManager::read(const QString &full_file_path){
+QString FileDirManager::read(const QString &full_file_path){
 
     QString buffer;
 
@@ -142,7 +142,7 @@ QString FileManager::read(const QString &full_file_path){
 
     return buffer;
 }
-void FileManager::write(const QString &full_file_path, const char *buffer){
+void FileDirManager::write(const QString &full_file_path, const char *buffer){
 
     current_full_filepath = full_file_path;
     // qDebug() << current_full_filepath;
@@ -164,7 +164,7 @@ void FileManager::write(const QString &full_file_path, const char *buffer){
     file.close();
 }
 // later if files will change change also in registry, everywhere
-void FileManager::rename(const QString &old_path, const QString &new_name) {
+void FileDirManager::rename(const QString &old_path, const QString &new_name) {
 
     QFileInfo info(old_path);
     if(info.isDir()){
@@ -186,7 +186,7 @@ void FileManager::rename(const QString &old_path, const QString &new_name) {
     }
 }
 
-void FileManager::duplicate(const QString &file_path) {
+void FileDirManager::duplicate(const QString &file_path) {
     QString buffer = read(file_path);
     QFileInfo finfo(file_path);
     QString path = finfo.absoluteDir().path();
@@ -194,7 +194,7 @@ void FileManager::duplicate(const QString &file_path) {
     write(path + "/" +  name + "_copy", buffer.toStdString().c_str());
 }
 
-void FileManager::move(const QString &old_path, const QString &new_path) {
+void FileDirManager::move(const QString &old_path, const QString &new_path) {
     QFileInfo info(old_path);
     if(info.isFile()){
         QFile file(old_path);

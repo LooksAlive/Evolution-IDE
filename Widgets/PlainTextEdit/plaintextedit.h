@@ -21,7 +21,8 @@
 #include "completer.h"
 
 class LineNumberArea;
-class TextInfoArea;
+class BreakPointArea;
+class Arrow;
 
 class PlainTextEdit : public QPlainTextEdit
 {
@@ -69,15 +70,6 @@ public:
     void setFilePath(const QString &file_path);
     QString getFilePath();
 
-public slots:
-    void toggleComment();
-    void formatFile();
-    void expand();
-    void collapse();
-
-signals:
-    void cursorPositionHasChanged();
-
 protected:
     void keyReleaseEvent(QKeyEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *e) override;
@@ -88,7 +80,8 @@ protected:
 
 private:
     LineNumberArea *LineArea;
-    TextInfoArea *textinfoarea;
+    BreakPointArea *BreakpointArea;
+    Arrow *arrowArea;
 
     QMenu *viewMenu;
     void createMenu();
@@ -102,6 +95,12 @@ private:
     QString file_extension;
     QString file;
     QList<QTextEdit::ExtraSelection> search_selections;  // pairs identical words
+
+public slots:
+    void toggleComment();
+    void formatFile();
+    void expand();
+    void collapse();
 
 private slots:
     void slotShowMenu(const QPoint &pos);
@@ -119,6 +118,7 @@ class LineNumberArea : public QWidget
 public:
     explicit LineNumberArea(PlainTextEdit *edit);
     ~LineNumberArea() = default;
+    // reprezents height, width or area even while changing its dimensions
     QSize sizeHint() const override;
 
 protected:
@@ -134,30 +134,44 @@ private:
     PlainTextEdit *m_Edit;
 };
 
-class TextInfoArea : public QWidget
+class BreakPointArea : public QWidget
 {
 Q_OBJECT
 public:
-    explicit TextInfoArea(PlainTextEdit *edit);
-    ~TextInfoArea() = default;
-    //QSize sizeHint() const override;
-    void buildTextInfoArea();
+    explicit BreakPointArea(PlainTextEdit *edit);
+    ~BreakPointArea() = default;
+    // reprezents height, width or area even while changing its dimensions
+    QSize sizeHint() const override;
 
-    QLabel *position;
+protected:
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
+
+signals:
+    void breakPointCreated();
+    void breakPointDeleted();
 
 private:
     PlainTextEdit *m_Edit;
 
-    /*
+};
+
+class Arrow : public QWidget
+{
+Q_OBJECT
+public:
+    explicit Arrow(PlainTextEdit *edit);
+    ~Arrow() = default;
+    // reprezents height, width or area even while changing its dimensions
+    //QSize sizeHint() const override;
+
 protected:
-    void leaveEvent(QEvent *event) override;
-    void mouseEvent(QMouseEvent *event);
-    void mouseMoveEvent(QMouseEvent *event) override;
-    void mousePressEvent(QMouseEvent *event) override;
-    void mouseReleaseEvent(QMouseEvent *event) override;
-    void paintEvent(QPaintEvent *event) override;
-    void wheelEvent(QWheelEvent *event) override;
-     */
+    //void mouseReleaseEvent(QMouseEvent *event) override;
+    //void paintEvent(QPaintEvent *event) override;
+
+private:
+    PlainTextEdit *m_Edit;
+
 };
 
 #endif // SOURCECODEEDIT_H

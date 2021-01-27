@@ -17,9 +17,8 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
     : QPlainTextEdit(parent)
 {
     LineArea = new LineNumberArea(this);
-    // textinfoarea = new TextInfoArea(this);
+    //BreakpointArea = new BreakPointArea(this);
 
-    //setCornerWidget(reinterpret_cast<QWidget*>(textinfoarea));
     QSettings settings;
     QFont font;
 #ifdef Q_OS_WIN
@@ -47,28 +46,30 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
     setWordWrapMode(QTextOption::WordWrap);
     setReadOnly(false);
 
-
+    // LineArea
     connect(this, &QPlainTextEdit::cursorPositionChanged, this, &PlainTextEdit::slotHighlightCurrentLine);
     connect(this, &QPlainTextEdit::blockCountChanged, this, &PlainTextEdit::slotBlockCountChanged);
     connect(this, &QPlainTextEdit::textChanged, this, &PlainTextEdit::slotTextChanged);
     connect(this, &QPlainTextEdit::updateRequest, this, &PlainTextEdit::slotUpdateRequest);
 
-    connect(new QShortcut(Qt::CTRL | Qt::Key_U, this), &QShortcut::activated, [=] {
+    // BreakpointArea
+
+    connect(new QShortcut(Qt::CTRL + Qt::Key_U, this), &QShortcut::activated, [=] {
         transformText(true);
     });
-    connect(new QShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_U, this), &QShortcut::activated, [=] {
+    connect(new QShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_U, this), &QShortcut::activated, [=] {
         transformText(false);
     });
-    connect(new QShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Up, this), &QShortcut::activated, [=] {
+    connect(new QShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_Up, this), &QShortcut::activated, [=] {
         moveSelection(true);
     });
-    connect(new QShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Down, this), &QShortcut::activated, [=] {
+    connect(new QShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_Down, this), &QShortcut::activated, [=] {
         moveSelection(false);
     });
-    connect(new QShortcut(Qt::CTRL | Qt::Key_Plus, this), &QShortcut::activated, [=] {
+    connect(new QShortcut(Qt::CTRL + Qt::Key_Plus, this), &QShortcut::activated, [=] {
         zoomIn();
     });
-    connect(new QShortcut(Qt::CTRL | Qt::Key_Minus, this), &QShortcut::activated, [=] {
+    connect(new QShortcut(Qt::CTRL + Qt::Key_Minus, this), &QShortcut::activated, [=] {
         zoomOut();
     });
 
@@ -575,6 +576,7 @@ bool PlainTextEdit::find(const QString &search, const QTextDocument::FindFlags &
 
     if(!cursor.isNull()){
         return true;
+        cursor.movePosition(QTextCursor::NextCharacter);
     }else{
         return false;   // no occurrences found
     }
@@ -620,9 +622,8 @@ void PlainTextEdit::replace(const QString &oldText, const QString &newText, cons
 
 void PlainTextEdit::replaceAndFind(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options)
 {
-    if(find(oldText, find_options)){
-        replace(oldText, newText, find_options);
-    }
+    replace(oldText, newText, find_options);
+    findNext(oldText, find_options);
 }
 
 int PlainTextEdit::replaceAll(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options)
@@ -676,7 +677,6 @@ QString PlainTextEdit::getFilePath(){
 
 /* slots
  ------------------------------------------------------------------------- */
-
 void PlainTextEdit::slotShowMenu(const QPoint &pos) {
     viewMenu->exec(viewport()->mapToGlobal(pos));
 }
@@ -696,13 +696,11 @@ void PlainTextEdit::collapse(){
 void PlainTextEdit::slotBlockCountChanged(const int count)
 {
     Q_UNUSED(count)
-    setViewportMargins(LineArea->sizeHint().width(), 0, 0, 0);
+    setViewportMargins(/*BreakpointArea->sizeHint().width() + */LineArea->sizeHint().width(), 0, 0, 0);
 }
 
 void PlainTextEdit::slotHighlightCurrentLine()
 {
-    // for tracking outside
-    emit cursorPositionHasChanged();
     QList<QTextEdit::ExtraSelection> selections;
     if (!isReadOnly()) {
         QTextEdit::ExtraSelection selection;
@@ -799,9 +797,14 @@ void PlainTextEdit::resizeEvent(QResizeEvent *event)
 
 void PlainTextEdit::keyReleaseEvent(QKeyEvent *event)
 {
+    QCursor mouse_cursor = cursor();
     QTextCursor cursor = textCursor();
 
     switch (event->key()) {
+        case Qt::Key_Control:
+        case Qt::CTRL:
+            mouse_cursor.setShape(Qt::DragMoveCursor);
+            break;
         case Qt::Key_Backtab:
         case Qt::Key_Tab: {
             bool forward = !QApplication::keyboardModifiers().testFlag(Qt::ShiftModifier);
@@ -810,7 +813,7 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event)
                 return;
             } else if (forward) {
                 QString text = TABS_TO_SPACES ? QString(TAB_STOP_WIDTH, ' ') : QChar('\t');
-                QTextCursor cursor = textCursor();
+                //QTextCursor cursor = textCursor();
                 cursor.insertText(text);
                 setTextCursor(cursor);
                 event->accept();
@@ -913,10 +916,7 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event)
 /* LineNumberArea widget
 ------------------------------------------------------------------------- */
 
-LineNumberArea::LineNumberArea(PlainTextEdit *edit)
-    : QWidget(edit), m_Edit(edit)
-{
-}
+LineNumberArea::LineNumberArea(PlainTextEdit *edit) : QWidget(edit), m_Edit(edit){}
 
 void LineNumberArea::leaveEvent(QEvent *e)
 {
@@ -1010,14 +1010,30 @@ void LineNumberArea::wheelEvent(QWheelEvent *e)
 /* TextInfoArea widget
 ------------------------------------------------------------------------- */
 
-TextInfoArea::TextInfoArea(PlainTextEdit *edit) : QWidget(edit), m_Edit(edit)
-{
-    buildTextInfoArea();
+BreakPointArea::BreakPointArea(PlainTextEdit *edit) : QWidget(edit), m_Edit(edit){}
+
+QSize BreakPointArea::sizeHint() const {
+    int digits = 1;
+    int blocks = qMax(1, m_Edit->blockCount());
+    while (blocks >= 10) {
+        blocks /= 10;
+        digits++;
+    }
+    digits++;
+    digits++;
+    return QSize((3 + (m_Edit->fontMetrics().width('8') * digits)), 0);
 }
 
-void TextInfoArea::buildTextInfoArea() {
-    position = new QLabel(this);
-    QPoint poss = m_Edit->getCursorPosition();
-    QString pos = "row: " + QString::number(poss.x()) + " col: " + QString::number(poss.y());
-    position->setText(pos);
+void BreakPointArea::mouseReleaseEvent(QMouseEvent *event) {
+    //QPixmap breakpoint;
+    //breakpoint.load(IconFactory::BreakPoint);
+    //breakpoint.width();breakpoint.height();
+    //breakPointCreated();
+    //breakPointDeleted();
+    QWidget::mouseReleaseEvent(event);
 }
+
+void BreakPointArea::paintEvent(QPaintEvent *event) {
+    QWidget::paintEvent(event);
+}
+

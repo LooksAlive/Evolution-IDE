@@ -148,17 +148,23 @@ void MainWindow::SetupVerticalBar(){
 
 void MainWindow::SetupStatusBar() {
     statusbar = new QStatusBar(this);
+    progress = new ProgressBar(this);
+    progress_tag = new QLabel(this);
     btn_encoding = new QToolButton(this);
     btn_position = new QToolButton(this);
 
-    statusbar->setFixedHeight(30);
+    statusbar->setContentsMargins(0, 0, 0, 0);
+    statusbar->setFixedHeight(25);
     statusbar->setMouseTracking(true);
+    progress_tag->setText(""); // indexing... or else
+    // progress->setVisible(false);
     btn_encoding->setText("UTF-8");
     btn_encoding->setFixedWidth(50);
     btn_position->setFixedWidth(70);
     connect(btn_position, SIGNAL(clicked()), this, SLOT(slotGoToLine()));
 
-
+    statusbar->addWidget(progress_tag);
+    statusbar->addWidget(progress);
     statusbar->addWidget(btn_position);
     statusbar->addWidget(btn_encoding);
     setStatusBar(statusbar);
@@ -197,6 +203,8 @@ void MainWindow::SetupMenuBar() {
     QMenu* fileMenu = new QMenu("File");
     QMenu* editMenu = new QMenu("Edit");
     QMenu* viewMenu = new QMenu("View");
+    QMenu* DebugMenu = new QMenu("Debug");
+    QMenu* AnalyzeMenu = new QMenu("Analyze");
     QMenu* HelpMenu = new QMenu("Help");
 
     /* actions under specific menu section, some shortcuts are random :) */
@@ -220,10 +228,13 @@ void MainWindow::SetupMenuBar() {
     editMenu->addAction(QIcon(IconFactory::Undo), "Undo", this, SLOT(slotUndo()), Qt::CTRL + Qt::Key_Z);
     editMenu->addAction(QIcon(IconFactory::Redo), "Redo", this, SLOT(slotRedo()), Qt::CTRL + Qt::SHIFT + Qt::Key_X);
     editMenu->addAction("Remove All", this, SLOT(slotRemoveAll()), Qt::CTRL + Qt::Key_Backspace);
+    editMenu->addAction("Expand", this, SLOT(slotExpand()));
+    editMenu->addAction("Collapse", this, SLOT(slotCollapse()));
+
     editMenu->addAction(QIcon(IconFactory::SelectAll), "Select All", this, SLOT(slotSelectAll()), Qt::CTRL + Qt::Key_A);
     editMenu->addSeparator();
     editMenu->addAction(QIcon(IconFactory::Comment),"toggle comment", this, SLOT(slotToggleComment()), Qt::CTRL + Qt::SHIFT + Qt::Key_C);
-    editMenu->addAction("Format Code", this, SLOT(), Qt::CTRL + Qt::SHIFT + Qt::Key_F);
+    editMenu->addAction("Format Code", this, SLOT(slotFormat()), Qt::CTRL + Qt::SHIFT + Qt::Key_F);
 
     viewMenu->addAction(Explorer->toggleViewAction());
     viewMenu->addAction(Docker->toggleViewAction());
@@ -234,12 +245,36 @@ void MainWindow::SetupMenuBar() {
     viewMenu->addAction(QIcon(IconFactory::FullScreen), "Full Screen", this, SLOT(slotFullScreen()));
     viewMenu->addAction("Converter", this, SLOT(SetupConverter()));
 
+
+    DebugMenu->addAction(QIcon(IconFactory::StartDebug), "Start Debug", this, SLOT(slotStartDebug()), Qt::Key_F5);
+    DebugMenu->addAction(QIcon(IconFactory::StopDebug), "Stop Debug", this, SLOT(slotStopDebug()));
+    DebugMenu->addAction(QIcon(IconFactory::RunToCursor), "Run to cursor", this, SLOT(slotRunToCursor()));
+    DebugMenu->addAction(QIcon(IconFactory::Resume), "Continue Debug", this, SLOT(slotContinue()));
+    DebugMenu->addSeparator();
+    DebugMenu->addAction(QIcon(IconFactory::NextLine), "Step Over", this, SLOT(slotStepOver()), Qt::Key_F6);
+    DebugMenu->addAction(QIcon(IconFactory::StepInto), "Step Into", this, SLOT(slotStepInto()), Qt::Key_F7);
+    DebugMenu->addAction(QIcon(IconFactory::NextInstruction), "Next Instruction", this, SLOT(slotStepInstruction()));
+    DebugMenu->addAction(QIcon(IconFactory::GetOutOfFunction), "Step Out", this, SLOT(slotStepOut()));
+    DebugMenu->addSeparator();
+    DebugMenu->addAction("Toggle Breakpoint", this, SLOT(slotToggleBreakPoint()), Qt::Key_F9);
+    DebugMenu->addAction("Set breakpoint at line", this, SLOT(slotSetBreakpointAtLine()), Qt::SHIFT + Qt::Key_F9);
+    DebugMenu->addAction("Show All Breakpointsts", this, SLOT(slotShowBreakpointsList()));
+
+
+
+    AnalyzeMenu->addAction( "Run Clang-Tidy", this, SLOT(slotClangTidy()));
+    AnalyzeMenu->addAction( "Run Clang-Check", this, SLOT(slotClangCheck()));
+    AnalyzeMenu->addAction( "Run Valgrind", this, SLOT(slotValgrind()));
+    AnalyzeMenu->addAction( "Run Gbd-Gui", this, SLOT(slotGdbGui()));
+
     HelpMenu->addAction("About Evolution", this, SLOT(slotAbout()));
 
     /* replace ui; decide if use namespace or just MainWindow->declared int .h as private pointer  */
     menuBar->addMenu(fileMenu);
     menuBar->addMenu(editMenu);
     menuBar->addMenu(viewMenu);
+    menuBar->addMenu(DebugMenu);
+    menuBar->addMenu(AnalyzeMenu);
     menuBar->addMenu(HelpMenu);
 
     setMenuBar(menuBar);
@@ -379,7 +414,7 @@ void MainWindow::SetupFileExplorer() {
     Explorer = new FileExplorer(this);
     // Explorer->setRootDirectory(QDir::homePath());
 
-    connect(Explorer->FileView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(OpenFile(QModelIndex)));/* double click */
+    connect(Explorer->FileView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(OpenFile(QModelIndex)));
     addDockWidget(Qt::LeftDockWidgetArea, Explorer); /* show at left side; function for MainWindow */
 }
 
@@ -405,7 +440,7 @@ void MainWindow::SetupCompileDock(){
 }
 
 void MainWindow::slotFind(){
-    find_replace->toggleViewAction();
+    find_replace->setVisible(true);   // insted of toggleViewAction()
     find_replace->LineEditFind->setFocus();
     QString text = currentWidget->textCursor().selectedText();
     if(!text.isEmpty()){
@@ -465,13 +500,18 @@ void MainWindow::CreateFile() {
     PlainTextEdit* NewPlainText = new PlainTextEdit;
     int index = Tabs->addTab(NewPlainText, NEW_TAB_NAME);
     NewPlainText->setFilePath("");
+
     Tabs->setCurrentIndex(index);
     Tabs->setTabToolTip(index, "");
     Tabs->setTabWhatsThis(index, "No changes");
 
     currentWidget = qobject_cast<PlainTextEdit *>(Tabs->widget(index));
+    // go to line/column
     connect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotTextPositionChanged()));
-    connect(NewPlainText, SIGNAL(textChanged()), this, SLOT(UpdateParameter()));
+    connect(currentWidget, SIGNAL(textChanged()), this, SLOT(UpdateParameter()));
+    // breakpoints
+    //connect(currentWidget, SIGNAL(breakPointCreated()), this, SLOT(slotToggleBreakPoint()));
+    //connect(currentWidget, SIGNAL(breakPointDeleted()), this, SLOT(slotDeleteBreakPoint()));
 
     // file dock
     QListWidgetItem* new_item = new QListWidgetItem;
@@ -537,9 +577,10 @@ void MainWindow::OpenFile(const QString& filepath) {
     }
 
 
-
     // tab
-    int index = Tabs->addTab(new_text_edit, file_manager.current_file_name);
+    // icon fro tab
+    QFileIconProvider provider;
+    int index = Tabs->addTab(new_text_edit,provider.icon(QFileInfo(filepath)),  file_manager.current_file_name);
     Tabs->setCurrentIndex(index);
     Tabs->setTabToolTip(index, file_manager.current_full_filepath);
     Tabs->setTabWhatsThis(index, "No changes");
@@ -726,6 +767,9 @@ void MainWindow::OpenFile(QModelIndex file_index) {
 
         currentWidget = qobject_cast<PlainTextEdit *>(Tabs->widget(Tabs->currentIndex()));
         connect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotTextPositionChanged()));
+        // breakpoints
+        //connect(currentWidget, SIGNAL(breakPointCreated()), this, SLOT(slotToggleBreakPoint()));
+        //connect(currentWidget, SIGNAL(breakPointDeleted()), this, SLOT(slotDeleteBreakPoint()));
     }
 }
 
@@ -885,6 +929,7 @@ void MainWindow::UpdateCurrentIndexOnDelete(int) {
     Docker->DockerFileList->setCurrentRow(Docker->DockerFileList->count() - 1);
 }
 
+// text operations
 void MainWindow::slotCopy() {
     currentWidget->copy();
 }
@@ -912,12 +957,14 @@ void MainWindow::slotRemoveAll() {
     currentWidget->clear();
 }
 
-
-
-// text operations
 void MainWindow::slotToggleComment() {
     currentWidget->toggleComment();
 }
+
+void MainWindow::slotFormat() {
+
+}
+
 
 void MainWindow::slotFullScreen() {
     if(isFullScreen()){
@@ -948,5 +995,70 @@ void MainWindow::slotStopProcess() {
         console_dock->setRawOutput("No Process attached");
     }
 
+}
+
+void MainWindow::slotStartDebug() {
+    if(!debuggerView->isActiveWindow()){
+        showDebuggerView();
+    }
+    debuggerView->slotStartDebug();
+}
+
+void MainWindow::slotStopDebug() {
+    debuggerView->slotStopDebug();
+}
+
+void MainWindow::slotContinue() {
+    debuggerView->slotStopDebug();
+}
+
+void MainWindow::slotRunToCursor() {
+    debuggerView->slotRunToCursor();
+}
+
+void MainWindow::slotStepOver() {
+    debuggerView->slotStepOver();
+}
+
+void MainWindow::slotStepInto() {
+    debuggerView->slotStepInto();
+}
+
+void MainWindow::slotStepInstruction() {
+    debuggerView->slotStepInstruction();
+}
+
+void MainWindow::slotStepOut() {
+    debuggerView->slotStepOut();
+}
+
+void MainWindow::slotToggleBreakPoint() {
+    QString filename = currentWidget->getFilePath();
+    int line = currentWidget->getCursorPosition().y();
+
+    if(!filename.isEmpty() && line != 0){
+        debuggerView->debugger.setBreakpoint(filename.toStdString().c_str(), line);
+    }
+}
+
+void MainWindow::slotDeleteBreakPoint() {
+    QString filename = currentWidget->getFilePath();
+    int line = currentWidget->getCursorPosition().y();
+
+    if(!filename.isEmpty() && line != 0){
+        debuggerView->debugger.setBreakpoint(filename.toStdString().c_str(), line);
+    }
+}
+
+void MainWindow::slotSetBreakpointAtLine() {
+    QString filepath = currentWidget->getFilePath();
+    if(!filepath.isEmpty()){
+        debuggerView->showSetManualBreakPoint(filepath);
+    }
+
+}
+
+void MainWindow::slotShowBreakpointsList() {
+    debuggerView->showBreakPointsList();
 }
 

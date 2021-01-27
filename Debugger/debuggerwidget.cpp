@@ -282,7 +282,7 @@ void DebuggerWidget::slotCmdlineExecute() {
 
 
 void DebuggerWidget::setStartFilePosition(const QString &file_path, const int &line) {
-    FileManager fmanager;
+    FileDirManager fmanager;
     QString content = fmanager.simple_read(file_path);  // wants a QString !!!
     source_view->setPlainText(content);
     source_view->setCursorAtLine(line);   // later maybe some effect
@@ -298,6 +298,52 @@ void DebuggerWidget::setExecutable(const std::string &exe_file_path) {
     //QSettings settings("Evolution");
     //debugger.executable = settings.value("Evolution/executable_path").toString().toStdString().c_str();
     //qDebug() << debugger.executable;
+}
+
+void DebuggerWidget::slotToggleBreakPoint() {
+    // debugger.setBreakpoint();
+}
+
+void DebuggerWidget::showBreakPointsList() {
+    QWidget *window = new QWidget(this);
+    QListWidget *break_list = new QListWidget(this);
+    QVBoxLayout *layout = new QVBoxLayout();
+    layout->addWidget(break_list);
+    window->setWindowFlags(Qt::Dialog);
+    for (int i = 0; i < debugger.BreakPointList.size(); i++) {
+        QListWidgetItem *item = new QListWidgetItem(break_list, i);
+        item->setIcon(QIcon(IconFactory::BreakPoint));
+        QString info = QString("ID: ") + QString::number(debugger.BreakPointList[i].break_id) + ", line: " +
+                QString::number(debugger.BreakPointList[i].line) + " File: " + debugger.BreakPointList[i].filename;
+        item->setText(info);
+        break_list->addItem(item);
+    }
+
+    window->setLayout(layout);
+    window->show();
+}
+
+void DebuggerWidget::showSetManualBreakPoint(const QString &filepath) {
+    file_path = filepath.toStdString().c_str();
+    window = new QWidget(this);
+    line_input = new QLineEdit(this);
+    QVBoxLayout *layout = new QVBoxLayout();
+    QFormLayout *form = new QFormLayout();
+    window->setWindowFlags(Qt::Dialog);
+    form->addRow("line: ", line_input);
+    layout->addLayout(form);
+    connect(line_input, SIGNAL(returnPressed()), this, SLOT(slotSetBreakPointByManualLine()));
+
+    window->setLayout(layout);
+    window->show();
+}
+
+void DebuggerWidget::slotSetBreakPointByManualLine() {
+    int line = line_input->text().toInt();
+    if(line != 0){
+        debugger.setBreakpoint(file_path, line);
+    }
+    window->close();
 }
 
 

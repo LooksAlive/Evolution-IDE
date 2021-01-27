@@ -6,6 +6,8 @@
 #include <QGridLayout>
 #include <QWidget>
 #include <QTabWidget>
+#include <QFileIconProvider>
+
 //#include <QSyntaxHighlighter>
 #include <QString>
 #include <QMenu>
@@ -61,6 +63,8 @@
 #include "Widgets/Converter/converter.h"
 #include "Widgets/Settings/CmakeGenerator/cmakegenerator.h"
 #include "commandlineexecutor.h"
+#include "Widgets/ProgressBar/ProgressBar.h"
+//#include "Clang/ClangBridge.h"
 
 #include "Widgets/NodeView/NodeView.h"
 #include "Widgets/HexView/hexview.h"
@@ -125,6 +129,8 @@ private:
 
     // Status Bar
     QStatusBar *statusbar;
+    ProgressBar *progress;
+    QLabel *progress_tag;
     QToolButton *btn_position;
     QToolButton *btn_encoding;
 
@@ -137,7 +143,7 @@ private:
     // connected when new file is created and tab changed, disconnected when deleted
     PlainTextEdit *currentWidget;
     /* file manager */
-    FileManager file_manager;
+    FileDirManager file_manager;
 
     /* explorer stuffs */
     FileExplorer *Explorer;
@@ -150,6 +156,7 @@ private:
 
     /* code info related stuffs dock */
     CodeInfoDock *codeInfoDock;
+    //ClangBridge clang_parser;     // need some arguments
 
     /* Converter - small widget */
     Converter *converter;
@@ -238,6 +245,7 @@ private slots:
     void slotPaste();
     void slotSelectAll();
     void slotRemoveAll();
+    void slotFormat();
 
     void slotAbout();
     void slotFullScreen();
@@ -247,6 +255,24 @@ private slots:
 
     void slotStopProcess();
     void slotTextPositionChanged();
+
+
+    // debugger
+    void slotStartDebug();
+    void slotStopDebug();
+    void slotContinue();
+    void slotRunToCursor();
+
+    void slotStepOver();
+    void slotStepInto();
+    void slotStepInstruction();
+    void slotStepOut();
+
+    void slotToggleBreakPoint();
+    void slotDeleteBreakPoint();
+    void slotSetBreakpointAtLine();
+    void slotShowBreakpointsList();
+
 
 private:
     // files operation variables

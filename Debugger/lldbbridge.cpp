@@ -97,7 +97,7 @@ void lldbBridge::setBreakpoint(const char *file_name, const int &line) {
 	if (!breakpoint.IsValid()) {
 	    setReport("Breakpoint is not valid:  filename: ");
 	    setReport(file_name);
-        setReport((char*)line);
+        //setReport(line);
         return;
 	}
 

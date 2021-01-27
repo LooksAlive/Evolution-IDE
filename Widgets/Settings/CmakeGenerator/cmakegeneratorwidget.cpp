@@ -25,6 +25,8 @@ CMakeGeneratorWidget::~CMakeGeneratorWidget(){}
 void CMakeGeneratorWidget::createMainWindow() {
     MainLayout = new QFormLayout(this);
 
+    generate_cmake = new QCheckBox(this);
+    cmake_path = new QLineEdit(this);
     compiler = new QLineEdit(this);
     compile_flags = new QLineEdit(this);
     cpu_cores = new QLineEdit(this);
@@ -32,7 +34,10 @@ void CMakeGeneratorWidget::createMainWindow() {
 
     MainLayout->setContentsMargins(10, 10, 10, 10);
     MainLayout->setSpacing(5);
+    setDefaultSettings();       // *********************************************************************
 
+    MainLayout->addRow("Generate cmake: ", generate_cmake);
+    MainLayout->addRow("Cmake path: ", cmake_path);
     MainLayout->addRow("Compiler ", compiler);
     MainLayout->addRow("Compile Flags: ", compile_flags);
     MainLayout->addRow("CPU Cores ", cpu_cores);
@@ -48,6 +53,7 @@ void CMakeGeneratorWidget::getCompilerVersion() {
 
 
 void CMakeGeneratorWidget::setDefaultSettings() {
+    generate_cmake->setChecked(true);
     compiler->setText("clang++-10");
     compile_flags->setText("-O0 -g -Wall");
     cpu_cores->setText("3");
@@ -72,10 +78,14 @@ void CMakeGeneratorWidget::manageSourceFiles() {
 void CMakeGeneratorWidget::loadData() {
 
     QSettings settings("Evolution");
+    bool generate = settings.value("Evolution/generate_cmake").toBool();
+    QString cmakePath = settings.value("Evolution/cmake_path").toString();
     QString co = settings.value("Evolution/compiler").toString();
     QString cf = settings.value("Evolution/compile_flags").toString();
     QString cr = settings.value("Evolution/cpu_cores").toString();
 
+    generate_cmake->setCheckable(generate);
+    cmake_path->setText(cmakePath);
     compiler->setText(co);
     compile_flags->setText(cf);
     cpu_cores->setText(cr);

@@ -9,38 +9,39 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QDialog(parent)
     SettingsWindow::setMinimumSize(500, 400);
 
     OuterLayout = new QVBoxLayout(this);
+    createButtons();
     OuterLayout->addLayout(buildForm());
-    OuterLayout->addWidget(buildButtonBox());
-    OuterLayout->setContentsMargins(4, 4, 4, 4);
+    OuterLayout->setContentsMargins(0, 0, 0, 0);
     OuterLayout->setSpacing(2);
     setAttribute(Qt::WA_DeleteOnClose);
 
     slotLoadData();
 }
 
-SettingsWindow::~SettingsWindow(){ /* if some changes -> ask to save or not. */}
-
-
-QWidget *SettingsWindow::buildButtonBox()
+void SettingsWindow::createButtons()
 {
-    ButtonBox = new QDialogButtonBox(QDialogButtonBox::Save | QDialogButtonBox::Cancel, this); // Save
+    buttonsLayout = new QHBoxLayout();
+    btn_save = new QPushButton(this);
+    btn_close = new QPushButton(this);
+    btn_save->setText("Save");
+    btn_close->setText("Close");
+    btn_save->setFixedWidth(60);
+    btn_close->setFixedWidth(60);
 
-    /*
-    connect(m_ButtonBox, &QDialogButtonBox::accepted, m_AppearanceSettingsWidget, &AppearanceSettingsWidget::save);
-    connect(m_ButtonBox, &QDialogButtonBox::accepted, m_BinarySettingsWidget, &BinarySettingsWidget::save);
-    connect(m_ButtonBox, &QDialogButtonBox::accepted, m_SigningConfigWidget, &SigningConfigWidget::save);
-    */
-    connect(ButtonBox, &QDialogButtonBox::accepted, this, &SettingsWindow::accept);
-    connect(ButtonBox, &QDialogButtonBox::rejected, this, &SettingsWindow::reject);
+    connect(btn_save, SIGNAL(clicked()), this, SLOT(slotSaveData()));
+    connect(btn_close, SIGNAL(clicked()), this, SLOT(close()));
 
-    return ButtonBox;
+    buttonsLayout->addWidget(btn_save, Qt::AlignRight);
+    buttonsLayout->addWidget(btn_close, Qt::AlignRight);
+
 }
 
 QLayout *SettingsWindow::buildForm()
 {
     InnerLayout = new QHBoxLayout();
-    OptionsList = new QListWidget();
+    OuterLayout = new QVBoxLayout();
     WidgetStack = new QStackedWidget();
+    OptionsList = new QListWidget(this);
 
     cmake = new CMakeGeneratorWidget(this);
     git = new GitWidget(this);
@@ -65,7 +66,9 @@ QLayout *SettingsWindow::buildForm()
     WidgetStack->addWidget(git);
     connect(OptionsList, &QListWidget::currentRowChanged, WidgetStack, &QStackedWidget::setCurrentIndex);
 
-    return InnerLayout;
+    OuterLayout->addLayout(InnerLayout);
+    OuterLayout->addLayout(buttonsLayout);
+    return OuterLayout;
 }
 
 void SettingsWindow::slotSaveData() {
@@ -73,6 +76,8 @@ void SettingsWindow::slotSaveData() {
     git->saveData();
     appearence->saveData();
     debugger->saveData();
+
+    close();
 }
 
 void SettingsWindow::slotLoadData() {

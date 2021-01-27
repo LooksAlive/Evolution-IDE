@@ -3,13 +3,15 @@
 Tab::Tab(QWidget *parent) : QTabWidget(parent)
 {
     /* QTabWidget inherited functions */
-    Tab::setMovable(true);
-    Tab::setTabsClosable(true);
-    Tab::setUsesScrollButtons(true);
-    Tab::setTabPosition(QTabWidget::North);
-    Tab::setTabShape(QTabWidget::Rounded);
-    // setElideMode(Qt::ElideRight); // not enoght space for tab name -> smth...
-
+    setMovable(true);
+    setMouseTracking(true);
+    setTabsClosable(true);
+    setUsesScrollButtons(true);
+    setAcceptDrops(true);
+    setTabPosition(QTabWidget::North);
+    setTabShape(QTabWidget::Rounded);
+    // setElideMode(Qt::ElideRight); // not enough space for tab name -> smth...
+    setFocusPolicy(Qt::ClickFocus);
 
     /* add + button to add a tab; connect with it */
     AddNewTabButton = new QToolButton(this);

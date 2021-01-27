@@ -52,6 +52,8 @@ private:
 
     QFormLayout *MainLayout;
 
+    QCheckBox *generate_cmake;
+    QLineEdit *cmake_path;
     QLineEdit *compiler;
     QLineEdit *compile_flags;
     QLineEdit *cpu_cores;

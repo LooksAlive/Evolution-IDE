@@ -5,6 +5,7 @@
 #include <QListWidget>
 #include <QStackedWidget>
 #include <QDialog>
+#include <QPushButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QPlainTextEdit>
@@ -20,7 +21,7 @@ class SettingsWindow : public QDialog
     Q_OBJECT
 public:
     explicit SettingsWindow(QWidget *parent = nullptr);
-    ~SettingsWindow();
+    ~SettingsWindow() = default;
 
 private:
 
@@ -35,7 +36,11 @@ private:
     AppearenceWidget *appearence;
     DebuggerSettings *debugger;
 
-    QWidget *buildButtonBox();
+    QHBoxLayout *buttonsLayout;
+    QPushButton *btn_save;
+    QPushButton *btn_close;
+
+    void createButtons();
     QLayout *buildForm();
 
 

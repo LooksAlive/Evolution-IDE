@@ -4,6 +4,7 @@ Converter::Converter(QWidget *parent) : QWidget(parent)
 {
     setLayout(BuildForm());
     setMinimumSize(300, 300);
+    setWindowFlags(Qt::Dialog);
 
     connect(convert_button, &QPushButton::clicked, this, &Converter::slotConvert);
 }

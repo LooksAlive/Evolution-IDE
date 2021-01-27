@@ -43,6 +43,15 @@ public:
     void setStartFilePosition(const QString &file_path, const int &line);
     void setExecutable(const std::string &exe_file_path);
 
+    lldbBridge debugger;    // debugger instance for direct ...
+
+    // small list widget with information
+    void showBreakPointsList();
+    void showSetManualBreakPoint(const QString &filepath);
+    QWidget *window;
+    QLineEdit *line_input;
+    const char *file_path;
+
 private:
 
     QHBoxLayout *MainWindowLayout;  // SourceConsoleLayout + debug_variable_window
@@ -78,14 +87,10 @@ private:
 
     void buildDebugVariableWindow();
 
-    lldbBridge debugger;
-
     // managed by breakpoints, position will be gathered from debug symbols
     void setFilePosition();
 
-private slots:
-
-
+public slots:
     void slotStepOver();
     void slotStepInto();
     void slotStepOut();
@@ -97,7 +102,13 @@ private slots:
     void slotStopDebug();
     void slotRunToCursor();
 
+    void slotToggleBreakPoint();
+
+private slots:
+
     void slotCmdlineExecute();
+
+    void slotSetBreakPointByManualLine();
 
     /*
     void onActionAddWatch();
