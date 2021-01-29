@@ -208,15 +208,33 @@ void DebuggerWidget::buildDebugVariableWindow() {
 // -----------------------------------------------------------------------------------------
 
 void DebuggerWidget::slotStartDebug() {
+    btn_StartDebug->setEnabled(false);
+
+    btn_StepOver->setEnabled(false);
+    btn_StepInto->setEnabled(false);
+    btn_StepInstruction->setEnabled(false);
+    btn_Continue->setEnabled(false);
+    btn_StepOut->setEnabled(false);
+
     debugger.start();
+    // running
+    // also make sure this feature is done by program to exit normally, but remain in error states
+    btn_StepOver->setEnabled(true);
+    btn_StepInto->setEnabled(true);
+    btn_StepInstruction->setEnabled(true);
+    btn_Continue->setEnabled(true);
+    btn_StepOut->setEnabled(true);
 
     if(debugger.report != ""){
         debug_output->appendPlainText(debugger.report.c_str());
     }
+    btn_StartDebug->setEnabled(true);
 }
 
 void DebuggerWidget::slotStopDebug() {
     debugger.stop();
+    // can run again
+    btn_StartDebug->setEnabled(true);
 
     if(debugger.report != ""){
         debug_output->appendPlainText(debugger.report.c_str());
@@ -261,7 +279,7 @@ void DebuggerWidget::slotStepInstruction() {
 }
 
 void DebuggerWidget::slotContinue() {
-    if(debugger.isRunning()){
+    if(debugger.isRunning){
         debugger.Continue();
     }else{
         return;
@@ -306,17 +324,26 @@ void DebuggerWidget::slotToggleBreakPoint() {
 
 void DebuggerWidget::showBreakPointsList() {
     QWidget *window = new QWidget(this);
-    QListWidget *break_list = new QListWidget(this);
+    QTreeWidget *tree = new QTreeWidget(this);
+    //QListWidget *break_list = new QListWidget(this);
     QVBoxLayout *layout = new QVBoxLayout();
-    layout->addWidget(break_list);
+    window->setFixedWidth(500);
+    tree->setColumnCount(3);
+    tree->setHeaderLabels(QStringList() << "ID" << "File" << "Line");
+    //layout->addWidget(break_list);
+    layout->addWidget(tree);
     window->setWindowFlags(Qt::Dialog);
     for (int i = 0; i < debugger.BreakPointList.size(); i++) {
-        QListWidgetItem *item = new QListWidgetItem(break_list, i);
-        item->setIcon(QIcon(IconFactory::BreakPoint));
-        QString info = QString("ID: ") + QString::number(debugger.BreakPointList[i].break_id) + ", line: " +
-                QString::number(debugger.BreakPointList[i].line) + " File: " + debugger.BreakPointList[i].filename;
-        item->setText(info);
-        break_list->addItem(item);
+        //QListWidgetItem *item = new QListWidgetItem(break_list, i);
+        QTreeWidgetItem *item = new QTreeWidgetItem(i);
+        item->setIcon(0, QIcon(IconFactory::BreakPoint));  // icon to begining
+        //QString info = QString("ID: ") + QString::number(debugger.BreakPointList[i].break_id) + ", line: " +
+        //        QString::number(debugger.BreakPointList[i].line) + " File: " + debugger.BreakPointList[i].filename;
+        item->setText(0, QString::number(debugger.BreakPointList[i].break_id));
+        item->setText(1, debugger.BreakPointList[i].filename);
+        item->setText(2, QString::number(debugger.BreakPointList[i].line));
+        //break_list->addItem(item);
+        tree->addTopLevelItem(item);
     }
 
     window->setLayout(layout);
@@ -344,6 +371,13 @@ void DebuggerWidget::slotSetBreakPointByManualLine() {
         debugger.setBreakpoint(file_path, line);
     }
     window->close();
+}
+
+void DebuggerWidget::showTaskManager() {
+    TaskWidget *task = new TaskWidget(this);
+    task->setFilterVisable(true);
+    task->show();
+    // debugger.attachToRunningProcess(some id);    // add signal from task and slot from here
 }
 
 

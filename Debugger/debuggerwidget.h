@@ -26,10 +26,13 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QFormLayout>
+#include <QTreeWidget>
+
 
 
 #include "Widgets/PlainTextEdit/plaintextedit.h"
 #include "filemanager.h"
+#include "TaskWidget/taskwidget.h"
 #include "lldbbridge.h"
 
 class DebuggerWidget : public QWidget
@@ -47,6 +50,8 @@ public:
 
     // small list widget with information
     void showBreakPointsList();
+    // task view to attach running already process
+    void showTaskManager();
     void showSetManualBreakPoint(const QString &filepath);
     QWidget *window;
     QLineEdit *line_input;

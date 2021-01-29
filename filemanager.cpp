@@ -1,7 +1,6 @@
 #include "filemanager.h"
 #include <QDebug>
 #include <QSettings>
-
 FileDirManager::FileDirManager()
 {
     // QSettings settings;

@@ -4,7 +4,6 @@ lldbBridge::lldbBridge(){}
 
 lldbBridge::~lldbBridge() {
     lldb::pid_t pid = Process.GetProcessID();
-    std::cout << std::string("Killing process ") + char(pid) << std::endl;  // not added pid, bad conversion
     setReport("Killing process ");
     Process.Kill();
     SBDebugger::Terminate();
@@ -12,25 +11,26 @@ lldbBridge::~lldbBridge() {
 
 void lldbBridge::init() {
 
-    SBDebugger::Initialize();
-    Debugger = SBDebugger::Create(true);
+    error = SBDebugger::InitializeWithErrorHandling();
+    Debugger = SBDebugger::Create();
     // Create a debugger instance so we can create a target
     if (!Debugger.IsValid()){
         setReport("Error: failed to create a debugger object\n");
         SBStream str;
         Debugger.GetDescription(str);
         setReport(str.GetData());
+        std::cout << str.GetData();
         return;
     }
+    // this should be set on the begining
     Target = Debugger.CreateTarget(executable);
-
 
     strm.RedirectToFileHandle(stdout, false);
 
 
     if(addr_cstr == nullptr) {
         setReport("empty address");
-        exit(1);
+        return;
     }
 // The second argument in the address that we want to lookup
 //lldb::addr_t file_addr = strtoull(addr_cstr, nullptr, 0);
@@ -47,7 +47,7 @@ void lldbBridge::init() {
     module_spec.SetFileSpec(SBFileSpec(executable));
     if(!module_spec.IsValid()){
         std::cout <<"Loaded not valid executable, Exiting " << std::endl;
-        exit(1);
+        return;
     }
     SBModule module(module_spec);
 
@@ -62,7 +62,230 @@ void lldbBridge::init() {
     }
 }
 
-void lldbBridge::setFrame(SBFrame frame) {
+void lldbBridge::start() {
+    init();
+
+    if (!Target.IsValid()) {
+        setReport("Cannot start a debugger process with an invalid target: ");
+        std::cout << "Cannot start a debugger process with an invalid target: \n";
+        std::cout << executable;
+        setReport(executable);
+        return;
+    }
+
+    setBreakpoint("main.cpp", 5);
+    setBreakpoint("main.cpp", 6);
+    setBreakpoint("main.cpp", 7);
+
+    listener = Debugger.GetListener();
+    //Process = Target.LaunchSimple(nullptr, nullptr, nullptr);
+    Process = Target.Launch(listener, nullptr, nullptr, nullptr, nullptr,
+                            nullptr, nullptr, 0, false, error);
+
+    if(!Process.IsValid()){
+        setReport("Process is invalid \n");
+        std::cout << "Process is invalid \n";
+        SBStream str;
+        Process.GetDescription(str);
+        std::cout << str.GetData();
+        //return;
+    }
+
+
+    std::thread debug_thread(&lldbBridge::setProcessInterruptFeatures, this); // , "Debug_session"
+    debug_thread.detach(); // join
+    // do not join, since i do not want to want for thread to end
+}
+
+void lldbBridge::stop() {
+    Process.Stop();
+}
+
+void lldbBridge::setProcessInterruptFeatures() {
+    const uint32_t event_timeout_secs = 10; // Wait for 10 seconds for an event. You can set this to be longer if you want like UINT32_MAX to wait forever.
+    bool done = false;
+    std::cout << "Im finally in !!!! \n";
+    while (!done) {
+        SBEvent event;
+        // frameDescribeLocation();
+
+
+        if (listener.WaitForEvent(event_timeout_secs, event)) {
+            if (SBProcess::EventIsProcessEvent(event)) {
+                // Handle process event
+                done = HandleProcessEvent(event);
+            }
+            else if (SBTarget::EventIsTargetEvent(event)) {
+                // Handle target event
+                //done = HandleTargetEvent(event);
+            }
+        }
+    }
+    //uint32_t lldb::SBEvent::GetType() const;
+}
+
+bool lldbBridge::HandleProcessEvent(SBEvent &event) {
+    switch (event.GetType()) {
+        case lldb::SBProcess::eBroadcastBitStateChanged:
+            return HandleProcessStateChangeEvent(event);
+
+        case lldb::SBProcess::eBroadcastBitSTDOUT:
+            //return HandleProcessSTDOUTEvent(event);
+            break;
+
+        case lldb::SBProcess::eBroadcastBitSTDERR:
+            //return HandleProcessSTDERREvent(event);
+            break;
+    }
+    return false; // Not done, don't exit main loop
+}
+
+bool lldbBridge::HandleProcessStateChangeEvent(SBEvent &event) {
+    SBProcess process = SBProcess::GetProcessFromEvent(event);
+    StateType state = SBProcess::GetStateFromEvent(event);
+
+    switch (state) {
+        case eStateAttaching: ///< Process is currently trying to attach
+            // Maybe you put up a progress dialog in case attach takes a while?
+            std::cout << "attaching to process";
+            break;
+        case eStateLaunching: ///< Process is in the process of launching
+            // Maybe you put up a progress dialog in case launch takes a while?
+            std::cout << "launching to process";
+            break;
+        case eStateStopped:   ///< Process is stopped and can be examined
+            HandleProcessStopped(event, process);
+            break;
+        case eStateRunning:   ///< Process is now running and can't be examined
+            // Update your UI maybe and disable the play and step buttons so the user
+            // can't try to run the program while it is already running
+            isRunning = true;
+            std::cout << "running";
+            break;
+        case eStateDetached:  ///< Process has been detached and can't be examined.
+            // Update your GUI top indicate you are no longer debugging since LLDB
+            // has detached from your process.
+            std::cout << "process has been detached";
+
+            // If you return true, then this will cause the event loop the exit.
+            // This will work well if you only ever debug one process at a time.
+            // If you are debugging multiple, you can return false.
+            return true;
+        case eStateExited:    ///< Process has exited and can't be examined.
+            // Update your GUI top indicate you are no longer debugging since your
+            // process has run to completion and has exited
+            isRunning = false;
+            std::cout << "Process exited normally";
+
+            // If you return true, then this will cause the event loop the exit.
+            // This will work well if you only ever debug one process at a time.
+            // If you are debugging multiple, you can return false.
+            return true;
+        default:
+            break;
+    }
+    return false; // Not done, don't exit main loop
+}
+
+void lldbBridge::HandleProcessStopped(SBEvent &event, SBProcess &process) {
+    if (SBProcess::GetRestartedFromEvent(event)) {
+        // Process is automatically restarted due to script or breakpoint action.
+        // Don't update the GUI because we will soon receive a eStateRunning state...
+        return;
+    }
+    const uint32_t num_threads = process.GetNumThreads();
+    for (uint32_t thread_idx=0; thread_idx<num_threads; ++thread_idx) {
+        SBThread thread = process.GetThreadAtIndex(thread_idx);
+        // Get the thread stop description by using a stream
+        SBStream description_stream;
+        thread.GetDescription(description_stream, true);
+        const char *description = description_stream.GetData();
+        // You can look at description and use this string in your GUI if it has the contents you want.
+        // This will be formatted using the "thread-format" which can be changed with "settings set":
+        //   settings set thread-format ....
+
+        // You can also get an enumeration for why the thread has stopped using:
+        const StopReason thread_stop_reason = thread.GetStopReason();
+        // Each stop reason might have additional data associated with it. See SBThread.h line 54 for details.
+        // You can use this following SBThread functions to extract the data:
+        //    size_t SBThread::GetStopReasonDataCount();
+        //    uint64_t SBThread::GetStopReasonDataAtIndex(uint32_t idx);
+
+        const size_t stop_reason_data_count = thread.GetStopReasonDataCount();
+        switch (thread_stop_reason) {
+            case eStopReasonInvalid:
+                break;
+            case eStopReasonNone:
+                break;
+            case eStopReasonTrace:
+                break;
+            case eStopReasonBreakpoint:
+                // The stop reason data contains the breakpoint and breakpoint location
+                // IDs that were hit. There might be more than one breakpoint that was
+                // hit by the same thread, so we will want to report all breakpoints that were hit
+                std::cout << "breakpoint was hit";
+                for (size_t i=0; i<stop_reason_data_count; i+=2) {
+                    break_id_t bp_id = thread.GetStopReasonDataAtIndex(i);
+                    break_id_t bp_loc_id = thread.GetStopReasonDataAtIndex(i+1);
+                    SBBreakpoint bp = process.GetTarget().FindBreakpointByID(bp_id);
+                    SBBreakpointLocation bp_loc = bp.FindLocationByID(bp_loc_id);
+                    //bp_loc.GetAddress();
+                    //bp_loc.GetThreadID();
+                }
+                break;
+            case eStopReasonWatchpoint:
+                break;
+            case eStopReasonSignal:
+                break;
+            case eStopReasonException:
+                break;
+            case eStopReasonExec:
+                break;
+            case eStopReasonPlanComplete:
+                break;
+            case eStopReasonThreadExiting:
+                break;
+            case eStopReasonInstrumentation:
+                break;
+        }
+    }
+}
+
+const char * lldbBridge::getAssembly(SBThread &thread) {
+    lldb::SBFrame frame = thread.GetFrameAtIndex(0);
+    lldb::SBFunction function = frame.GetFunction();
+    lldb::SBInstructionList instructions;
+    if (function.IsValid()) {
+        // We have debug info that describes the frame's address
+        instructions = function.GetInstructions(thread.GetProcess().GetTarget());
+    } else {
+        // We don't have debug info that describes the frame's address, maybe a symbol from the symbol table
+        lldb::SBSymbol symbol = frame.GetSymbol();
+        if (symbol.IsValid())
+            instructions = symbol.GetInstructions(thread.GetProcess().GetTarget());
+    }
+
+    lldb::SBStream instruction_stream;
+    instructions.GetDescription(instruction_stream);
+    const char *disassembly = instruction_stream.GetData();
+
+    return disassembly;
+}
+
+void lldbBridge::attachToRunningProcess(const int &proc_id){
+     SBAttachInfo attach_info;
+    attach_info.SetProcessID(proc_id);
+    if(attach_info.ParentProcessIDIsValid()){
+        Process = Target.Attach(attach_info, error);
+    }
+    if(error.Success()){
+        setReport("something went wrong shen attaching to process");
+        return;
+    }
+}
+
+
+void lldbBridge::storeFrameData(SBFrame frame) {
     //clear();
 
     auto FrameList = frame.GetVariables(true,  // args
@@ -84,14 +307,14 @@ void lldbBridge::setFrame(SBFrame frame) {
 }
 
 void lldbBridge::setBreakpoint(const char *file_name, const int &line) {
-
-    std::string res;
-
     // create the breakpoint
-    filespec.SetFilename("some starting file path");
+    filespec.SetFilename(file_name);
+    if(!filespec.IsValid()){
+        setReport("invalid filename, breakpoint not set");
+        return;
+    }
 
-    SBBreakpoint breakpoint = Target.BreakpointCreateByLocation(
-            filespec, line);
+    SBBreakpoint breakpoint = Target.BreakpointCreateByLocation(filespec, line);
 
      	// make sure that it's good
 	if (!breakpoint.IsValid()) {
@@ -111,6 +334,7 @@ void lldbBridge::setBreakpoint(const char *file_name, const int &line) {
 void lldbBridge::removeBreakpoint(const break_id_t &id) {
     if(!Target.BreakpointDelete(id)){
         setReport("Breakpoint was not deleted !");
+        return;
     }
 }
 
@@ -124,34 +348,9 @@ void lldbBridge::removeBreakpoint(const char *file_name, const int &line) {
     }
     if(!Target.BreakpointDelete(ID)){
         setReport("Breakpoint was not deleted !");
-    }
-
-}
-
-void lldbBridge::start() {
-    init();
-
-    if (!Target.IsValid()) {
-        setReport("Cannot start a debugger process with an invalid target: ");
-        setReport(executable);
         return;
     }
 
-    Process = Target.LaunchSimple(nullptr, nullptr, executable);
-}
-
-void lldbBridge::stop() {
-    Process.Stop();
-}
-
-
-bool lldbBridge::isRunning() {
-    if(Debugger.IsValid() && Process.IsValid()){
-        return true;
-    }
-    else{
-        return false;
-    }
 }
 
 std::vector<lldbBridge::framedata> get_var_func_info() {
@@ -163,7 +362,7 @@ lldbBridge::framedata get_var_func_info_update() {
 }
 
 SBThread lldbBridge::getCurrentThread() {
-    if(Process){
+    if(Process.IsValid()){
         return Process.GetSelectedThread();
     }
 }
@@ -175,8 +374,7 @@ SBFrame lldbBridge::getCurrentFrame() {
     }
 }
 
-std::string lldbBridge::frameDescribeLocation() {
-    SBFrame frame;
+std::string lldbBridge::frameDescribeLocation(SBFrame &frame) {
     const char *filename = frame.GetLineEntry().GetFileSpec().GetFilename();
     SBFunction function = frame.GetFunction();
     uint32_t line = frame.GetLineEntry().GetLine();
@@ -185,6 +383,11 @@ std::string lldbBridge::frameDescribeLocation() {
     description += std::string("line= ") + char(line) + " ";
     description += std::string("address= ") + char(frame.GetPCAddress().GetOffset()) + " ";
     description += std::string("function= ") + function.GetDisplayName() + " ";
+
+    std::cout << std::string("file= ") + filename + " ";
+    std::cout << std::string("line= ") + char(line) + " ";
+    std::cout << std::string("address= ") + char(frame.GetPCAddress().GetOffset()) + " ";
+    std::cout << std::string("function= ") + function.GetDisplayName() + " ";
 
     return description;
 }
@@ -232,7 +435,10 @@ void lldbBridge::stepInstruction() {
 }
 
 std::string lldbBridge::executeDebuggerCommand(const std::string &args) {
-    SBCommandReturnObject result = SBCommandReturnObject();
+    // tutorial site:
+    // https://lldb.llvm.org/use/tutorial.html
+
+    SBCommandReturnObject result;
     Debugger.GetCommandInterpreter().HandleCommand(args.c_str(), result);
 
     std::string output;
@@ -246,6 +452,10 @@ std::string lldbBridge::executeDebuggerCommand(const std::string &args) {
 }
 
 void lldbBridge::setReport(const char *msg) {
+    report += msg + std::string("\n");
+}
+
+void lldbBridge::recordRunningError(const char *msg) {
     report += msg + std::string("\n");
 }
 

@@ -16,6 +16,129 @@ set(CMAKE_CXX_FLAGS ${CXX_FLAGS})
 
 #add_subdirectory(Widgets)
 
+include_directories(
+        ${CMAKE_CURRENT_BINARY_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        /usr/local/include         # llvm, lldb, clang
+        /usr/local/include/clang-tidy
+        /usr/local/include/clangd  # clangd -> indexer, completer, parser etc.
+        /usr/local/include/clangd/support
+        #clangd
+        #clangd/support
+)
+
+set(CLANGD_SOURCES
+        clangd/AST.cpp
+        clangd/ClangdLSPServer.cpp
+        clangd/ClangdServer.cpp
+        clangd/CodeComplete.cpp
+        clangd/CodeCompletionStrings.cpp
+        clangd/CollectMacros.cpp
+        clangd/CompileCommands.cpp
+        clangd/Compiler.cpp
+        clangd/Config.cpp
+        clangd/ConfigCompile.cpp
+        clangd/ConfigProvider.cpp
+        clangd/ConfigYAML.cpp
+        clangd/Diagnostics.cpp
+        clangd/DraftStore.cpp
+        clangd/ExpectedTypes.cpp
+        clangd/FindSymbols.cpp
+        clangd/FindTarget.cpp
+        clangd/FileDistance.cpp
+        clangd/Format.cpp
+        clangd/FS.cpp
+        clangd/FuzzyMatch.cpp
+        clangd/GlobalCompilationDatabase.cpp
+        clangd/Headers.cpp
+        clangd/HeaderSourceSwitch.cpp
+        clangd/Hover.cpp
+        clangd/IncludeFixer.cpp
+        clangd/JSONTransport.cpp
+        clangd/PathMapping.cpp
+        clangd/Protocol.cpp
+        clangd/Quality.cpp
+        clangd/ParsedAST.cpp
+        clangd/Preamble.cpp
+        clangd/RIFF.cpp
+        clangd/Selection.cpp
+        clangd/SemanticHighlighting.cpp
+        clangd/SemanticSelection.cpp
+        clangd/SourceCode.cpp
+        clangd/QueryDriverDatabase.cpp
+        clangd/TUScheduler.cpp
+        clangd/URI.cpp
+        clangd/XRefs.cpp
+
+        clangd/CompletionModel.cpp
+
+        clangd/index/Background.cpp
+        clangd/index/BackgroundIndexLoader.cpp
+        clangd/index/BackgroundIndexStorage.cpp
+        clangd/index/BackgroundQueue.cpp
+        clangd/index/BackgroundRebuild.cpp
+        clangd/index/CanonicalIncludes.cpp
+        clangd/index/FileIndex.cpp
+        clangd/index/Index.cpp
+        clangd/index/IndexAction.cpp
+        clangd/index/MemIndex.cpp
+        clangd/index/Merge.cpp
+        clangd/index/Ref.cpp
+        clangd/index/Relation.cpp
+        clangd/index/Serialization.cpp
+        clangd/index/Symbol.cpp
+        clangd/index/SymbolCollector.cpp
+        clangd/index/SymbolID.cpp
+        clangd/index/SymbolLocation.cpp
+        clangd/index/SymbolOrigin.cpp
+        clangd/index/YAMLSerialization.cpp
+
+        clangd/index/dex/Dex.cpp
+        clangd/index/dex/Iterator.cpp
+        clangd/index/dex/PostingList.cpp
+        clangd/index/dex/Trigram.cpp
+
+        clangd/refactor/Rename.cpp
+        clangd/refactor/Tweak.cpp
+
+        clangd/support/Cancellation.cpp
+        clangd/support/Function.h
+        clangd/support/Markup.h
+        clangd/support/Threading.cpp
+        clangd/support/Trace.cpp
+        clangd/support/Cancellation.h
+        clangd/support/Logger.cpp
+        clangd/support/Path.h
+        clangd/support/Threading.h
+        clangd/support/Trace.h
+        clangd/support/Context.cpp
+        clangd/support/Logger.h
+        clangd/support/Shutdown.cpp
+        clangd/support/ThreadsafeFS.cpp
+        clangd/support/Context.h
+        clangd/support/Markup.cpp
+        clangd/support/Shutdown.h
+        clangd/support/ThreadsafeFS.h
+        )
+
+set(TASK_VIEW
+        TaskWidget/processmodel.h
+        TaskWidget/readprocessstrategy.h
+        TaskWidget/processdescriptor.cpp
+        TaskWidget/processproxymodel.cpp
+        TaskWidget/taskwidget.cpp
+        TaskWidget/processdescriptor.h
+        TaskWidget/processproxymodel.h
+        TaskWidget/taskwidget.h
+        TaskWidget/processfilterwidget.cpp
+        TaskWidget/readlinuxprocessesstrategy.cpp
+        TaskWidget/taskwidgetimages.qrc
+        TaskWidget/processfilterwidget.h
+        TaskWidget/readlinuxprocessesstrategy.h
+        TaskWidget/processmodel.cpp
+        TaskWidget/readprocessstrategy.cpp
+        )
+
 set(HEX_VIEW
         Widgets/HexView/QHexView/document/buffer/qfilebuffer.cpp
         Widgets/HexView/QHexView/document/buffer/qfilebuffer.h
@@ -45,7 +168,8 @@ set(HEX_VIEW
         Widgets/HexView/QHexView/qhexview.h
     )
 
-set(SOURCE_FILES main.cpp
+set(SOURCE_FILES
+                main.cpp
                 highlighter.cpp
                 highlighter.h
                 mainwindow.cpp
@@ -78,6 +202,8 @@ set(SOURCE_FILES main.cpp
                 Widgets/BinaryInfo/binaryview.cpp
                 Widgets/BinaryInfo/binaryview.h
                 ${HEX_VIEW}
+                #${CLANGD_SOURCES} # in the future will be more accurate, now only takes much storage and time
+                ${TASK_VIEW}
                 Widgets/HexView/hexview.cpp
                 Widgets/HexView/hexview.h
                 Widgets/Converter/converter.cpp
@@ -89,8 +215,8 @@ set(SOURCE_FILES main.cpp
                 Debugger/debuggerwidget.h
                 Clang/indexer.cpp
                 Clang/indexer.h
-        Clang/ClangBridge.cpp
-        Clang/ClangBridge.h
+                Clang/ClangBridge.cpp
+                Clang/ClangBridge.h
                 llvm/llvmbridge.cpp
                 llvm/llvmbridge.h
 
@@ -106,13 +232,23 @@ set(SOURCE_FILES main.cpp
                 Widgets/Settings/git/gitbridge.h
                 Widgets/Settings/git/gitwidget.cpp
                 Widgets/Settings/git/gitwidget.h
-        icons/IconFactory.h
+                icons/IconFactory.h
                 Widgets/Settings/Appearence/AppearenceWidget.cpp
                 Widgets/Settings/Appearence/AppearenceWidget.h
                 Widgets/CodeInfoDock/CodeInfoDock.cpp
                 Widgets/CodeInfoDock/CodeInfoDock.h
                 Widgets/FileExplorer/NewWindow.cpp
-                Widgets/FileExplorer/NewWindow.h Widgets/Settings/Debugger/DebuggerSettings.cpp Widgets/Settings/Debugger/DebuggerSettings.h Widgets/FileExplorer/SourceTemplates.h Widgets/NodeView/NodeView.cpp Widgets/NodeView/NodeView.h Widgets/PlainTextEdit/GoToLineColumn.cpp Widgets/PlainTextEdit/GoToLineColumn.h Widgets/ProgressBar/ProgressBar.cpp Widgets/ProgressBar/ProgressBar.h)
+                Widgets/FileExplorer/NewWindow.h
+                Widgets/Settings/Debugger/DebuggerSettings.cpp
+                Widgets/Settings/Debugger/DebuggerSettings.h
+                Widgets/FileExplorer/SourceTemplates.h
+                Widgets/NodeView/NodeView.cpp
+                Widgets/NodeView/NodeView.h
+                Widgets/PlainTextEdit/GoToLineColumn.cpp
+                Widgets/PlainTextEdit/GoToLineColumn.h
+                Widgets/ProgressBar/ProgressBar.cpp
+                Widgets/ProgressBar/ProgressBar.h
+        )
 
 
 
@@ -128,14 +264,6 @@ set (CMAKE_AUTORCC ON)
 
 set (CMAKE_INCLUDE_CURRENT_DIR ON)
 
-include_directories(
-        ${CMAKE_CURRENT_BINARY_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        /usr/local/include         # llvm, lldb, clang
-        /usr/local/include/clangd  # clangd -> indexer, completer, parser etc.
-        /usr/local/include/clangd/support
-)
-
 # required libs by clang ...
 set(SYSTEM_LIBS rt dl tinfo pthread m z)
 
@@ -145,9 +273,7 @@ set(LLDB_LIBS_SHARED lldb) # one shared lib
 # clangd has no shared libs, so if i want to use clang shared lib in the future and recompile clang by in this manner
 # i would need to go deep into clangd and extract, what i need -> so yes later
 
-set(CLANG_LIBS_SHARED   clang
-                        #clang-cpp  # -> does not work combined with clang.
-        )
+set(CLANG_LIBS_SHARED clang)
 
 set(CLANG_LIBS
         clangAnalysis clangApplyReplacements clangARCMigrate
@@ -183,7 +309,7 @@ set(CLANG_LIBS
 # LLVM libraries: `llvm-config -ibs $(LLVM_MODULES)`;LLVM_MODULES = all engine
 set(LLVM_LIBS_SHARED    Polly
                         LTO
-                        LLVM #llvm -> in /usr/lib/llvm11
+                        LLVM #llvm -> not working
                         )
 
 
@@ -230,10 +356,7 @@ set(LLVM_LIBS
 
         )
 
-
 link_directories(/usr/local/lib)
-#link_directories(/usr/lib/llvm-11)
-
 
 add_executable(editor ${SOURCE_FILES} resources.qrc)
 
@@ -257,5 +380,5 @@ find_package( Qt5 REQUIRED
 
 set_target_properties(Qt5::Core PROPERTIES MAP_IMPORTED_CONFIG_COVERAGE "DEBUG")
 
-target_link_libraries(editor Qt5::Widgets Qt5::Gui Qt5::Core Qt5::Xml Qt5::PrintSupport
-        -Wl,--start-group ${SYSTEM_LIBS} ${LLVM_LIBS_SHARED} ${CLANG_LIBS_SHARED} ${LLDB_LIBS_SHARED} -Wl,--end-group)
+target_link_libraries(editor -Wl,--start-group Qt5::Widgets Qt5::Gui Qt5::Core Qt5::Xml Qt5::PrintSupport
+         ${SYSTEM_LIBS} ${LLVM_LIBS} ${CLANG_LIBS} ${LLDB_LIBS_SHARED} -Wl,--end-group)

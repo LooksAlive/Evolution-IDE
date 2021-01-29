@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QToolBar>
+#include <QMenuBar>
 #include <QGridLayout>
 #include <QWidget>
 #include <QTabWidget>
@@ -75,6 +76,7 @@
 #include <QDebug>
 
 #include <iostream>
+#include <string>
 #include <vector>
 
 
@@ -102,6 +104,9 @@ class MainWindow : public QMainWindow {
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
+    // describes what iss happening at moment in statusbar beside progressbar
+    std::string progress_action;
     
 private:
 
@@ -209,6 +214,7 @@ private slots:
     void CloseFile();
     void CloseFile(int);
     void CloseAllFiles();
+    void slotRestart();
     void CloseWindow();
 
     void SetupSettingsWindow();
@@ -272,6 +278,7 @@ private slots:
     void slotDeleteBreakPoint();
     void slotSetBreakpointAtLine();
     void slotShowBreakpointsList();
+    void slotShowAttachToProcess();
 
 
 private:

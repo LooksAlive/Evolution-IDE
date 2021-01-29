@@ -56,8 +56,10 @@ private:
     QString search_text;
     QString replace_text;
 
+public slots:
+    void slotNext();   // mainwindow search
+
 private slots:
-    void slotNext();
     void slotPrevious();
     void slotReplace();
     void slotReplaceAll();

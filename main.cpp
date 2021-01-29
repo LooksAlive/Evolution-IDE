@@ -8,6 +8,7 @@
 
 int main(int argc, char *argv[]) {
 
+    QCoreApplication::setAttribute(Qt::AA_DontUseNativeMenuBar);
     QSettings settings("Evolution");
     bool def = settings.value("Evolution/SetDefaultSettings").toBool();
     if(!def){

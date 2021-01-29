@@ -53,7 +53,7 @@ public:
     static constexpr auto SelectAll = "/home/adam/Desktop/sources/Evolution-IDE/icons/select_all.svg";
     static constexpr auto Collapse = "/home/adam/Desktop/sources/Evolution-IDE/icons/collapse.svg";
     static constexpr auto Expand = "/home/adam/Desktop/sources/Evolution-IDE/icons/expand.svg";
-    static constexpr auto BreakPoint = "/home/adam/Desktop/sources/Evolution-IDE/icons/BreakPoint.svg";
+    static constexpr auto BreakPoint = "/home/adam/Desktop/sources/Evolution-IDE/icons/BreakPoint.png";
     static constexpr auto Comment = "/home/adam/Desktop/sources/Evolution-IDE/icons/comment.png";
 
     // EXPLORERS

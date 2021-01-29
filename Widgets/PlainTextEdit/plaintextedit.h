@@ -123,6 +123,7 @@ public:
 
 protected:
     void leaveEvent(QEvent *event) override;
+    // this event is done in all types of mouse events on widget
     void mouseEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;

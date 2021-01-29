@@ -34,6 +34,7 @@ void CMakeGeneratorWidget::createMainWindow() {
 
     MainLayout->setContentsMargins(10, 10, 10, 10);
     MainLayout->setSpacing(5);
+    generate_cmake->setCheckable(true);
     setDefaultSettings();       // *********************************************************************
 
     MainLayout->addRow("Generate cmake: ", generate_cmake);

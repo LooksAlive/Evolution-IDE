@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <thread>
 #include <unordered_map>
 
 #include "lldb/API/LLDB.h"
@@ -23,8 +24,11 @@ public:
     lldbBridge& operator=(const lldbBridge&) = delete;
     lldbBridge& operator=(lldbBridge&&) = delete;
 
-    void setReport(const char *msg);   // SBError handling function
-    std::string report; // access outside TODO: how to track if error occurred or not ?
+    // SBError handling function
+    void setReport(const char *msg);
+    // when program is running, this set if some unexpected occurred (segmentation fault, bad pointers, ...)
+    void recordRunningError(const char *msg);
+    std::string report;
 
     void pause();    // when breakpoint is hit
     void Continue();
@@ -33,10 +37,10 @@ public:
     void removeBreakpoint(const char *file_name, const int &line);
     void removeBreakpoint(const break_id_t &id);
 
-    void setFrame(SBFrame frame);
+    void storeFrameData(SBFrame frame);
     SBThread getCurrentThread();
     SBFrame getCurrentFrame();
-    std::string frameDescribeLocation();
+    std::string frameDescribeLocation(SBFrame &frame);
     SBValue findSymbol(const char *name);
 
 
@@ -67,22 +71,32 @@ public:
     };
     std::vector<BreakPointData> BreakPointList;
 
-    bool isRunning();
-
     void start();   // process initialization
     void stop();    // destructor called here
 
+    void attachToRunningProcess(const int &proc_id);
+
 
     // The first argument is the file path we want to look something up in
-    const char *executable = "/home/adam/Desktop/SKUSKA/executable";   // "/home/adam/Desktop/SKK/cmake-build/executable"
+    const char *executable = "/home/adam/Desktop/sources/Evolution-IDE/cmake-build-debug/editor";   // "/home/adam/Desktop/SKK/cmake-build/executable"
     const char *addr_cstr = "#address_to_lookup";
     const bool add_dependent_libs = false;
     const char *arch = nullptr;
     const char *platform = nullptr;
 
+    bool isRunning = false;
 
 private:
     void init();
+    // main function
+    // is breakpoint hit, waiting for such events
+    // called when debug process starts
+    void setProcessInterruptFeatures();
+    bool HandleProcessEvent(SBEvent &event);
+    bool HandleProcessStateChangeEvent(SBEvent &event);
+    void HandleProcessStopped(SBEvent &event, SBProcess &process);
+
+    const char * getAssembly(SBThread &thread);
 
     SBError error;
     SBStream strm;
@@ -92,6 +106,7 @@ private:
     SBDebugger Debugger;
     SBTarget   Target;
     SBProcess  Process;
+    SBListener listener;
 
 
     struct breaks{

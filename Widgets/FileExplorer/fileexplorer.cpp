@@ -19,7 +19,9 @@ FileExplorer::FileExplorer(QWidget *parent) : QDockWidget(parent)
     FileView->setColumnHidden(2, true);
     FileView->setColumnHidden(3, true);
     FileView->setHeaderHidden(true);
-    FileView->acceptDrops();        // dirs and files
+    //FileView->acceptDrops();        // dirs and files
+    FileView->setAcceptDrops(true);
+    FileView->setDragEnabled(true); // moving files around
     FileView->showDropIndicator();
 
     /* QDockWidget inherited functions */

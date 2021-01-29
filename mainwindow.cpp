@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "icons/IconFactory.h"
+#include "Clang/ClangBridge.h"
+
 /*
 keyword this always represents parent in which class it is declared, also
 want to show exact widget into this section(mainwindow - app)
@@ -195,10 +197,12 @@ void MainWindow::SetupMenuBar() {
 
     menuBar = new QMenuBar(this);
     menuBar->setWindowTitle("Menu bar");
+    menuBar->setObjectName("Menubar");
     // menuBar->setGeometry(QRect(0, 0, 1000, 24));
     menuBar->setFixedHeight(24);    // or none, still work well
     menuBar->setMouseTracking(true);
-    menuBar->setNativeMenuBar(true);
+    menuBar->setNativeMenuBar(false);
+    menuBar->setTabletTracking(true);
 
     QMenu* fileMenu = new QMenu("File");
     QMenu* editMenu = new QMenu("Edit");
@@ -220,6 +224,7 @@ void MainWindow::SetupMenuBar() {
     fileMenu->addSeparator();
     fileMenu->addAction(QIcon(IconFactory::Settings), "Settings", this, SLOT(SetupSettingsWindow()), Qt::CTRL + Qt::Key_P);
     fileMenu->addSeparator();
+    fileMenu->addAction("Restart", this, SLOT(slotRestart()));
     fileMenu->addAction(QIcon(IconFactory::ShutDown),"Exit", this, SLOT(CloseWindow()), Qt::CTRL + Qt::Key_Q);
 
     editMenu->addAction(QIcon(IconFactory::Copy), "Copy", this, SLOT(slotCopy()),      Qt::CTRL + Qt::Key_C);
@@ -228,8 +233,8 @@ void MainWindow::SetupMenuBar() {
     editMenu->addAction(QIcon(IconFactory::Undo), "Undo", this, SLOT(slotUndo()), Qt::CTRL + Qt::Key_Z);
     editMenu->addAction(QIcon(IconFactory::Redo), "Redo", this, SLOT(slotRedo()), Qt::CTRL + Qt::SHIFT + Qt::Key_X);
     editMenu->addAction("Remove All", this, SLOT(slotRemoveAll()), Qt::CTRL + Qt::Key_Backspace);
-    editMenu->addAction("Expand", this, SLOT(slotExpand()));
-    editMenu->addAction("Collapse", this, SLOT(slotCollapse()));
+    //editMenu->addAction("Expand", this, SLOT(slotExpand()));
+    //editMenu->addAction("Collapse", this, SLOT(slotCollapse()));
 
     editMenu->addAction(QIcon(IconFactory::SelectAll), "Select All", this, SLOT(slotSelectAll()), Qt::CTRL + Qt::Key_A);
     editMenu->addSeparator();
@@ -248,6 +253,7 @@ void MainWindow::SetupMenuBar() {
 
     DebugMenu->addAction(QIcon(IconFactory::StartDebug), "Start Debug", this, SLOT(slotStartDebug()), Qt::Key_F5);
     DebugMenu->addAction(QIcon(IconFactory::StopDebug), "Stop Debug", this, SLOT(slotStopDebug()));
+    DebugMenu->addAction("Attach Process", this, SLOT(slotShowAttachToProcess()));
     DebugMenu->addAction(QIcon(IconFactory::RunToCursor), "Run to cursor", this, SLOT(slotRunToCursor()));
     DebugMenu->addAction(QIcon(IconFactory::Resume), "Continue Debug", this, SLOT(slotContinue()));
     DebugMenu->addSeparator();
@@ -277,6 +283,8 @@ void MainWindow::SetupMenuBar() {
     menuBar->addMenu(AnalyzeMenu);
     menuBar->addMenu(HelpMenu);
 
+    menuBar->setVisible(true);
+    menuBar->show();
     setMenuBar(menuBar);
 }
 
@@ -336,9 +344,9 @@ void MainWindow::showDebuggerView(){
     QString path = currentWidget->getFilePath();
     // for now, starting with current file, later track    ;  not i only care for line
     // file_manager.current_full_filepath, 0
-    file_manager.executable_file_path = "/home/adam/Desktop/SKK/cmake-build/executable";
+    //file_manager.executable_file_path = "/home/adam/Desktop/SKK/cmake-build/executable";
     debuggerView->setStartFilePosition(path, currentWidget->getCursorPosition().y());   // ???
-    debuggerView->setExecutable(file_manager.executable_file_path.toStdString());
+    //debuggerView->setExecutable(file_manager.executable_file_path.toStdString());
 }
 
 void MainWindow::showHexView(){
@@ -443,12 +451,15 @@ void MainWindow::slotFind(){
     find_replace->setVisible(true);   // insted of toggleViewAction()
     find_replace->LineEditFind->setFocus();
     QString text = currentWidget->textCursor().selectedText();
+    // find selected text
     if(!text.isEmpty()){
         find_replace->LineEditFind->setText(text);
     }
+    // find word under cursor, if no text is selected
     else{
         text = currentWidget->getWordUnderCursor();
         find_replace->LineEditFind->setText(text);
+        find_replace->slotNext();
     }
 }
 
@@ -1060,5 +1071,13 @@ void MainWindow::slotSetBreakpointAtLine() {
 
 void MainWindow::slotShowBreakpointsList() {
     debuggerView->showBreakPointsList();
+}
+
+void MainWindow::slotShowAttachToProcess() {
+    debuggerView->showTaskManager();
+}
+
+void MainWindow::slotRestart() {
+    // find how to
 }
 

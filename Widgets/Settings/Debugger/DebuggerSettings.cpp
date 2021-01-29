@@ -1,5 +1,9 @@
 #include "DebuggerSettings.h"
 #include <QSettings>
+#include <QProgressDialog>
+#include <QTreeWidget>
+#include <QTableWidget>
+#include <QTableView>
 
 DebuggerSettings::DebuggerSettings(QWidget *parent) : QWidget(parent){
     createWindow();
