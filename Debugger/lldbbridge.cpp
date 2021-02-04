@@ -78,9 +78,11 @@ void lldbBridge::start() {
     setBreakpoint("main.cpp", 7);
 
     listener = Debugger.GetListener();
+    SBLaunchInfo launch_info(nullptr);
+    launch_info.SetExecutableFile(filespec, true);
+    launch_info.SetListener(listener);
     //Process = Target.LaunchSimple(nullptr, nullptr, nullptr);
-    Process = Target.Launch(listener, nullptr, nullptr, nullptr, nullptr,
-                            nullptr, nullptr, 0, false, error);
+    Process = Target.Launch(launch_info, error);
 
     if(!Process.IsValid()){
         setReport("Process is invalid \n");
@@ -280,7 +282,7 @@ void lldbBridge::attachToRunningProcess(const int &proc_id){
     }
     if(error.Success()){
         setReport("something went wrong shen attaching to process");
-        return;
+        //return;
     }
 }
 
@@ -362,16 +364,11 @@ lldbBridge::framedata get_var_func_info_update() {
 }
 
 SBThread lldbBridge::getCurrentThread() {
-    if(Process.IsValid()){
-        return Process.GetSelectedThread();
-    }
+    return Process.GetSelectedThread();
 }
 
 SBFrame lldbBridge::getCurrentFrame() {
-    SBThread thread = getCurrentThread();
-    if(thread){
-        return thread.GetSelectedFrame();
-    }
+    return getCurrentThread().GetSelectedFrame();
 }
 
 std::string lldbBridge::frameDescribeLocation(SBFrame &frame) {
@@ -458,7 +455,11 @@ void lldbBridge::setReport(const char *msg) {
 void lldbBridge::recordRunningError(const char *msg) {
     report += msg + std::string("\n");
 }
-
+/*
+void lldbBridge::setObject(DebuggerWidget *widget) {
+    widgets = widget;
+}
+*/
 
 
 

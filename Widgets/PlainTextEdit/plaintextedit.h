@@ -61,7 +61,7 @@ public:
     void selectWord(const int &line, const int &column);
     // missing selected text for return -> no use for now
     void deleteLine();
-    void highlight(QList<QTextEdit::ExtraSelection> &selections, const bool &Background,
+    void highlight(QList<QTextEdit::ExtraSelection> &selections, const bool &Background, const int &line,
                    const QColor &color = QColor::fromRgb(0, 255, 0));
     QList<QPoint> getParenthessesPairPositions();   // set cursor selection on them in update request
 
@@ -69,6 +69,10 @@ public:
     void setFileExtension(const QString &extension = "cpp");
     void setFilePath(const QString &file_path);
     QString getFilePath();
+
+    // return line where BreakPoint was created, also set it into view
+    int setBreakPoint();
+    void removeBreakPoint(const int &line);
 
 protected:
     void keyReleaseEvent(QKeyEvent *event) override;
@@ -143,17 +147,23 @@ public:
     ~BreakPointArea() = default;
     // reprezents height, width or area even while changing its dimensions
     QSize sizeHint() const override;
+    QPixmap breakpoint;
+    // represents breakpoints at lines
+    std::vector<int> blocks;
 
 protected:
-    void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseEvent(QMouseEvent *event);
+    void mousePressEvent(QMouseEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
 
 signals:
-    void breakPointCreated();
-    void breakPointDeleted();
+    //void breakPointCreated();
+    //void breakPointRemoved();
 
 private:
     PlainTextEdit *m_Edit;
+
+    bool canCreateBreakPoint(const QTextBlock &block);
 
 };
 

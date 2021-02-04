@@ -134,7 +134,7 @@ private:
 
     // Status Bar
     QStatusBar *statusbar;
-    ProgressBar *progress;
+    ProgressBar *progress_bar;
     QLabel *progress_tag;
     QToolButton *btn_position;
     QToolButton *btn_encoding;

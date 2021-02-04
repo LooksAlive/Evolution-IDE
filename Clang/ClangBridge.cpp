@@ -51,11 +51,18 @@
 
 #include "ClangBridge.h"
 
-ClangBridge::ClangBridge(const GlobalCompilationDatabase &CDB, const Options &Opts) {
-    //GetClangTidyOptions(Opts.GetClangTidyOptions);
-    SuggestMissingIncludes = Opts.SuggestMissingIncludes;
-    BuildRecoveryAST = Opts.BuildRecoveryAST;
-    PreserveRecoveryASTType = Opts.PreserveRecoveryASTType;
+ClangBridge::ClangBridge() {
+
+}
+
+void ClangBridge::setCompilationArguments(const std::string &args) {
+    // CDBDatabase CDB;
+    // auto cmd = CDB.getCompileCommand(args);
+    /*
+    DirectoryBasedGlobalCompilationDatabase CDB(std::string("jskdfh"));
+    auto cmd = CDB.getCompileCommand(args);
+    cmd.getValue().CommandLine;
+    */
 }
 
 void ClangBridge::addDocument(PathRef File, StringRef Contents, llvm::StringRef Version, WantDiagnostics WD,

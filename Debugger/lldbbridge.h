@@ -6,7 +6,6 @@
 #include <string>
 #include <vector>
 #include <thread>
-#include <unordered_map>
 
 #include "lldb/API/LLDB.h"
 
@@ -43,8 +42,6 @@ public:
     std::string frameDescribeLocation(SBFrame &frame);
     SBValue findSymbol(const char *name);
 
-
-
     void stepOver();
     void stepInto();
     void stepOut();
@@ -52,7 +49,7 @@ public:
 
     std::string executeDebuggerCommand(const std::string &args);
 
-
+    // data storages
     struct framedata{
         std::string type;
         std::string name;
@@ -71,6 +68,8 @@ public:
     };
     std::vector<BreakPointData> BreakPointList;
 
+
+    //void setObject(DebuggerWidget *widget);
     void start();   // process initialization
     void stop();    // destructor called here
 
@@ -96,7 +95,9 @@ private:
     bool HandleProcessStateChangeEvent(SBEvent &event);
     void HandleProcessStopped(SBEvent &event, SBProcess &process);
 
-    const char * getAssembly(SBThread &thread);
+    const char *getAssembly(SBThread &thread);
+
+    //DebuggerWidget *widgets;
 
     SBError error;
     SBStream strm;
@@ -107,14 +108,6 @@ private:
     SBTarget   Target;
     SBProcess  Process;
     SBListener listener;
-
-
-    struct breaks{
-        int line;
-        char compile_unit;
-    };
-    //std::unordered_map<breaks, lldb::SBBreakpoint> Breakpoints;
-
 };
 
 #endif // LLDBBRIDGE_H

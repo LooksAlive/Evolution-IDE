@@ -3,6 +3,7 @@
 #include <QIcon>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QShortcut>
 
 #include "icons/IconFactory.h"
 #include "findreplace.h"
@@ -16,9 +17,11 @@ FindReplaceWidget::FindReplaceWidget(Tab *tab, QWidget *parent)
 
     base = new QWidget(this);
     base->setLayout(MainLayout);
-    base->setContentsMargins(0, 0, 0, 0);
+    base->setContentsMargins(5, 5, 5, 5);
+    base->setFixedWidth(700);
+    //base->setFixedHeight(100);
     setWidget(base);
-    setVisible(false);
+    this->setVisible(false);
 
     setWindowTitle("Find & Replace");
 
@@ -29,6 +32,8 @@ FindReplaceWidget::FindReplaceWidget(Tab *tab, QWidget *parent)
     connect(btn, SIGNAL(clicked()), this, SLOT(close()));
     setTitleBarWidget(btn);
     */
+    // escape shortcut  -> will close the window
+    connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [=] {this->setVisible(false);});
 }
 
 void FindReplaceWidget::createWindow() {
@@ -69,11 +74,23 @@ void FindReplaceWidget::createWindow() {
     input_layout->addRow("Replace:  ", LineEditReplacement);
     input_layout->addWidget(LabelText);
 
+    auto *find_layout = new QVBoxLayout();
+    auto *replace_layout = new QVBoxLayout();
+
+    find_layout->addWidget(next);
+    find_layout->addWidget(previous);
+    replace_layout->addWidget(replace);
+    replace_layout->addWidget(replaceall);
+
     MainLayout->addLayout(input_layout);
+    /*
     MainLayout->addWidget(next);
     MainLayout->addWidget(previous);
     MainLayout->addWidget(replace);
     MainLayout->addWidget(replaceall);
+    */
+    MainLayout->addLayout(find_layout);
+    MainLayout->addLayout(replace_layout);
     MainLayout->addLayout(flags_layout);
 }
 

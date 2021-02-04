@@ -143,9 +143,12 @@ public:
     // Features like indexing must be enabled if desired.
     static Options optsForTest();
 
-    ClangBridge(const GlobalCompilationDatabase &CDB, const Options &Opts);
+    ClangBridge();
     ~ClangBridge() = default;
 
+    //Options Opts;
+
+    void setCompilationArguments(const std::string &args);
 
     void addDocument(PathRef File, StringRef Contents,
                      llvm::StringRef Version = "null",

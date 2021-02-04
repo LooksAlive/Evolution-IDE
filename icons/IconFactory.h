@@ -72,7 +72,7 @@ public:
     static constexpr auto RunToCursor = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/RunToCursor.png";
     static constexpr auto NextLine = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/NextLine.png";
     static constexpr auto StepInto = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/GetIntoFunction.png";
-    static constexpr auto NextInstruction = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/NextInstruction.png";   // StepInstruction
+    static constexpr auto StepInstruction = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/NextInstruction.png";   // StepInstruction
     static constexpr auto GetOutOfFunction = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/GetOutOfFunction.png";
 
 };

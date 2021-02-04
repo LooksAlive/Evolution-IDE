@@ -17,7 +17,7 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
     : QPlainTextEdit(parent)
 {
     LineArea = new LineNumberArea(this);
-    //BreakpointArea = new BreakPointArea(this);
+    BreakpointArea = new BreakPointArea(this);
 
     QSettings settings;
     QFont font;
@@ -113,15 +113,15 @@ void PlainTextEdit::setCursorPosition(const int &row, const int &col)
 
 QPoint PlainTextEdit::getCursorPosition(){
     QTextCursor cursor = textCursor();
-    int row = cursor.blockNumber() + 1;     // +1
-    int col = cursor.columnNumber() + 1;    // +1 , ending position
+    int row = cursor.blockNumber() ;     // +1
+    int col = cursor.columnNumber();    // +1 , ending position
 
     return QPoint(row, col);
 }
 
 void PlainTextEdit::setCursorAtLine(const int &line)
 {
-    setCursorPosition(line + 1, 0);   // yet no idea how ? jumps as it wants
+    setCursorPosition(line, 0);   // +1 ; yet no idea how ? jumps as it wants
 }
 
 // text manipulation
@@ -519,7 +519,7 @@ QList<QPoint> PlainTextEdit::getParenthessesPairPositions(){
     return positions;
 }
 
-void PlainTextEdit::highlight(QList<QTextEdit::ExtraSelection> &selections, const bool &Background,
+void PlainTextEdit::highlight(QList<QTextEdit::ExtraSelection> &selections, const bool &Background, const int &line,
                               const QColor &color)
 {
     if(!isReadOnly())
@@ -533,6 +533,9 @@ void PlainTextEdit::highlight(QList<QTextEdit::ExtraSelection> &selections, cons
         selection.format.setProperty(QTextFormat::FontWeight, true);
         selection.cursor=textCursor();
         selection.cursor.clearSelection();
+        if(line){
+            selection.cursor.setPosition(textCursor().block().position());
+        }
         selections.append(selection);
     }
 }
@@ -675,6 +678,20 @@ QString PlainTextEdit::getFilePath(){
     return file;
 }
 
+int PlainTextEdit::setBreakPoint() {
+    int line = getCursorPosition().y();
+    BreakpointArea->blocks.push_back(line);
+
+    return line;
+}
+
+void PlainTextEdit::removeBreakPoint(const int &line) {
+    // create temp vector, first check if line is valid
+    //BreakpointArea->blocks.push_back(line);
+}
+
+
+
 /* slots
  ------------------------------------------------------------------------- */
 void PlainTextEdit::slotShowMenu(const QPoint &pos) {
@@ -693,10 +710,12 @@ void PlainTextEdit::collapse(){
     indentText(false);
 }
 
+// increase size when number are 10, 100, 1000, ...
 void PlainTextEdit::slotBlockCountChanged(const int count)
 {
     Q_UNUSED(count)
-    setViewportMargins(/*BreakpointArea->sizeHint().width() + */LineArea->sizeHint().width(), 0, 0, 0);
+    // + BreakpointArea->sizeHint().width()
+    setViewportMargins(LineArea->sizeHint().width(), 0, 0, 0);
 }
 
 void PlainTextEdit::slotHighlightCurrentLine()
@@ -715,12 +734,17 @@ void PlainTextEdit::slotHighlightCurrentLine()
     setExtraSelections(selections);
 }
 
+// update automatically whole view -> all widgets contained
 void PlainTextEdit::slotUpdateRequest(const QRect &rect, const int column)
 {
     if (column) {
         LineArea->scroll(0, column);
+        BreakpointArea->scroll(0, column);
     }
-    LineArea->update(0, rect.y(), LineArea->width(), rect.height());
+    //LineArea->update(0, rect.y(), LineArea->width(), rect.height());
+    //BreakpointArea->update(0, rect.y(), BreakpointArea->width(), rect.height());
+    LineArea->update();
+    BreakpointArea->update();
     if (rect.contains(viewport()->rect())) {
         slotBlockCountChanged(0);
     }
@@ -775,6 +799,7 @@ void PlainTextEdit::wheelEvent(QWheelEvent *event)
 void PlainTextEdit::paintEvent(QPaintEvent *event)
 {
     QPainter line(viewport());
+    // symbolic line that represents width of 1 row --> 80 characters
     const int offset = static_cast<int>((fontMetrics().width('8') * 80)
                                         + contentOffset().x()
                                         + document()->documentMargin());
@@ -782,6 +807,7 @@ void PlainTextEdit::paintEvent(QPaintEvent *event)
     static QColor eol = palette().color(QPalette::Text);
     eol.setAlpha(50);
     pen.setColor(eol);
+    // line made from dots
     pen.setStyle(Qt::DotLine);
     line.setPen(pen);
     line.drawLine(offset, 0, offset, viewport()->height());
@@ -790,9 +816,15 @@ void PlainTextEdit::paintEvent(QPaintEvent *event)
 
 void PlainTextEdit::resizeEvent(QResizeEvent *event)
 {
+    // whole text edit rect
+    const QRect rect = contentsRect();
+    // LineArea->setGeometry(QRect(rect.left(), rect.top(), LineArea->sizeHint().width(), rect.height()));
+    LineArea->resize(LineArea->sizeHint().width(), rect.height());
+    //BreakpointArea->setGeometry(QRect(rect.left(), rect.top(), BreakpointArea->sizeHint().width(), rect.height()));
+    // BreakPoint width is fixed, since it is an image --> but still i can change for another BreakPoint
+    BreakpointArea->resize(BreakpointArea->sizeHint().width(), rect.height());
+
     QPlainTextEdit::resizeEvent(event);
-    QRect rect = contentsRect();
-    LineArea->setGeometry(QRect(rect.left(), rect.top(), LineArea->sizeHint().width(), rect.height()));
 }
 
 void PlainTextEdit::keyReleaseEvent(QKeyEvent *event)
@@ -803,7 +835,7 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event)
     switch (event->key()) {
         case Qt::Key_Control:
         case Qt::CTRL:
-            mouse_cursor.setShape(Qt::DragMoveCursor);
+            mouse_cursor.setShape(Qt::PointingHandCursor);
             break;
         case Qt::Key_Backtab:
         case Qt::Key_Tab: {
@@ -936,6 +968,7 @@ void LineNumberArea::paintEvent(QPaintEvent *e)
     painter.fillRect(full, palette().color(QPalette::Base));
     while (block.isValid() && (top <= full.bottom())) {
         if (block.isVisible() && (bottom >= full.top())) {
+            // !!! since BreakPoint is on left, i need to move first x pos, or on left -> change break area x pos
             QRect box(0, top, width(), m_Edit->fontMetrics().height());
             QFont font = painter.font();
             font.setFamily(m_Edit->font().family());
@@ -1007,33 +1040,76 @@ void LineNumberArea::wheelEvent(QWheelEvent *e)
     QApplication::sendEvent(m_Edit->viewport(), e);
 }
 
-/* TextInfoArea widget
+/* BreakPointArea widget
 ------------------------------------------------------------------------- */
 
-BreakPointArea::BreakPointArea(PlainTextEdit *edit) : QWidget(edit), m_Edit(edit){}
-
-QSize BreakPointArea::sizeHint() const {
-    int digits = 1;
-    int blocks = qMax(1, m_Edit->blockCount());
-    while (blocks >= 10) {
-        blocks /= 10;
-        digits++;
-    }
-    digits++;
-    digits++;
-    return QSize((3 + (m_Edit->fontMetrics().width('8') * digits)), 0);
+BreakPointArea::BreakPointArea(PlainTextEdit *edit) : QWidget(edit), m_Edit(edit){
+    breakpoint.load(IconFactory::BreakPoint);
+    setFixedWidth(breakpoint.width());
+    blocks.reserve(5);
 }
 
-void BreakPointArea::mouseReleaseEvent(QMouseEvent *event) {
-    //QPixmap breakpoint;
-    //breakpoint.load(IconFactory::BreakPoint);
-    //breakpoint.width();breakpoint.height();
-    //breakPointCreated();
-    //breakPointDeleted();
-    QWidget::mouseReleaseEvent(event);
+bool BreakPointArea::canCreateBreakPoint(const QTextBlock &block) {
+    //int count;
+    for (int i = 0; i < blocks.size(); ++i) {
+        // if already contain -> remove it, paint only background pixels, else create
+        if(blocks[i] == block.blockNumber()){
+            // remove it from list
+            //breakPointRemoved();
+            //qDebug() << blocks;
+            //count++;
+            return true;
+        }
+    }
+
+    // can create
+    return false;
+}
+
+QSize BreakPointArea::sizeHint() const {
+    return QSize((breakpoint.width()), 0);
+}
+
+void BreakPointArea::mouseEvent(QMouseEvent *event) {
+    QTextCursor cursor = m_Edit->cursorForPosition(QPoint(0, event->pos().y()));
+    QTextBlock touched_block = cursor.block();
+    if ((event->type() == QEvent::MouseButtonPress) && (event->button() == Qt::LeftButton)) {
+        // record touched block so in paintEvent i can create, remove at clicked line(block)
+        blocks.push_back(touched_block.blockNumber());
+        cursor.setVisualNavigation(true);
+        m_Edit->setTextCursor(cursor);
+        //qDebug() << touched_block.blockNumber();
+        //qDebug() << blocks;
+    }
+}
+
+void BreakPointArea::mousePressEvent(QMouseEvent *event) {
+    mouseEvent(event);
 }
 
 void BreakPointArea::paintEvent(QPaintEvent *event) {
-    QWidget::paintEvent(event);
+    QPainter painter(this);
+    QTextBlock block = m_Edit->firstVisibleBlockProxy();
+    // y1, y2 coordinates of rectangle we are going to paint in: top, top + height of 1 line(block)
+    int top = static_cast<int>(m_Edit->blockBoundingGeometryProxy(block).translated(m_Edit->contentOffsetProxy()).top());
+    int bottom = top + static_cast<int>(m_Edit->blockBoundingRectProxy(block).height());
+    // widget area rectangle
+    QRect area_rect = event->rect();
+    // while not all lines are painted, at the end increasing, checking if valid
+    while (block.isValid() && (top <= area_rect.bottom())) {
+        if (block.isVisible() && (bottom >= area_rect.top())) {
+            // width is fixed in constructor, height -> i want to fill by font size, since it can increase
+            // TODO: first x is problem, since line numbers are also like that painted
+            if(canCreateBreakPoint(block)){
+                // was 0
+                QRect box(0, top, width(), m_Edit->fontMetrics().height());
+                painter.drawPixmap(box, breakpoint);
+            }
+        }
+        block = block.next();
+        top = bottom;
+        bottom = (top + static_cast<int>(m_Edit->blockBoundingRectProxy(block).height()));
+    }
+    //QWidget::paintEvent(event);
 }
 

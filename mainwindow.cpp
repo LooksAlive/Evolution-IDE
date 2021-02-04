@@ -9,7 +9,7 @@ want to show exact widget into this section(mainwindow - app)
 */
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
-    ui->setupUi(this);
+    //ui->setupUi(this);
     setAcceptDrops(true);
     setWindowIcon(QIcon(":/icons/icon.png"));
     setWindowTitle("Evolution IDE");
@@ -150,7 +150,7 @@ void MainWindow::SetupVerticalBar(){
 
 void MainWindow::SetupStatusBar() {
     statusbar = new QStatusBar(this);
-    progress = new ProgressBar(this);
+    progress_bar = new ProgressBar(this);
     progress_tag = new QLabel(this);
     btn_encoding = new QToolButton(this);
     btn_position = new QToolButton(this);
@@ -162,16 +162,24 @@ void MainWindow::SetupStatusBar() {
     // progress->setVisible(false);
     btn_encoding->setText("UTF-8");
     btn_encoding->setFixedWidth(50);
+    btn_encoding->setWindowFlags(Qt::FramelessWindowHint);
+    btn_encoding->setToolButtonStyle(Qt::ToolButtonFollowStyle);
     btn_position->setFixedWidth(70);
+    btn_position->setWindowFlags(Qt::FramelessWindowHint);
+    btn_position->setToolButtonStyle(Qt::ToolButtonFollowStyle);
+    btn_position->setAttribute(Qt::WA_NoSystemBackground, true);
+    btn_position->setAttribute(Qt::WA_TranslucentBackground, true);
     connect(btn_position, SIGNAL(clicked()), this, SLOT(slotGoToLine()));
+    progress_bar->setWindowFlags(Qt::FramelessWindowHint);
 
     statusbar->addWidget(progress_tag);
-    statusbar->addWidget(progress);
+    statusbar->addWidget(progress_bar);
     statusbar->addWidget(btn_position);
     statusbar->addWidget(btn_encoding);
     setStatusBar(statusbar);
 }
 
+// after line is set , field is empty
 void MainWindow::slotTextPositionChanged(){
     // later consider creating new button here
     // What if on the changed tab is no cursor set -> remain last cursor position
@@ -197,21 +205,22 @@ void MainWindow::SetupMenuBar() {
 
     menuBar = new QMenuBar(this);
     menuBar->setWindowTitle("Menu bar");
-    menuBar->setObjectName("Menubar");
-    // menuBar->setGeometry(QRect(0, 0, 1000, 24));
-    menuBar->setFixedHeight(24);    // or none, still work well
+    //menuBar->setObjectName("Menubar");
+    //menuBar->setGeometry(QRect(0, 0, 1000, 24));
+    //menuBar->setFixedHeight(24);    // or none, still work well
     menuBar->setMouseTracking(true);
-    menuBar->setNativeMenuBar(false);
+    //menuBar->setNativeMenuBar(false);
     menuBar->setTabletTracking(true);
 
-    QMenu* fileMenu = new QMenu("File");
-    QMenu* editMenu = new QMenu("Edit");
-    QMenu* viewMenu = new QMenu("View");
-    QMenu* DebugMenu = new QMenu("Debug");
-    QMenu* AnalyzeMenu = new QMenu("Analyze");
-    QMenu* HelpMenu = new QMenu("Help");
+    // if there will not be this param, will not show, or add geometry manually like above
+    QMenu* fileMenu = new QMenu("File", this);
+    QMenu* editMenu = new QMenu("Edit", this);
+    QMenu* viewMenu = new QMenu("View", this);
+    QMenu* DebugMenu = new QMenu("Debug", this);
+    QMenu* AnalyzeMenu = new QMenu("Analyze", this);
+    QMenu* HelpMenu = new QMenu("Help", this);
 
-    /* actions under specific menu section, some shortcuts are random :) */
+
     fileMenu->addAction(QIcon(IconFactory::NewFile), "New File",   this, SLOT(CreateFile()),    Qt::CTRL + Qt::Key_N);
     fileMenu->addAction(QIcon(IconFactory::OpenFile), "Open File",  this, SLOT(OpenFile()),      Qt::CTRL + Qt::Key_O);
     fileMenu->addSeparator();
@@ -235,7 +244,6 @@ void MainWindow::SetupMenuBar() {
     editMenu->addAction("Remove All", this, SLOT(slotRemoveAll()), Qt::CTRL + Qt::Key_Backspace);
     //editMenu->addAction("Expand", this, SLOT(slotExpand()));
     //editMenu->addAction("Collapse", this, SLOT(slotCollapse()));
-
     editMenu->addAction(QIcon(IconFactory::SelectAll), "Select All", this, SLOT(slotSelectAll()), Qt::CTRL + Qt::Key_A);
     editMenu->addSeparator();
     editMenu->addAction(QIcon(IconFactory::Comment),"toggle comment", this, SLOT(slotToggleComment()), Qt::CTRL + Qt::SHIFT + Qt::Key_C);
@@ -250,7 +258,6 @@ void MainWindow::SetupMenuBar() {
     viewMenu->addAction(QIcon(IconFactory::FullScreen), "Full Screen", this, SLOT(slotFullScreen()));
     viewMenu->addAction("Converter", this, SLOT(SetupConverter()));
 
-
     DebugMenu->addAction(QIcon(IconFactory::StartDebug), "Start Debug", this, SLOT(slotStartDebug()), Qt::Key_F5);
     DebugMenu->addAction(QIcon(IconFactory::StopDebug), "Stop Debug", this, SLOT(slotStopDebug()));
     DebugMenu->addAction("Attach Process", this, SLOT(slotShowAttachToProcess()));
@@ -259,14 +266,12 @@ void MainWindow::SetupMenuBar() {
     DebugMenu->addSeparator();
     DebugMenu->addAction(QIcon(IconFactory::NextLine), "Step Over", this, SLOT(slotStepOver()), Qt::Key_F6);
     DebugMenu->addAction(QIcon(IconFactory::StepInto), "Step Into", this, SLOT(slotStepInto()), Qt::Key_F7);
-    DebugMenu->addAction(QIcon(IconFactory::NextInstruction), "Next Instruction", this, SLOT(slotStepInstruction()));
+    DebugMenu->addAction(QIcon(IconFactory::StepInstruction), "Step Instruction", this, SLOT(slotStepInstruction()));
     DebugMenu->addAction(QIcon(IconFactory::GetOutOfFunction), "Step Out", this, SLOT(slotStepOut()));
     DebugMenu->addSeparator();
     DebugMenu->addAction("Toggle Breakpoint", this, SLOT(slotToggleBreakPoint()), Qt::Key_F9);
     DebugMenu->addAction("Set breakpoint at line", this, SLOT(slotSetBreakpointAtLine()), Qt::SHIFT + Qt::Key_F9);
-    DebugMenu->addAction("Show All Breakpointsts", this, SLOT(slotShowBreakpointsList()));
-
-
+    DebugMenu->addAction("Show All Breakpoints", this, SLOT(slotShowBreakpointsList()));
 
     AnalyzeMenu->addAction( "Run Clang-Tidy", this, SLOT(slotClangTidy()));
     AnalyzeMenu->addAction( "Run Clang-Check", this, SLOT(slotClangCheck()));
@@ -275,7 +280,6 @@ void MainWindow::SetupMenuBar() {
 
     HelpMenu->addAction("About Evolution", this, SLOT(slotAbout()));
 
-    /* replace ui; decide if use namespace or just MainWindow->declared int .h as private pointer  */
     menuBar->addMenu(fileMenu);
     menuBar->addMenu(editMenu);
     menuBar->addMenu(viewMenu);
@@ -283,8 +287,7 @@ void MainWindow::SetupMenuBar() {
     menuBar->addMenu(AnalyzeMenu);
     menuBar->addMenu(HelpMenu);
 
-    menuBar->setVisible(true);
-    menuBar->show();
+    //qDebug() << menuBar->isVisible();
     setMenuBar(menuBar);
 }
 
@@ -728,6 +731,13 @@ void MainWindow::CloseAllFiles() {
 
 /* close all files, prevent memory leak */
 void MainWindow::CloseWindow() {
+
+    QMessageBox::StandardButton reply = QMessageBox::question(
+            this, "Exit",
+            "Are you sure, you want to exit Evolution-IDE ?", QMessageBox::Yes|QMessageBox::No);
+    if (reply == QMessageBox::No)
+        return;
+
     // reopen project not closed tabs later.
     QStringList opened_tabs;
     QList <int> tabs_cursor_positions;
@@ -816,8 +826,8 @@ void MainWindow::UpdateCurrentIndex(int new_selection_index) {
     QString file_extension = QFileInfo(file).suffix();
     if (!file_extension.isEmpty()) {
         if (highlighter->setExtension(file_extension)) {
-            highlighter->setDocument(((PlainTextEdit*)Tabs->currentWidget())->document()); // unsafe getting!
-            highlighter->highlightBlock(((PlainTextEdit*)Tabs->currentWidget())->toPlainText()); // unsafe getting!
+            highlighter->setDocument(currentWidget->document());
+            highlighter->highlightBlock(currentWidget->toPlainText());
         }
     }
 }
@@ -988,7 +998,7 @@ void MainWindow::slotFullScreen() {
 }
 
 void MainWindow::slotAbout() {
-    static QString about = "Evolution IDE is an Integrated Development Environment mainly aimed for C & C++ . \n"
+    const QString about = "Evolution IDE is an Integrated Development Environment mainly aimed for C & C++ . \n"
                            "It is Open source. If you Want to use It, you can read Readme.md file with all features \n";
 
     QMessageBox::information(this, "About Evolution", about, QMessageBox::Close);
@@ -1009,10 +1019,14 @@ void MainWindow::slotStopProcess() {
 }
 
 void MainWindow::slotStartDebug() {
-    if(!debuggerView->isActiveWindow()){
+    if(!debuggerView->isVisible()){
         showDebuggerView();
+        // TODO: wait some time
+        debuggerView->start();
     }
-    debuggerView->slotStartDebug();
+    else{
+        debuggerView->start();
+    }
 }
 
 void MainWindow::slotStopDebug() {
@@ -1045,20 +1059,21 @@ void MainWindow::slotStepOut() {
 
 void MainWindow::slotToggleBreakPoint() {
     QString filename = currentWidget->getFilePath();
-    int line = currentWidget->getCursorPosition().y();
+
+    int line = currentWidget->setBreakPoint();
 
     if(!filename.isEmpty() && line != 0){
-        debuggerView->debugger.setBreakpoint(filename.toStdString().c_str(), line);
+        debuggerView->setBreakpoint(filename.toStdString().c_str(), line);
     }
 }
 
 void MainWindow::slotDeleteBreakPoint() {
     QString filename = currentWidget->getFilePath();
     int line = currentWidget->getCursorPosition().y();
+    int id;
+    currentWidget->removeBreakPoint(line);
 
-    if(!filename.isEmpty() && line != 0){
-        debuggerView->debugger.setBreakpoint(filename.toStdString().c_str(), line);
-    }
+    debuggerView->removeBreakpoint(id);
 }
 
 void MainWindow::slotSetBreakpointAtLine() {

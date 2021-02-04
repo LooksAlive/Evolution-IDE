@@ -17,12 +17,12 @@ int main(int argc, char *argv[]) {
 
     QApplication app(argc, argv);
     MainWindow window;
-    QFile file("/home/adam/Desktop/sources/Evolution-IDE/stylesheets/Combinear.qss");
+    // /home/adam/Desktop/sources/Evolution-IDE/stylesheets/Combinear.qss
+    QFile file("/home/adam/Desktop/sources/Evolution-IDE/stylesheet.qss");
     QString darktheme; // Adaptic.qss, SyNet.qss
     if(file.open(QFile::ReadOnly)){
         darktheme = file.readAll();
     }
-
 
     QString theme = settings.value("Evolution/theme").toString();
     /*
@@ -31,6 +31,7 @@ int main(int argc, char *argv[]) {
         // app.setStyleSheet(darktheme);
         DarkStyle *style = new DarkStyle();
         app.setStyle(style);
+        //app.setStyleSheet(darktheme);
     }
     */
 

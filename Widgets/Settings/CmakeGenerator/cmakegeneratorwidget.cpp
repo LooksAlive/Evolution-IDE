@@ -26,7 +26,7 @@ void CMakeGeneratorWidget::createMainWindow() {
     MainLayout = new QFormLayout(this);
 
     generate_cmake = new QCheckBox(this);
-    cmake_path = new QLineEdit(this);
+    cmakelists_path = new QLineEdit(this);
     compiler = new QLineEdit(this);
     compile_flags = new QLineEdit(this);
     cpu_cores = new QLineEdit(this);
@@ -38,7 +38,7 @@ void CMakeGeneratorWidget::createMainWindow() {
     setDefaultSettings();       // *********************************************************************
 
     MainLayout->addRow("Generate cmake: ", generate_cmake);
-    MainLayout->addRow("Cmake path: ", cmake_path);
+    MainLayout->addRow("CmakeLists path: ", cmakelists_path);
     MainLayout->addRow("Compiler ", compiler);
     MainLayout->addRow("Compile Flags: ", compile_flags);
     MainLayout->addRow("CPU Cores ", cpu_cores);
@@ -86,7 +86,7 @@ void CMakeGeneratorWidget::loadData() {
     QString cr = settings.value("Evolution/cpu_cores").toString();
 
     generate_cmake->setCheckable(generate);
-    cmake_path->setText(cmakePath);
+    cmakelists_path->setText(cmakePath);
     compiler->setText(co);
     compile_flags->setText(cf);
     cpu_cores->setText(cr);

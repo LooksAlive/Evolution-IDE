@@ -29,8 +29,8 @@ include_directories(
 
 set(CLANGD_SOURCES
         clangd/AST.cpp
-        clangd/ClangdLSPServer.cpp
-        clangd/ClangdServer.cpp
+        #clangd/ClangdLSPServer.cpp
+        #clangd/ClangdServer.cpp
         clangd/CodeComplete.cpp
         clangd/CodeCompletionStrings.cpp
         clangd/CollectMacros.cpp
@@ -209,8 +209,8 @@ set(SOURCE_FILES
                 Widgets/Converter/converter.cpp
                 Widgets/Converter/converter.h
 
-                Debugger/lldbbridge.cpp
-                Debugger/lldbbridge.h
+                #Debugger/lldbbridge.cpp
+                #Debugger/lldbbridge.h
                 Debugger/debuggerwidget.cpp
                 Debugger/debuggerwidget.h
                 Clang/indexer.cpp
