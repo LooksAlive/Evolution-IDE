@@ -8,10 +8,11 @@
 #include <QPointer>
 #include <QPushButton>
 #include <QToolButton>
+#include <QTreeView>
 #include <QGroupBox>
 #include <QDockWidget>
 #include <QFormLayout>
-
+#include <QListWidget>
 
 #include "Widgets/PlainTextEdit/plaintextedit.h"
 #include "Widgets/Tab/tab.h"
@@ -26,7 +27,8 @@ public:
     QLineEdit *LineEditFind;
 
 private:
-    QHBoxLayout *MainLayout;
+    QVBoxLayout *MainLayout;
+    QHBoxLayout *UpLayout;
     QFormLayout *input_layout;
     QVBoxLayout *flags_layout;
 
@@ -48,6 +50,8 @@ private:
     PlainTextEdit *m_Edit = nullptr;
     QString same_file;
 
+    QTreeView *results;
+
     void createWindow();
 
     void getOptionsAndTexts();
@@ -55,6 +59,7 @@ private:
     QTextDocument::FindFlags find_options;
     QString search_text;
     QString replace_text;
+
 
 public slots:
     void slotNext();   // mainwindow search

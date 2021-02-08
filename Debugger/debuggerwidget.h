@@ -23,6 +23,9 @@
 #include <QComboBox>
 #include <QPalette>
 #include <QThread>
+#include <QListWidget>
+#include <QTreeView>
+#include <QTabWidget>
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -95,6 +98,9 @@ private:
     QVBoxLayout *var_layout;
     QListWidget *all_variables;
     QListWidget *variable_description;
+
+    QTabWidget *tab;
+    QTreeView *view;
 
     void createDebugVariableWindow();
 

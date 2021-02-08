@@ -248,7 +248,7 @@ set(SOURCE_FILES
                 Widgets/PlainTextEdit/GoToLineColumn.h
                 Widgets/ProgressBar/ProgressBar.cpp
                 Widgets/ProgressBar/ProgressBar.h
-        )
+        Widgets/Education/Education.cpp Widgets/Education/Education.h Widgets/Education/CodeSamples.h)
 
 
 

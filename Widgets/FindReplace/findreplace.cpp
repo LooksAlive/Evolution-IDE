@@ -4,6 +4,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QShortcut>
+#include <QStandardItem>
 
 #include "icons/IconFactory.h"
 #include "findreplace.h"
@@ -12,7 +13,8 @@ FindReplaceWidget::FindReplaceWidget(Tab *tab, QWidget *parent)
     : QDockWidget(parent), m_Tab(tab)
 {
     createWindow();
-    MainLayout->setContentsMargins(0, 0, 0, 0);
+
+    MainLayout->setContentsMargins(0, 5, 0, 0);
     MainLayout->setSpacing(2);
 
     base = new QWidget(this);
@@ -37,9 +39,11 @@ FindReplaceWidget::FindReplaceWidget(Tab *tab, QWidget *parent)
 }
 
 void FindReplaceWidget::createWindow() {
-    MainLayout = new QHBoxLayout();
+    MainLayout = new QVBoxLayout();
+    UpLayout = new QHBoxLayout();
     input_layout = new QFormLayout();
     flags_layout = new QVBoxLayout();
+    results = new QTreeView(this);
     CaseSensitive = new QCheckBox("Case Sensitive", this);
     WholeWords = new QCheckBox("Whole Text", this);
     RegularExpression = new QCheckBox("Use Regexp", this);
@@ -52,6 +56,7 @@ void FindReplaceWidget::createWindow() {
     LabelText->setAlignment(Qt::AlignBottom | Qt::AlignLeft);
     LabelText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
+    results->setHeaderHidden(true);
 
     next = new QPushButton("Next", this);
     previous = new QPushButton("Previous", this);
@@ -82,16 +87,22 @@ void FindReplaceWidget::createWindow() {
     replace_layout->addWidget(replace);
     replace_layout->addWidget(replaceall);
 
-    MainLayout->addLayout(input_layout);
+    UpLayout->addLayout(input_layout);
     /*
     MainLayout->addWidget(next);
     MainLayout->addWidget(previous);
     MainLayout->addWidget(replace);
     MainLayout->addWidget(replaceall);
     */
-    MainLayout->addLayout(find_layout);
-    MainLayout->addLayout(replace_layout);
-    MainLayout->addLayout(flags_layout);
+    UpLayout->addLayout(find_layout);
+    UpLayout->addLayout(replace_layout);
+    UpLayout->addLayout(flags_layout);
+
+    UpLayout->setContentsMargins(0, 0, 0, 0);
+    UpLayout->setSpacing(2);
+
+    MainLayout->addLayout(UpLayout);
+    MainLayout->addWidget(results);
 }
 
 /* needs to be called everytime in case of changes */
@@ -119,6 +130,24 @@ void FindReplaceWidget::slotNext(){
     }
     getOptionsAndTexts();
     m_Edit->findNext(search_text, find_options);
+
+    // result tree:
+    // get data from m_Edit by some function after find call
+    auto *model = new QStandardItemModel(this);
+    QStandardItem *rootNode = model->invisibleRootItem();
+    // resultData data = getSearchResultData();
+    for (int i = 0; i <= /*data.size()*/ 5; i++) {
+        QStandardItem *file = new QStandardItem(/*data[i].fileName*/"filename");
+        rootNode->appendRow(file);
+        for (int j = 0; j <= /*data[i].other.size()*/ 2; j++) {
+            // this in loop, contains whole line content and line
+            QStandardItem *line = new QStandardItem(/*data[i].fileName*/"line");
+            file->appendRow(line);
+        }
+    }
+
+    results->setModel(model);
+    results->collapseAll();
 }
 // figure it out later
 void FindReplaceWidget::slotPrevious(){

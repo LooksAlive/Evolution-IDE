@@ -32,12 +32,19 @@ DebuggerWidget::DebuggerWidget(QWidget *parent) : QWidget(parent)
 
 void DebuggerWidget::createConsole(){
 
+    tab = new QTabWidget(this);
     Console = new QWidget(this);
     MainConsoleLayout = new QHBoxLayout(this);
     console_out_in = new QVBoxLayout();
     debug_output = new QPlainTextEdit(this);
     args_input = new QLineEdit(this);
     completer = new QCompleter(this);
+
+    auto *debugger = new QWidget(this);
+    //auto *variables = new QWidget(this);
+    view = new QTreeView(this);
+    view->setHeaderHidden(true);
+
 
     debug_output->setReadOnly(true);
     completer->setCaseSensitivity(Qt::CaseInsensitive);
@@ -48,7 +55,9 @@ void DebuggerWidget::createConsole(){
 
     console_out_in->addWidget(debug_output);
     console_out_in->addWidget(args_input);
-
+    debug_output->setContentsMargins(0, 0, 0, 0);
+    args_input->setContentsMargins(0, 0, 0, 0);
+    console_out_in->setContentsMargins(0, 0, 0, 0);
     Console->setFixedHeight(200);
     /*
     Console->setAutoFillBackground(true);
@@ -60,8 +69,16 @@ void DebuggerWidget::createConsole(){
 
     createControlPanel();
 
+    debugger->setLayout(console_out_in);
+    debugger->setContentsMargins(0, 0, 0, 0);
+
+
+    tab->addTab(debugger, "Debugger");
+    tab->addTab(view, "Variables");
+
     MainConsoleLayout->addLayout(ControlPanel);
-    MainConsoleLayout->addLayout(console_out_in);
+    //MainConsoleLayout->addLayout(console_out_in);
+    MainConsoleLayout->addWidget(tab);
 
     Console->setLayout(MainConsoleLayout);
 }
@@ -473,8 +490,8 @@ void DebuggerWidget::start() {
         //return;
     }
 
-    setBreakpoint("/home/adam/Desktop/sources/Evolution-IDE/main.cpp", 23);
-    //setBreakpoint("/home/adam/Desktop/sources/Evolution-IDE/main.cpp", 27);
+    //setBreakpoint("/home/adam/Desktop/sources/Evolution-IDE/main.cpp", 23);
+    setBreakpoint("/home/adam/Desktop/sources/Evolution-IDE/main.cpp", 27);
 
     //Process = Target.LaunchSimple(nullptr, nullptr, nullptr);
     //Process = Target.Launch(launch_info, error);
@@ -498,6 +515,7 @@ void DebuggerWidget::start() {
     //connect(worker, &QThread::started, this, &DebuggerWidget::setProcessInterruptFeatures);
     //connect(worker, &QThread::finished, worker, &QObject::deleteLater);
     //worker->start();
+    // when process stopped, return true, pause process
     //setProcessInterruptFeatures();
     std::thread debug_thread(&DebuggerWidget::setProcessInterruptFeatures, this); // , "Debug_session"
     debug_thread.detach(); // join
@@ -723,6 +741,10 @@ void DebuggerWidget::attachToRunningProcess(const int &proc_id){
 void DebuggerWidget::storeFrameData(SBFrame frame) {
     //clear();
 
+    auto *model = new QStandardItemModel(this);
+
+    QStandardItem *rootNode = model->invisibleRootItem();
+
     auto FrameList = frame.GetVariables(true,  // args
                                         true,  // locals
                                         true,  // statics
@@ -743,7 +765,25 @@ void DebuggerWidget::storeFrameData(SBFrame frame) {
         variable_description->insertItem(idx, value.GetValue());
         all_variables->insertItem(idx, value.GetName());
 
+        //defining a couple of items
+        QStandardItem *var = new QStandardItem(value.GetName());
+        QStandardItem *val = new QStandardItem(value.GetValue());
+
+        //building up the hierarchy
+        rootNode->appendRow(var);
+        var->appendRow(val);
+
     }
+
+    view->setModel(model);
+    view->collapseAll();
+
+    /*
+     //selection changes shall trigger a slot
+    QItemSelectionModel *selectionModel = treeView->selectionModel();
+    connect(selectionModel, &QItemSelectionModel::selectionChanged,
+            this, &MainWindow::selectionChangedSlot);
+    */
 }
 
 std::string DebuggerWidget::frameGetLocation(SBFrame frame) {

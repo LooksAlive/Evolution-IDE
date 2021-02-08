@@ -113,8 +113,9 @@ void PlainTextEdit::setCursorPosition(const int &row, const int &col)
 
 QPoint PlainTextEdit::getCursorPosition(){
     QTextCursor cursor = textCursor();
-    int row = cursor.blockNumber() ;     // +1
-    int col = cursor.columnNumber();    // +1 , ending position
+    // there is no 0 col or row in view but it is acts like it is
+    int row = cursor.blockNumber();     // +1
+    int col = cursor.columnNumber();    // +1 , starting from 1
 
     return QPoint(row, col);
 }
@@ -321,7 +322,7 @@ int PlainTextEdit::indentSize(const QString &text)
     return count;
 }
 
-bool PlainTextEdit::indentText(const bool forward)
+bool PlainTextEdit::indentText(const bool &forward)
 {
     QTextCursor cursor = textCursor();
     QTextCursor clone = cursor;
@@ -424,7 +425,7 @@ void PlainTextEdit::moveCursor(const bool &end)
 }
 
 /* moving selected text arround */
-void PlainTextEdit::moveSelection(const bool up)
+void PlainTextEdit::moveSelection(const bool &up)
 {
     QTextCursor original = textCursor();
     QTextCursor moved = original;
@@ -469,7 +470,7 @@ void PlainTextEdit::moveSelection(const bool up)
     setTextCursor(moved);
 }
 
-void PlainTextEdit::transformText(const bool upper)
+void PlainTextEdit::transformText(const bool &upper)
 {
     QTextCursor cursor = textCursor();
     if (!cursor.hasSelection()) {
@@ -656,11 +657,10 @@ void PlainTextEdit::createMenu() {
     viewMenu->addAction(QIcon(IconFactory::Expand), "Expand", this, SLOT(expand()));
     viewMenu->addSeparator();
     viewMenu->addAction(QIcon(IconFactory::Comment), "Comment Code", this, SLOT(toggleComment()), Qt::CTRL + Qt::SHIFT + Qt::Key_C);
-    /*
+    viewMenu->addAction("Generate...", this, SLOT(slotGenerate()), Qt::CTRL + Qt::SHIFT + Qt::Key_G);
     viewMenu->addAction("Format File", this, SLOT(formatFile()), Qt::CTRL + Qt::SHIFT + Qt::Key_F);
     viewMenu->addAction("Go to Definition", this, SLOT(slotGoToDefinition()), Qt::CTRL + Qt::SHIFT + Qt::Key_D);
     viewMenu->addAction("Find References", this, SLOT(slotFindReferences()), Qt::CTRL + Qt::SHIFT + Qt::Key_F);
-    */
 
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(slotShowMenu(const QPoint&)));
@@ -699,6 +699,18 @@ void PlainTextEdit::slotShowMenu(const QPoint &pos) {
 }
 
 void PlainTextEdit::formatFile() {
+
+}
+
+void PlainTextEdit::slotGenerate() {
+
+}
+
+void PlainTextEdit::slotGoToDefinition() {
+
+}
+
+void PlainTextEdit::slotFindReferences() {
 
 }
 

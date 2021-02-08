@@ -17,7 +17,6 @@
 
 #include <iostream>
 #include <vector>
-#include <unordered_map>
 #include "completer.h"
 
 class LineNumberArea;
@@ -46,6 +45,7 @@ public:
     void findNext(const QString &search, const QTextDocument::FindFlags &find_options = QTextDocument::FindWholeWords);
     void replace(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options = QTextDocument::FindWholeWords);
     void replaceAndFind(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options = QTextDocument::FindWholeWords);
+    // returns how many occurrences were replaces
     int replaceAll(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options = QTextDocument::FindWholeWords);
 
     // cursor
@@ -91,10 +91,10 @@ private:
     void createMenu();
 
     int indentSize(const QString &text);
-    bool indentText(const bool forward);
+    bool indentText(const bool &forward);
     QString indentText(QString text, int count) const;
-    void moveSelection(const bool up);
-    void transformText(const bool upper);
+    void moveSelection(const bool &up);
+    void transformText(const bool &upper);
 
     QString file_extension;
     QString file;
@@ -103,6 +103,9 @@ private:
 public slots:
     void toggleComment();
     void formatFile();
+    void slotGoToDefinition();
+    void slotFindReferences();
+    void slotGenerate();
     void expand();
     void collapse();
 

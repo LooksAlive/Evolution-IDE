@@ -94,10 +94,10 @@ void FileExplorer::createSearchBox() {
     connect(searchBox, SIGNAL(returnPressed()), this, SLOT(slotTreeSearch()));
 
     // later set completer etc.
-    //completer = new QCompleter(this);
-    //completer->setCompletionMode(QCompleter::PopupCompletion);
-    //completer->setModel(FileModel);
-    //searchBox->setCompleter(completer);
+    completer = new QCompleter(this);
+    completer->setCompletionMode(QCompleter::PopupCompletion);
+    completer->setModel(FileModel);
+    searchBox->setCompleter(completer);
 }
 
 void FileExplorer::setRootDirectory(const QString &path){
@@ -244,16 +244,17 @@ void FileExplorer::slotCreate() {
 
 void FileExplorer::slotBack() {
     // FileView->setHeader(new QHeaderView());
-    QFileInfo info = FileModel->fileInfo(FileView->currentIndex());
+    QFileInfo info(FileModel->fileInfo(FileView->currentIndex()));
     if(info.isDir()){
-        setRootDirectory(info.dir().absolutePath());
+        FileModel->rootDirectory().cdUp();
+        //FileView->setRootIndex(FileModel->index(info.dir().absolutePath()));
     }
 }
 
 void FileExplorer::slotSetDefaultDir() {
-    QFileInfo info = FileModel->fileInfo(FileView->currentIndex());
+    QFileInfo info(FileModel->fileInfo(FileView->currentIndex()));
     if(info.isDir()){
-        setRootDirectory(info.dir().absolutePath());
+        FileView->setRootIndex(FileModel->index(info.dir().absolutePath()));
     }
 }
 

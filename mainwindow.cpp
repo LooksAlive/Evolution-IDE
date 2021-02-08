@@ -24,6 +24,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     SetupMenuBar();
     SetupToolBar();
 
+    SetupEducationWidget();
+
     SetupNodeView();
     SetupDebuggerView();
     SetupBinaryView();
@@ -218,6 +220,7 @@ void MainWindow::SetupMenuBar() {
     QMenu* viewMenu = new QMenu("View", this);
     QMenu* DebugMenu = new QMenu("Debug", this);
     QMenu* AnalyzeMenu = new QMenu("Analyze", this);
+    QMenu* EducationMenu = new QMenu("Education", this);
     QMenu* HelpMenu = new QMenu("Help", this);
 
 
@@ -275,8 +278,11 @@ void MainWindow::SetupMenuBar() {
 
     AnalyzeMenu->addAction( "Run Clang-Tidy", this, SLOT(slotClangTidy()));
     AnalyzeMenu->addAction( "Run Clang-Check", this, SLOT(slotClangCheck()));
+    AnalyzeMenu->addAction( "Document File", this, SLOT(slotClangDocGenerate()));
     AnalyzeMenu->addAction( "Run Valgrind", this, SLOT(slotValgrind()));
     AnalyzeMenu->addAction( "Run Gbd-Gui", this, SLOT(slotGdbGui()));
+
+    EducationMenu->addAction("Code Samples", this, SLOT(slotShowEducation()));
 
     HelpMenu->addAction("About Evolution", this, SLOT(slotAbout()));
 
@@ -285,6 +291,7 @@ void MainWindow::SetupMenuBar() {
     menuBar->addMenu(viewMenu);
     menuBar->addMenu(DebugMenu);
     menuBar->addMenu(AnalyzeMenu);
+    menuBar->addMenu(EducationMenu);
     menuBar->addMenu(HelpMenu);
 
     //qDebug() << menuBar->isVisible();
@@ -483,6 +490,10 @@ void MainWindow::SetupSettingsWindow(){
 void MainWindow::SetupConverter(){
     converter = new Converter(this);
     converter->show();
+}
+
+void MainWindow::SetupEducationWidget(){
+    education = new Education(Tabs, this);
 }
 
 
@@ -937,6 +948,9 @@ void MainWindow::slotValgrind(){
     CommandLineExecutor executor;
     console_dock->setRawOutput(QString::fromStdString(executor.Valgrind()));
 }
+void MainWindow::slotClangDocGenerate() {
+    // clang-doc
+}
 void MainWindow::slotGdbGui(){
     CommandLineExecutor executor;
     executor.OpenGdbGui();
@@ -997,9 +1011,18 @@ void MainWindow::slotFullScreen() {
     // exit also with ESC
 }
 
+void MainWindow::slotShowEducation() {
+    education->show();
+}
+
 void MainWindow::slotAbout() {
     const QString about = "Evolution IDE is an Integrated Development Environment mainly aimed for C & C++ . \n"
-                           "It is Open source. If you Want to use It, you can read Readme.md file with all features \n";
+                           "It is Open source. If you Want to use It, you can read Readme.md file with all features \n"
+                           "\n"
+                           "Newly contain Educational system, which could provide convenient code samples with brief \n"
+                           "comments. There are also provided many stuffs i personally always want to know quicker. \n"
+                           "If you are interested, you can provide your own sample: "
+                           "https://github.com/adamko222/Evolution-IDE.";
 
     QMessageBox::information(this, "About Evolution", about, QMessageBox::Close);
 }
@@ -1095,4 +1118,5 @@ void MainWindow::slotShowAttachToProcess() {
 void MainWindow::slotRestart() {
     // find how to
 }
+
 

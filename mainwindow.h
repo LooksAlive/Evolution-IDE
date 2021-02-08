@@ -73,6 +73,8 @@
 #include "Widgets/BinaryInfo/binaryview.h"
 //#include "Debugger/Decompiler"
 
+#include "Widgets/Education/Education.h"
+
 #include <QDebug>
 
 #include <iostream>
@@ -166,6 +168,8 @@ private:
     /* Converter - small widget */
     Converter *converter;
 
+    Education *education;
+
     void dragEnterEvent(QDragEnterEvent* drag_event) override;
     void dropEvent(QDropEvent* drop_event) override;
 
@@ -178,6 +182,7 @@ private:
     void SetupFileDocker();
     void SetupCompileDock();
     void SetupCodeInfoDock();
+    void SetupEducationWidget();
 
     void SetupVerticalBar();
     void SetupNodeView();
@@ -240,6 +245,7 @@ private slots:
     void slotClangFormat();
     void slotClangTidy();
     void slotClangCheck();
+    void slotClangDocGenerate();
     void slotValgrind();
     void slotGdbGui();
 
@@ -261,6 +267,8 @@ private slots:
 
     void slotStopProcess();
     void slotTextPositionChanged();
+
+    void slotShowEducation();
 
 
     // debugger
