@@ -1,5 +1,4 @@
 #include <QFormLayout>
-#include <QGroupBox>
 #include <QIcon>
 #include <QPushButton>
 #include <QVBoxLayout>
@@ -57,6 +56,9 @@ void FindReplaceWidget::createWindow() {
     LabelText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     results->setHeaderHidden(true);
+    // not editable, later possible updates and auto refactoring edited item; by item function or like this
+    results->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    connect(results, SIGNAL(doubleClicked(const QModelIndex &)), this, SLOT(slotForwardToResult(const QModelIndex &)));
 
     next = new QPushButton("Next", this);
     previous = new QPushButton("Previous", this);
@@ -111,6 +113,7 @@ void FindReplaceWidget::getOptionsAndTexts()
     LabelText->setText(QString());
     search_text = LineEditFind->text();
     replace_text = LineEditReplacement->text();
+    // QTextDocument::FindBackward  ----> previous btn,  so we need to clear it every time as usual
     find_options = NULL;
 
     if (CaseSensitive->isChecked()) {
@@ -119,65 +122,66 @@ void FindReplaceWidget::getOptionsAndTexts()
     if (WholeWords->isChecked()) {
         find_options |= QTextDocument::FindWholeWords;
     }
-    // QTextDocument::FindBackward  ----> previous,  next also do not work(stacked on 1 found)
-}
 
-void FindReplaceWidget::slotNext(){
     /* same_file == ""  --> means that file has no filepath yet (blank) */
     if(same_file != m_Tab->tabToolTip(m_Tab->currentIndex()) || same_file == ""){
         m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
         same_file = m_Tab->tabToolTip(m_Tab->currentIndex());
     }
-    getOptionsAndTexts();
-    m_Edit->findNext(search_text, find_options);
-
-    // result tree:
-    // get data from m_Edit by some function after find call
-    auto *model = new QStandardItemModel(this);
-    QStandardItem *rootNode = model->invisibleRootItem();
-    // resultData data = getSearchResultData();
-    for (int i = 0; i <= /*data.size()*/ 5; i++) {
-        QStandardItem *file = new QStandardItem(/*data[i].fileName*/"filename");
-        rootNode->appendRow(file);
-        for (int j = 0; j <= /*data[i].other.size()*/ 2; j++) {
-            // this in loop, contains whole line content and line
-            QStandardItem *line = new QStandardItem(/*data[i].fileName*/"line");
-            file->appendRow(line);
-        }
-    }
-
-    results->setModel(model);
-    results->collapseAll();
 }
-// figure it out later
-void FindReplaceWidget::slotPrevious(){
-    if(same_file != m_Tab->tabToolTip(m_Tab->currentIndex()) || same_file == ""){
-        m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
-        same_file = m_Tab->tabToolTip(m_Tab->currentIndex());
-    }
+
+void FindReplaceWidget::slotNext(){
     getOptionsAndTexts();
-    find_options |= QTextDocument::FindBackward;   // here flag for previous search
+
+    if(search_text != temp_search_text){
+        m_Edit->findStoreAndSelectAll(search_text, find_options);
+        temp_search_text = search_text;
+
+        // result tree:
+        // remove all elements and insert new ones
+        results->reset();
+        auto *model = new QStandardItemModel(this);
+        QStandardItem *rootNode = model->invisibleRootItem();
+        // for now only 1 file, later on figure out how to manage more files
+        // maybe consider (no idea) ...
+        auto *file = new QStandardItem(m_Edit->search_results[0].fileName);
+        rootNode->appendRow(file);
+        for (auto & elem : m_Edit->search_results) {
+            QString row_col = QString::number(elem.row) + ":" + QString::number(elem.col);
+            QString line_content = m_Edit->getLineContent(elem.row);
+            QString all = line_content + "   " + row_col;
+            // QString line; // later append line content and beginning + row_col follows getLineUnderCursor();
+            auto *pos = new QStandardItem(all);
+            file->appendRow(pos);
+        }
+
+        results->setModel(model);
+        results->collapseAll();
+    }
+
+    m_Edit->findNext(search_text, find_options);
+}
+
+void FindReplaceWidget::slotPrevious(){
+    getOptionsAndTexts();
+    find_options |= QTextDocument::FindBackward;   // flag for previous search
     m_Edit->findNext(search_text, find_options);
 }
 
 void FindReplaceWidget::slotReplace(){
-    if(same_file != m_Tab->tabToolTip(m_Tab->currentIndex()) || same_file == ""){
-        m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
-        same_file = m_Tab->tabToolTip(m_Tab->currentIndex());
-    }
     getOptionsAndTexts();
-    m_Edit->replace(search_text, replace_text);
+    m_Edit->replace(search_text, replace_text, find_options);
 }
 
 void FindReplaceWidget::slotReplaceAll()
 {
-    if(same_file != m_Tab->tabToolTip(m_Tab->currentIndex()) || same_file == ""){
-        m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
-        same_file = m_Tab->tabToolTip(m_Tab->currentIndex());
-    }
     getOptionsAndTexts();
-
-    int occurrences = m_Edit->replaceAll(search_text, replace_text);
+    int occurrences = m_Edit->replaceAll(search_text, replace_text, find_options);
     LabelText->setText(tr("Replace %1 occurrences of the search term.").arg(occurrences));
+}
+
+void FindReplaceWidget::slotForwardToResult(const QModelIndex &index) {
+    // do this a lot better :)
+    m_Edit->setCursorPosition(m_Edit->search_results[index.row()].row, 0);
 }
 

@@ -14,10 +14,16 @@
 #include <QDebug>
 #include <QLabel>
 #include <QMenu>
+#include <QCompleter>
+#include <QAbstractItemView>
+#include <QStringListModel>
+
+#include <QFileSystemModel>
+#include <QTableView>
+#include <QListView>
 
 #include <iostream>
 #include <vector>
-#include "completer.h"
 
 class LineNumberArea;
 class BreakPointArea;
@@ -30,6 +36,9 @@ public:
     explicit PlainTextEdit(QWidget *parent = nullptr);
     ~PlainTextEdit() = default;
 
+    BreakPointArea *BreakpointArea;
+    Arrow *ArrowArea;
+
     QRectF blockBoundingGeometryProxy(const QTextBlock &block);
     QRectF blockBoundingRectProxy(const QTextBlock &block);
     QPointF contentOffsetProxy();
@@ -37,16 +46,20 @@ public:
     void moveCursor(const bool &end);
 
     // search
-    std::unordered_map<QString, int> search_results;
-    std::vector<int> search_results_positions;
-    void findStoreAndSelectAll(const QString &search, const QTextDocument::FindFlags &find_options = QTextDocument::FindWholeWords);
+    struct searchResult{
+        QString fileName;
+        int row;
+        int col;
+    };
+    std::vector<searchResult> search_results;
+    void findStoreAndSelectAll(const QString &search, const QTextDocument::FindFlags &find_options = QTextDocument::FindCaseSensitively);
     // find() does not set text cursor, findNext() does
-    bool find(const QString &search, const QTextDocument::FindFlags &find_options = QTextDocument::FindWholeWords);
-    void findNext(const QString &search, const QTextDocument::FindFlags &find_options = QTextDocument::FindWholeWords);
-    void replace(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options = QTextDocument::FindWholeWords);
-    void replaceAndFind(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options = QTextDocument::FindWholeWords);
+    bool find(const QString &search, const QTextDocument::FindFlags &find_options = QTextDocument::FindCaseSensitively);
+    void findNext(const QString &search, const QTextDocument::FindFlags &find_options = QTextDocument::FindCaseSensitively);
+    void replace(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options = QTextDocument::FindCaseSensitively);
+    void replaceAndFind(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options = QTextDocument::FindCaseSensitively);
     // returns how many occurrences were replaces
-    int replaceAll(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options = QTextDocument::FindWholeWords);
+    int replaceAll(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options = QTextDocument::FindCaseSensitively);
 
     // cursor
     void setCursorPosition(const int &row, const int &col);
@@ -56,6 +69,7 @@ public:
     // text manipulation
     void selectLineUnderCursor();
     QString getLineUnderCursor();
+    QString getLineContent(const int &row);
     void selectWordUnderCursor();
     QString getWordUnderCursor();
     void selectWord(const int &line, const int &column);
@@ -74,9 +88,14 @@ public:
     int setBreakPoint();
     void removeBreakPoint(const int &line);
 
+    // completer words, will get from clang parser
+    void setCompletionData(const std::vector<std::string> &data);
+
 protected:
     void keyReleaseEvent(QKeyEvent *event) override;
+    //void keyPressEvent(QKeyEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *e) override;
+    void focusInEvent(QFocusEvent *e) override;
     void paintEvent(QPaintEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
@@ -84,11 +103,12 @@ protected:
 
 private:
     LineNumberArea *LineArea;
-    BreakPointArea *BreakpointArea;
-    Arrow *arrowArea;
 
     QMenu *viewMenu;
     void createMenu();
+
+    QCompleter *completer;
+    void SetupCompleter();
 
     int indentSize(const QString &text);
     bool indentText(const bool &forward);
@@ -100,7 +120,10 @@ private:
     QString file;
     QList<QTextEdit::ExtraSelection> search_selections;  // pairs identical words
 
+
 public slots:
+    void completerInsertText(const QString &text);
+
     void toggleComment();
     void formatFile();
     void slotGoToDefinition();
@@ -142,6 +165,7 @@ private:
     PlainTextEdit *m_Edit;
 };
 
+
 class BreakPointArea : public QWidget
 {
 Q_OBJECT
@@ -169,6 +193,7 @@ private:
     bool canCreateBreakPoint(const QTextBlock &block);
 
 };
+
 
 class Arrow : public QWidget
 {

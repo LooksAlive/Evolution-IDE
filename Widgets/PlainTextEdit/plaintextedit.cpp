@@ -74,6 +74,7 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
     });
 
     createMenu();
+    SetupCompleter();
     ensureCursorVisible();
 }
 
@@ -101,11 +102,11 @@ QTextBlock PlainTextEdit::firstVisibleBlockProxy()
 // cursor
 void PlainTextEdit::setCursorPosition(const int &row, const int &col)
 {
-    const QTextBlock block = document()->findBlockByLineNumber(row - 1);
+    const QTextBlock block = document()->findBlockByLineNumber(row - 1);  // - 1
     if(block.isValid())
     {
         QTextCursor cursor = textCursor();
-        cursor.setPosition(block.position() + col + 1);
+        cursor.setPosition(block.position() + col);  // + 1, bc. col cannot be 0
         setTextCursor(cursor);
         ensureCursorVisible();
     }
@@ -114,15 +115,15 @@ void PlainTextEdit::setCursorPosition(const int &row, const int &col)
 QPoint PlainTextEdit::getCursorPosition(){
     QTextCursor cursor = textCursor();
     // there is no 0 col or row in view but it is acts like it is
-    int row = cursor.blockNumber();     // +1
-    int col = cursor.columnNumber();    // +1 , starting from 1
+    int row = cursor.blockNumber() + 1;     // +1
+    int col = cursor.columnNumber() + 1;    // +1 , starting from 1
 
     return QPoint(row, col);
 }
 
 void PlainTextEdit::setCursorAtLine(const int &line)
 {
-    setCursorPosition(line, 0);   // +1 ; yet no idea how ? jumps as it wants
+    setCursorPosition(line, 1);   // +1 ; yet no idea how ? jumps as it wants
 }
 
 // text manipulation
@@ -142,6 +143,11 @@ QString PlainTextEdit::getLineUnderCursor(){
     setTextCursor(cur);
     ensureCursorVisible();
     return line;
+}
+
+QString PlainTextEdit::getLineContent(const int &row) {
+    setCursorPosition(row, 1);
+    return getLineUnderCursor();
 }
 
 void PlainTextEdit::selectWordUnderCursor(){
@@ -169,6 +175,17 @@ void PlainTextEdit::selectWord(const int &line, const int &column){
     selectWordUnderCursor();
     search_selections.append(selection);
     setExtraSelections(search_selections);
+}
+
+void PlainTextEdit::completerInsertText(const QString &text) {
+    if (completer->widget() != this)
+        return;
+    QTextCursor tc = textCursor();
+    int extra = text.length() - completer->completionPrefix().length();
+    tc.movePosition(QTextCursor::Left);
+    tc.movePosition(QTextCursor::EndOfWord);
+    tc.insertText(text.right(extra));
+    setTextCursor(tc);
 }
 
 void PlainTextEdit::deleteLine(){
@@ -544,11 +561,19 @@ void PlainTextEdit::highlight(QList<QTextEdit::ExtraSelection> &selections, cons
 // search
 void PlainTextEdit::findStoreAndSelectAll(const QString &search, const QTextDocument::FindFlags &find_options)
 {
-    //search_selections.clear();
+    // ensure no other selections are here
+    search_selections.clear();
+    search_results.clear();
+    // set to start, 1 file search
+    textCursor().movePosition(QTextCursor::Start);
+    // entry position, since we are changing cursor position, regardless findNext also sets cursor for start
+    int pos = textCursor().position();
 
+    // results do not contain search text, it is simply got where it is used and parsed as argument
     while(find(search, find_options)){
-        QTextEdit::ExtraSelection selection;
-        selection.cursor.movePosition(QTextCursor::Start);
+        //QTextEdit::ExtraSelection selection;
+        searchResult search_result_data;
+        /*
         QColor highlight = palette().color(QPalette::Dark);
         highlight.setAlpha(25);
         selection.format.setBackground(highlight);
@@ -558,19 +583,28 @@ void PlainTextEdit::findStoreAndSelectAll(const QString &search, const QTextDocu
         //selection.cursor.select(QTextCursor::WordUnderCursor);
         search_selections.push_back(selection);
         selection.cursor.clearSelection();
+        selection.cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
+        */
+        textCursor().movePosition(QTextCursor::NextCharacter);
 
-        search_results_positions.push_back(selection.cursor.position());
-        selection.cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, 1);
+        // get data
+        QPoint point = getCursorPosition();
+        search_result_data.fileName = file;
+        search_result_data.row = point.x();
+        search_result_data.col = point.y();
+
         // later search_results for multifile search
+
+        search_results.push_back(search_result_data);
     }
+    textCursor().setPosition(pos);
+    // set selections
     /*
-    for (int i = 0; i < search_selections.size(); ++i) {
-        qDebug() << search_selections[i].cursor.selectedText();
-    }
-    */
     if(!search_selections.isEmpty()){
         setExtraSelections(search_selections);
     }
+    */
+    qDebug() << search_results.size();
 }
 
 bool PlainTextEdit::find(const QString &search, const QTextDocument::FindFlags &find_options)
@@ -579,8 +613,9 @@ bool PlainTextEdit::find(const QString &search, const QTextDocument::FindFlags &
     cursor = document()->find(search, cursor, find_options);
 
     if(!cursor.isNull()){
+        // cursor.movePosition(QTextCursor::NextCharacter);
+        setTextCursor(cursor);
         return true;
-        cursor.movePosition(QTextCursor::NextCharacter);
     }else{
         return false;   // no occurrences found
     }
@@ -611,11 +646,12 @@ void PlainTextEdit::findNext(const QString &search, const QTextDocument::FindFla
 
 void PlainTextEdit::replace(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options)
 {
-    findNext(oldText, find_options);
     QTextCursor cursor = textCursor();
 
     if(cursor.hasSelection() && !isReadOnly()/* && cursor.selectedText() == oldText */)
     {
+        findNext(oldText, find_options);
+
         cursor.beginEditBlock();
         cursor.removeSelectedText();
         cursor.insertText(newText);
@@ -633,7 +669,7 @@ void PlainTextEdit::replaceAndFind(const QString &oldText, const QString &newTex
 int PlainTextEdit::replaceAll(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options)
 {
     int count = 0;
-    textCursor().movePosition(QTextCursor::Start); // on start
+    textCursor().movePosition(QTextCursor::Start); // on start, works yet only with one file
 
     while(find(oldText, find_options)){
         replace(oldText, newText, find_options);
@@ -641,7 +677,6 @@ int PlainTextEdit::replaceAll(const QString &oldText, const QString &newText, co
     }
     return count;
 }
-
 
 // other
 void PlainTextEdit::createMenu() {
@@ -664,6 +699,37 @@ void PlainTextEdit::createMenu() {
 
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(slotShowMenu(const QPoint&)));
+}
+
+void PlainTextEdit::SetupCompleter() {
+    QStringList words;
+    words << "void" << "bool" << "int";
+    //completer->setModel(new QStringListModel(words, completer));
+
+    completer = new QCompleter(words, this);
+    completer->setCaseSensitivity(Qt::CaseInsensitive);
+    completer->setMaxVisibleItems(8);
+    completer->setCompletionMode(QCompleter::PopupCompletion);
+    completer->setWrapAround(false);
+    completer->setFilterMode(Qt::MatchContains);
+
+    auto *model = new QFileSystemModel(this);
+    model->setRootPath(QDir::homePath());
+    auto *view = new QListView(this);
+    view->setViewMode(QListView::ListMode);
+    view->setLayoutMode(QListView::Batched);
+    completer->setPopup(view);
+    //completer->popup()->setMinimumSize(200, 100);
+    //connect(completer, SIGNAL(activated(const QString&)), this, SLOT(completerInsertText(const QString&)));
+
+}
+
+void PlainTextEdit::setCompletionData(const std::vector<std::string> &data) {
+    QStringList buffer;
+    for (int i = 0; i < data.size(); i++) {
+        buffer.push_back(QString::fromStdString(data[i]));
+    }
+    completer->setModel(new QStringListModel(buffer, completer));
 }
 
 void PlainTextEdit::setFileExtension(const QString &extension){
@@ -841,14 +907,73 @@ void PlainTextEdit::resizeEvent(QResizeEvent *event)
 
 void PlainTextEdit::keyReleaseEvent(QKeyEvent *event)
 {
-    QCursor mouse_cursor = cursor();
     QTextCursor cursor = textCursor();
+    /*
+    if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Space){
+        auto popup = completer->popup();
+        popup->setCurrentIndex(completer->completionModel()->index(0,0));
+
+        QRect rect = cursorRect();  // text cursor position
+        rect.setWidth(50);
+        rect.setHeight(30);
+        completer->complete(rect);
+    }
+    if(event->modifiers() == Qt::ControlModifier){
+        this->cursor().setShape(Qt::PointingHandCursor);
+    }
+    */
+    /*
+    bool isShortcut = ((event->modifiers() && Qt::ControlModifier) && event->key() == Qt::Key_E); // CTRL+E
+    if (!completer || !isShortcut) // do not process the shortcut when we have a completer
+        QPlainTextEdit::keyReleaseEvent(event);
+    const bool ctrlOrShift = event->modifiers() && (Qt::ControlModifier | Qt::ShiftModifier);
+    if (!completer || (ctrlOrShift && event->text().isEmpty()))
+        return;
+    if (!isShortcut && (hasModifier || event->text().isEmpty()|| completionPrefix.length() < 3
+                        || eow.contains(event->text().right(1)))) {
+        completer->popup()->hide();
+        return;
+    }
+    static QString eow("~!@#$%^&*()_+{}|:\"<>?,./;'[]\\-="); // end of word
+    bool hasModifier = (event->modifiers() != Qt::NoModifier) && !ctrlOrShift;
+    */
+    QString completionPrefix = getWordUnderCursor();
+
+    if (event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Space &&
+        completionPrefix != completer->completionPrefix())
+    {
+        completer->setCompletionPrefix(completionPrefix);
+        completer->popup()->setCurrentIndex(completer->completionModel()->index(0, 0));
+
+        QRect cr = cursorRect();
+        cr.setWidth(completer->popup()->sizeHintForColumn(0)
+                    + completer->popup()->verticalScrollBar()->sizeHint().width());
+        completer->complete(cr); // popup it up!
+    }
+
+    if (completer && completer->popup()->isVisible()) {
+        // The following keys are forwarded by the completer to the widget
+        switch (event->key()) {
+            case Qt::Key_Return:
+            case Qt::Key_Enter:
+                completerInsertText(completionPrefix);
+                completer->popup()->hide();  // complete done, hide popup and continue
+                break;
+            case Qt::Key_Escape:
+            case Qt::Key_Tab:
+            case Qt::Key_Backtab:
+                event->ignore();
+                QPlainTextEdit::keyReleaseEvent(event);
+                //return; // let the completer do default behavior
+                break;
+            default:
+                event->ignore();
+                QPlainTextEdit::keyReleaseEvent(event);
+                break;
+        }
+    }
 
     switch (event->key()) {
-        case Qt::Key_Control:
-        case Qt::CTRL:
-            mouse_cursor.setShape(Qt::PointingHandCursor);
-            break;
         case Qt::Key_Backtab:
         case Qt::Key_Tab: {
             bool forward = !QApplication::keyboardModifiers().testFlag(Qt::ShiftModifier);
@@ -904,22 +1029,6 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event)
                 event->accept();
             }
             break;
-            /* // solved by connect shortcut
-            case Qt::Key_Plus:
-            case Qt::Key_Minus:
-                if (QApplication::keyboardModifiers().testFlag(Qt::ControlModifier)){
-                    if (event->key() == Qt::Key_Plus){
-                        // setReadOnly(true);
-                        zoomIn();
-                    }
-                    if(event->key() == Qt::Key_Minus){
-                        // setReadOnly(true);
-                        zoomOut();
-                    }
-                    event->accept();
-                }
-                break;
-                */
             // automatic type braces
         case Qt::Key_BracketLeft:
             cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
@@ -954,8 +1063,24 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event)
         default:
             break;
     }
-    QPlainTextEdit::keyReleaseEvent(event);
+    //QPlainTextEdit::keyReleaseEvent(event);
 }
+/*
+void PlainTextEdit::keyPressEvent(QKeyEvent *event) {
+    QPlainTextEdit::keyPressEvent(event);
+}
+ */
+
+void PlainTextEdit::focusInEvent(QFocusEvent *e) {
+
+    if(completer){
+        completer->setWidget(this);
+    }
+
+    QPlainTextEdit::focusInEvent(e);
+
+}
+
 
 /* LineNumberArea widget
 ------------------------------------------------------------------------- */
@@ -1090,6 +1215,7 @@ void BreakPointArea::mouseEvent(QMouseEvent *event) {
         blocks.push_back(touched_block.blockNumber());
         cursor.setVisualNavigation(true);
         m_Edit->setTextCursor(cursor);
+        //emit breakPointCreated();
         //qDebug() << touched_block.blockNumber();
         //qDebug() << blocks;
     }

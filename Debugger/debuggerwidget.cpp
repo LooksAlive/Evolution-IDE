@@ -44,7 +44,8 @@ void DebuggerWidget::createConsole(){
     //auto *variables = new QWidget(this);
     view = new QTreeView(this);
     view->setHeaderHidden(true);
-
+    // not editable yet, later possible to change values
+    view->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     debug_output->setReadOnly(true);
     completer->setCaseSensitivity(Qt::CaseInsensitive);
@@ -279,9 +280,9 @@ void DebuggerWidget::slotCmdlineExecute() {
 
 
 
-void DebuggerWidget::setStartFilePosition(const QString &file_path, const int &line) {
+void DebuggerWidget::setStartFilePosition(const QString &path, const int &line) {
     FileDirManager fmanager;
-    QString content = fmanager.simple_read(file_path);  // wants a QString !!!
+    QString content = fmanager.simple_read(path);  // wants a QString !!!
     source_view->setPlainText(content);
     source_view->setCursorAtLine(line);   // later maybe some effect
 }
@@ -301,10 +302,10 @@ void DebuggerWidget::setExecutable(const std::string &exe_file_path) {
 }
 
 void DebuggerWidget::showBreakPointsList() {
-    QWidget *window = new QWidget(this);
-    QTreeWidget *tree = new QTreeWidget(this);
+    auto *window = new QWidget(this);
+    auto *tree = new QTreeWidget(this);
     //QListWidget *break_list = new QListWidget(this);
-    QVBoxLayout *layout = new QVBoxLayout();
+    auto *layout = new QVBoxLayout();
     window->setFixedWidth(500);
     tree->setColumnCount(3);
     tree->setHeaderLabels(QStringList() << "ID" << "File" << "Line");
@@ -313,7 +314,7 @@ void DebuggerWidget::showBreakPointsList() {
     window->setWindowFlags(Qt::Dialog);
     for (int i = 0; i < BreakPointList.size(); i++) {
         //QListWidgetItem *item = new QListWidgetItem(break_list, i);
-        QTreeWidgetItem *item = new QTreeWidgetItem(i);
+        auto *item = new QTreeWidgetItem(i);
         item->setIcon(0, QIcon(IconFactory::BreakPoint));  // icon to begining
         //QString info = QString("ID: ") + QString::number(debugger.BreakPointList[i].break_id) + ", line: " +
         //        QString::number(debugger.BreakPointList[i].line) + " File: " + debugger.BreakPointList[i].filename;
@@ -490,7 +491,7 @@ void DebuggerWidget::start() {
         //return;
     }
 
-    //setBreakpoint("/home/adam/Desktop/sources/Evolution-IDE/main.cpp", 23);
+    setBreakpoint("/home/adam/Desktop/sources/Evolution-IDE/main.cpp", 23);
     setBreakpoint("/home/adam/Desktop/sources/Evolution-IDE/main.cpp", 27);
 
     //Process = Target.LaunchSimple(nullptr, nullptr, nullptr);
@@ -516,9 +517,9 @@ void DebuggerWidget::start() {
     //connect(worker, &QThread::finished, worker, &QObject::deleteLater);
     //worker->start();
     // when process stopped, return true, pause process
-    //setProcessInterruptFeatures();
-    std::thread debug_thread(&DebuggerWidget::setProcessInterruptFeatures, this); // , "Debug_session"
-    debug_thread.detach(); // join
+    setProcessInterruptFeatures();
+    //std::thread debug_thread(&DebuggerWidget::setProcessInterruptFeatures, this); // , "Debug_session"
+    //debug_thread.detach(); // join
     // do not join, since i do not want to want for thread to end
 }
 
@@ -538,7 +539,6 @@ void DebuggerWidget::setProcessInterruptFeatures() {
             }
         }
     }
-    std::cout << "process ended";
     //uint32_t lldb::SBEvent::GetType() const;
 }
 
@@ -552,13 +552,16 @@ bool DebuggerWidget::HandleProcessEvent(SBEvent &event) {
             storeFrameData(getCurrentFrame());
 
             return HandleProcessStateChangeEvent(event);
-
+        /*
         case lldb::SBProcess::eBroadcastBitSTDOUT:
             //return HandleProcessSTDOUTEvent(event);
             break;
 
         case lldb::SBProcess::eBroadcastBitSTDERR:
             //return HandleProcessSTDERREvent(event);
+            break;
+        */
+        default:
             break;
     }
     return false; // Not done, don't exit main loop
@@ -590,9 +593,9 @@ bool DebuggerWidget::HandleProcessStateChangeEvent(SBEvent &event) {
 
             HandleProcessStopped(event, process);
             // since from this point the process will stop i can only stepping or continue
-            //process.Stop();
-            //return true;
-            break;
+            process.Stop();
+            return true;
+            //break;
         case eStateRunning:   ///< Process is now running and can't be examined
             // Update your UI maybe and disable the play and step buttons so the user
             // can't try to run the program while it is already running
@@ -739,8 +742,8 @@ void DebuggerWidget::attachToRunningProcess(const int &proc_id){
 
 
 void DebuggerWidget::storeFrameData(SBFrame frame) {
-    //clear();
-
+    // clear
+    view->reset();
     auto *model = new QStandardItemModel(this);
 
     QStandardItem *rootNode = model->invisibleRootItem();
@@ -766,8 +769,8 @@ void DebuggerWidget::storeFrameData(SBFrame frame) {
         all_variables->insertItem(idx, value.GetName());
 
         //defining a couple of items
-        QStandardItem *var = new QStandardItem(value.GetName());
-        QStandardItem *val = new QStandardItem(value.GetValue());
+        auto *var = new QStandardItem(QString(value.GetName()));
+        auto *val = new QStandardItem(QString(value.GetValue()));
 
         //building up the hierarchy
         rootNode->appendRow(var);
@@ -801,6 +804,9 @@ std::string DebuggerWidget::frameGetLocation(SBFrame frame) {
     std::cout << std::string("line= ") + char(line) + " ";
     std::cout << std::string("address= ") + char(frame.GetPCAddress().GetOffset()) + " ";
     std::cout << std::string("function= ") + function.GetDisplayName() + " ";
+
+    // set source, where are we in debugging process + highlight line
+    //source_view->setCursorAtLine(line);
 
     return description;
 }
@@ -896,6 +902,7 @@ void DebuggerWidget::Continue() {
 
 void DebuggerWidget::stepOver() {
     Process.GetSelectedThread().StepOver();
+    //setProcessInterruptFeatures();
     // plus later use other definition maybe, providing SBError
 }
 

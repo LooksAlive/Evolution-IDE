@@ -535,7 +535,7 @@ void MainWindow::CreateFile() {
     connect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotTextPositionChanged()));
     connect(currentWidget, SIGNAL(textChanged()), this, SLOT(UpdateParameter()));
     // breakpoints
-    //connect(currentWidget, SIGNAL(breakPointCreated()), this, SLOT(slotToggleBreakPoint()));
+    //connect(currentWidget->BreakpointArea, SIGNAL(breakPointCreated()), this, SLOT(slotToggleBreakPoint()));
     //connect(currentWidget, SIGNAL(breakPointDeleted()), this, SLOT(slotDeleteBreakPoint()));
 
     // file dock

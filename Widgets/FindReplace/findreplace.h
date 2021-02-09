@@ -58,6 +58,7 @@ private:
 
     QTextDocument::FindFlags find_options;
     QString search_text;
+    QString temp_search_text = "";   // for whole file parsing, to not repeat with that same text
     QString replace_text;
 
 
@@ -68,6 +69,8 @@ private slots:
     void slotPrevious();
     void slotReplace();
     void slotReplaceAll();
+
+    void slotForwardToResult(const QModelIndex &);
 };
 
 #endif // FINDREPLACEDIALOG_H

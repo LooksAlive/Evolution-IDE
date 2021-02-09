@@ -54,7 +54,7 @@ public:
     ~DebuggerWidget();
 
     // outside function only for duplicating current opened file
-    void setStartFilePosition(const QString &file_path, const int &line);
+    void setStartFilePosition(const QString &path, const int &line);
     void setExecutable(const std::string &exe_file_path);
 
     // small list widget with information

@@ -1,6 +1,6 @@
 #include "GoToLineColumn.h"
 
-GoToLineColumn::GoToLineColumn(PlainTextEdit *editt, QWidget *parent) : edit(editt), QWidget(parent){
+GoToLineColumn::GoToLineColumn(PlainTextEdit *textEdit, QWidget *parent) : QWidget(parent), edit(textEdit){
     setWindowFlags(Qt::Dialog);
     createWindow();
 }

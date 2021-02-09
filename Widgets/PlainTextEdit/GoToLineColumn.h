@@ -11,7 +11,7 @@
 class GoToLineColumn : public QWidget{
 Q_OBJECT
 public:
-    explicit GoToLineColumn(PlainTextEdit *edit, QWidget *parent = nullptr);
+    explicit GoToLineColumn(PlainTextEdit *textEdit, QWidget *parent = nullptr);
     ~GoToLineColumn() = default;
 
 private:
