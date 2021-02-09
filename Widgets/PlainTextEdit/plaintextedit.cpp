@@ -703,7 +703,7 @@ void PlainTextEdit::createMenu() {
 
 void PlainTextEdit::SetupCompleter() {
     QStringList words;
-    words << "void" << "bool" << "int";
+    words << "void" << "voidd" << "vaid" << "bool" << "int";
     //completer->setModel(new QStringListModel(words, completer));
 
     completer = new QCompleter(words, this);
@@ -713,15 +713,15 @@ void PlainTextEdit::SetupCompleter() {
     completer->setWrapAround(false);
     completer->setFilterMode(Qt::MatchContains);
 
-    auto *model = new QFileSystemModel(this);
-    model->setRootPath(QDir::homePath());
     auto *view = new QListView(this);
     view->setViewMode(QListView::ListMode);
     view->setLayoutMode(QListView::Batched);
     completer->setPopup(view);
+    //auto *model = new QFileSystemModel(this);
+    //model->setRootPath(QDir::homePath());
     //completer->popup()->setMinimumSize(200, 100);
-    //connect(completer, SIGNAL(activated(const QString&)), this, SLOT(completerInsertText(const QString&)));
 
+    connect(completer, SIGNAL(activated(const QString&)), this, SLOT(completerInsertText(const QString&)));
 }
 
 void PlainTextEdit::setCompletionData(const std::vector<std::string> &data) {
