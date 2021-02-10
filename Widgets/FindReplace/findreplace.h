@@ -70,6 +70,9 @@ private slots:
     void slotReplace();
     void slotReplaceAll();
 
+    // clear search selections where not visible
+    void slotVisible(bool visible);
+
     void slotForwardToResult(const QModelIndex &);
 };
 

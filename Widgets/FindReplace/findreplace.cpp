@@ -26,15 +26,25 @@ FindReplaceWidget::FindReplaceWidget(Tab *tab, QWidget *parent)
 
     setWindowTitle("Find & Replace");
 
-    /*
-    QToolButton *btn = new QToolButton(this);
+
+    auto *btn = new QToolButton(this);
     btn->setIcon(QIcon(IconFactory::Remove));
     btn->setFixedWidth(30);
+    btn->setWindowFlags(Qt::FramelessWindowHint);
+    //btn->setSizePolicy(QWidget::Expanding);
     connect(btn, SIGNAL(clicked()), this, SLOT(close()));
     setTitleBarWidget(btn);
-    */
+
     // escape shortcut  -> will close the window
     connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [=] {this->setVisible(false);});
+    
+    /* same_file == ""  --> means that file has no filepath yet (blank) */
+    if(same_file != m_Tab->tabToolTip(m_Tab->currentIndex()) || same_file == ""){
+        m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
+        same_file = m_Tab->tabToolTip(m_Tab->currentIndex());
+    }
+    // clear search selection
+    connect(this, SIGNAL(visibilityChanged(bool)), m_Edit, SLOT(slotVisible(bool)));
 }
 
 void FindReplaceWidget::createWindow() {
@@ -140,6 +150,10 @@ void FindReplaceWidget::slotNext(){
         // result tree:
         // remove all elements and insert new ones
         results->reset();
+        if(m_Edit->search_results.empty()){
+            m_Edit->findNext(search_text, find_options);
+            return;
+        }
         auto *model = new QStandardItemModel(this);
         QStandardItem *rootNode = model->invisibleRootItem();
         // for now only 1 file, later on figure out how to manage more files
@@ -158,7 +172,6 @@ void FindReplaceWidget::slotNext(){
         results->setModel(model);
         results->collapseAll();
     }
-
     m_Edit->findNext(search_text, find_options);
 }
 
@@ -182,6 +195,14 @@ void FindReplaceWidget::slotReplaceAll()
 
 void FindReplaceWidget::slotForwardToResult(const QModelIndex &index) {
     // do this a lot better :)
-    m_Edit->setCursorPosition(m_Edit->search_results[index.row()].row, 0);
+    m_Edit->setCursorPosition(m_Edit->search_results[index.row()].row, m_Edit->search_results[index.row()].col);
+}
+
+void FindReplaceWidget::slotVisible(bool visible) {
+    if(!visible){
+        m_Edit->clearSelectionsBySearch = visible;
+        // consider, the cursor might not move or text changed ...
+        // m_Edit->manageExtraSelections();
+    }
 }
 

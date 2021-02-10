@@ -491,7 +491,7 @@ void DebuggerWidget::start() {
         //return;
     }
 
-    setBreakpoint("/home/adam/Desktop/sources/Evolution-IDE/main.cpp", 23);
+    //setBreakpoint("/home/adam/Desktop/sources/Evolution-IDE/main.cpp", 23);
     setBreakpoint("/home/adam/Desktop/sources/Evolution-IDE/main.cpp", 27);
 
     //Process = Target.LaunchSimple(nullptr, nullptr, nullptr);
@@ -861,10 +861,13 @@ DebuggerWidget::framedata get_var_func_info_update() {
 
 SBThread DebuggerWidget::getCurrentThread() {
     // no needed
+
     if(!Process.IsValid()){
         std::cout << "process is not valid";
-        debug_output->appendPlainText("not valid");
+        debug_output->appendPlainText("process is not valid");
+        exit(1);
     }
+
     return Process.GetSelectedThread();
 }
 
@@ -889,33 +892,43 @@ void DebuggerWidget::pause() {
 void DebuggerWidget::Continue() {
     if (Process.IsValid()) {
         auto err = Process.Continue();
-        if (err.Fail()) {
+        if (err.Success()) {
             SBStream str;
             err.GetDescription(str);
             std::cout << "Failed to continue process" + std::string(str.GetData());
             debug_output->appendPlainText("Failed to continue process" + QString(str.GetData()));
             // {{"Error Code", err.GetError()}, {"Error String", err.GetCString()}};
+            disableDebuggerButtons();
+        }
+        else{
+            debug_output->appendPlainText("Finished");
+            //setProcessInterruptFeatures();
+            disableDebuggerButtons();
         }
     }
     //disableDebuggerButtons();
 }
 
 void DebuggerWidget::stepOver() {
-    Process.GetSelectedThread().StepOver();
+    getCurrentThread().StepOver();
     //setProcessInterruptFeatures();
+    //std::cout << "after\n";
+    //std::string pos = frameGetLocation(getCurrentFrame());
+    //debug_output->appendPlainText(QString::fromStdString(pos));
+    //std::cout << pos;
     // plus later use other definition maybe, providing SBError
 }
 
 void DebuggerWidget::stepInto() {
-    Process.GetSelectedThread().StepInto();
+    getCurrentThread().StepInto();
 }
 
 void DebuggerWidget::stepOut() {
-    Process.GetSelectedThread().StepOut();
+    getCurrentThread().StepOut();
 }
 
 void DebuggerWidget::stepInstruction() {
-    Process.GetSelectedThread().StepInstruction(true); // step_over     ; false -> into call instr.
+    getCurrentThread().StepInstruction(true); // step_over     ; false -> into call instr.
 }
 
 std::string DebuggerWidget::executeDebuggerCommand(const std::string &args) {
