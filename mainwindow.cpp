@@ -198,7 +198,7 @@ void MainWindow::slotTextPositionChanged(){
 }
 
 void MainWindow::slotGoToLine(){
-    GoToLineColumn *goTo = new GoToLineColumn(currentWidget, this);
+    auto *goTo = new GoToLineColumn(currentWidget, this);
     goTo->show();
     slotTextPositionChanged();    // update  position
 }
@@ -215,13 +215,13 @@ void MainWindow::SetupMenuBar() {
     menuBar->setTabletTracking(true);
 
     // if there will not be this param, will not show, or add geometry manually like above
-    QMenu* fileMenu = new QMenu("File", this);
-    QMenu* editMenu = new QMenu("Edit", this);
-    QMenu* viewMenu = new QMenu("View", this);
-    QMenu* DebugMenu = new QMenu("Debug", this);
-    QMenu* AnalyzeMenu = new QMenu("Analyze", this);
-    QMenu* EducationMenu = new QMenu("Education", this);
-    QMenu* HelpMenu = new QMenu("Help", this);
+    auto* fileMenu = new QMenu("File", this);
+    auto* editMenu = new QMenu("Edit", this);
+    auto* viewMenu = new QMenu("View", this);
+    auto* DebugMenu = new QMenu("Debug", this);
+    auto* AnalyzeMenu = new QMenu("Analyze", this);
+    auto* EducationMenu = new QMenu("Education", this);
+    auto* HelpMenu = new QMenu("Help", this);
 
 
     fileMenu->addAction(QIcon(IconFactory::NewFile), "New File",   this, SLOT(CreateFile()),    Qt::CTRL + Qt::Key_N);
@@ -245,8 +245,8 @@ void MainWindow::SetupMenuBar() {
     editMenu->addAction(QIcon(IconFactory::Undo), "Undo", this, SLOT(slotUndo()), Qt::CTRL + Qt::Key_Z);
     editMenu->addAction(QIcon(IconFactory::Redo), "Redo", this, SLOT(slotRedo()), Qt::CTRL + Qt::SHIFT + Qt::Key_X);
     editMenu->addAction("Remove All", this, SLOT(slotRemoveAll()), Qt::CTRL + Qt::Key_Backspace);
-    //editMenu->addAction("Expand", this, SLOT(slotExpand()));
-    //editMenu->addAction("Collapse", this, SLOT(slotCollapse()));
+    editMenu->addAction(QIcon(IconFactory::Expand),"Expand", this, SLOT(slotExpand()));
+    editMenu->addAction(QIcon(IconFactory::Collapse),"Collapse", this, SLOT(slotCollapse()));
     editMenu->addAction(QIcon(IconFactory::SelectAll), "Select All", this, SLOT(slotSelectAll()), Qt::CTRL + Qt::Key_A);
     editMenu->addSeparator();
     editMenu->addAction(QIcon(IconFactory::Comment),"toggle comment", this, SLOT(slotToggleComment()), Qt::CTRL + Qt::SHIFT + Qt::Key_C);
@@ -355,7 +355,7 @@ void MainWindow::showDebuggerView(){
     // for now, starting with current file, later track    ;  not i only care for line
     // file_manager.current_full_filepath, 0
     //file_manager.executable_file_path = "/home/adam/Desktop/SKK/cmake-build/executable";
-    debuggerView->setStartFilePosition(path, currentWidget->getCursorPosition().y());   // ???
+    debuggerView->setStartFilePosition(path, currentWidget->getCursorPosition().x());   // ???
     //debuggerView->setExecutable(file_manager.executable_file_path.toStdString());
 }
 
@@ -470,6 +470,8 @@ void MainWindow::slotFind(){
         text = currentWidget->getWordUnderCursor();
         find_replace->LineEditFind->setText(text);
         find_replace->slotNext();
+        // also selections, slotNext wont do that, bc. yet no temp string is set
+        currentWidget->findStoreAndSelectAll(text);
     }
 }
 
@@ -522,7 +524,7 @@ void MainWindow::showDecompilerView(){
 
 void MainWindow::CreateFile() {
     // tab
-    PlainTextEdit* NewPlainText = new PlainTextEdit;
+    auto* NewPlainText = new PlainTextEdit;
     int index = Tabs->addTab(NewPlainText, NEW_TAB_NAME);
     NewPlainText->setFilePath("");
 
@@ -535,11 +537,11 @@ void MainWindow::CreateFile() {
     connect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotTextPositionChanged()));
     connect(currentWidget, SIGNAL(textChanged()), this, SLOT(UpdateParameter()));
     // breakpoints
-    //connect(currentWidget->BreakpointArea, SIGNAL(breakPointCreated()), this, SLOT(slotToggleBreakPoint()));
-    //connect(currentWidget, SIGNAL(breakPointDeleted()), this, SLOT(slotDeleteBreakPoint()));
+    connect(currentWidget->BreakpointArea, SIGNAL(breakPointCreated(const int&)), this, SLOT(slotCreateBreakPoint(const int&)));
+    connect(currentWidget->BreakpointArea, SIGNAL(breakPointRemoved(const int&)), this, SLOT(slotDeleteBreakPoint(const int&)));
 
     // file dock
-    QListWidgetItem* new_item = new QListWidgetItem;
+    auto* new_item = new QListWidgetItem;
     new_item->setText(Tabs->tabText(index));
     new_item->setToolTip(Tabs->tabToolTip(index));
     // new_item->setIcon(QIcon(IconFactory::Remove));
@@ -554,7 +556,7 @@ void MainWindow::CreateFile() {
 
 void MainWindow::OpenFile() {
     // #TODO:  do not work yet << setfilemode, to set dir into explorer from dialog
-    QFileDialog *dialog = new QFileDialog(this);
+    auto *dialog = new QFileDialog(this);
     dialog->setFileMode(QFileDialog::ExistingFiles);
     dialog->setFileMode(QFileDialog::Directory);
 
@@ -579,7 +581,7 @@ void MainWindow::OpenFile(const QString& filepath) {
         return;
     }
 
-    PlainTextEdit* new_text_edit = new PlainTextEdit();
+    auto* new_text_edit = new PlainTextEdit();
     new_text_edit->appendPlainText(file_manager.read(filepath));
     new_text_edit->setFilePath(filepath);
     new_text_edit->setFileExtension(file_manager.getFileExtension(file_manager.current_file_name));
@@ -611,7 +613,7 @@ void MainWindow::OpenFile(const QString& filepath) {
     Tabs->setTabWhatsThis(index, "No changes");
     connect(new_text_edit, SIGNAL(textChanged()), this, SLOT(UpdateParameter()));
 
-    QListWidgetItem* new_item = new QListWidgetItem();
+    auto* new_item = new QListWidgetItem();
     new_item->setText(Tabs->tabText(index));
     new_item->setToolTip(Tabs->tabToolTip(index));
     // new_item->setIcon(QIcon(IconFactory::Remove));
@@ -700,6 +702,10 @@ void MainWindow::CloseFile(int index_) {
         }
     }
 
+    // breakpoints
+    disconnect(currentWidget->BreakpointArea, SIGNAL(breakPointCreated(const int&)), this, SLOT(slotCreateBreakPoint(const int&)));
+    disconnect(currentWidget->BreakpointArea, SIGNAL(breakPointRemoved(const int&)), this, SLOT(slotDeleteBreakPoint(const int&)));
+    // go to line/column
     disconnect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotTextPositionChanged()));
     delete Tabs->widget(index_);
     DeleteTabFromList(index_);
@@ -800,8 +806,8 @@ void MainWindow::OpenFile(QModelIndex file_index) {
         currentWidget = qobject_cast<PlainTextEdit *>(Tabs->widget(Tabs->currentIndex()));
         connect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotTextPositionChanged()));
         // breakpoints
-        //connect(currentWidget, SIGNAL(breakPointCreated()), this, SLOT(slotToggleBreakPoint()));
-        //connect(currentWidget, SIGNAL(breakPointDeleted()), this, SLOT(slotDeleteBreakPoint()));
+        connect(currentWidget->BreakpointArea, SIGNAL(breakPointCreated(const int&)), this, SLOT(slotCreateBreakPoint(const int&)));
+        connect(currentWidget->BreakpointArea, SIGNAL(breakPointRemoved(const int&)), this, SLOT(slotDeleteBreakPoint(const int&)));
     }
 }
 
@@ -843,10 +849,13 @@ void MainWindow::UpdateCurrentIndex(int new_selection_index) {
     }
 }
 
+
+
 void MainWindow::slotBuild(){
 
     // clear terminal window
     console_dock->clear();
+    // deactivate action build
 
     bool cmake = true;
     /*
@@ -878,6 +887,7 @@ void MainWindow::slotBuild(){
         executor.setCompiler("clang++", CommandLineExecutor::Debug, "");
         executor.setExecutableName("executable", file_manager.Project_Dir.toStdString()); // watch for / at the end
         std::vector<std::string> sources;
+        sources.reserve(10);
         for (int i = 0; i < file_manager.source_files.size(); i++) {
             sources.push_back(file_manager.source_files[i].toStdString());
         }
@@ -992,6 +1002,14 @@ void MainWindow::slotRemoveAll() {
     currentWidget->clear();
 }
 
+void MainWindow::slotExpand() {
+    currentWidget->slotExpand();
+}
+
+void MainWindow::slotCollapse() {
+    currentWidget->slotCollapse();
+}
+
 void MainWindow::slotToggleComment() {
     currentWidget->toggleComment();
 }
@@ -1045,6 +1063,8 @@ void MainWindow::slotStartDebug() {
     if(!debuggerView->isVisible()){
         showDebuggerView();
         // TODO: wait some time
+        // unistd.h   -> linux header
+        sleep(1);
         debuggerView->start();
     }
     else{
@@ -1080,31 +1100,54 @@ void MainWindow::slotStepOut() {
     debuggerView->slotStepOut();
 }
 
+// this might go only through containBlock and decide to create or remove
 void MainWindow::slotToggleBreakPoint() {
     QString filename = currentWidget->getFilePath();
+    int line = currentWidget->getCursorPosition().x();
+    // in edit
+    bool created = currentWidget->toggleBreakPoint(line);
 
-    int line = currentWidget->setBreakPoint();
-
-    if(!filename.isEmpty() && line != 0){
-        debuggerView->setBreakpoint(filename.toStdString().c_str(), line);
+    // in debugger
+    if(!filename.isEmpty()){
+        // created
+        if(created){
+            debuggerView->createBreakpoint(filename.toStdString().c_str(), line);
+        }
+            // removed
+        else{
+            debuggerView->removeBreakpoint(filename.toStdString().c_str(), line);
+        }
     }
 }
 
-void MainWindow::slotDeleteBreakPoint() {
+void MainWindow::slotCreateBreakPoint(const int& line) {
     QString filename = currentWidget->getFilePath();
-    int line = currentWidget->getCursorPosition().y();
-    int id;
-    currentWidget->removeBreakPoint(line);
+    if(!filename.isEmpty()){
+        debuggerView->createBreakpoint(filename.toStdString().c_str(), line);
+    }
+}
 
-    debuggerView->removeBreakpoint(id);
+void MainWindow::slotDeleteBreakPoint(const int& line) {
+    QString filename = currentWidget->getFilePath();
+    if(!filename.isEmpty()){
+        debuggerView->removeBreakpoint(filename.toStdString().c_str(), line);
+    }
 }
 
 void MainWindow::slotSetBreakpointAtLine() {
-    QString filepath = currentWidget->getFilePath();
-    if(!filepath.isEmpty()){
-        debuggerView->showSetManualBreakPoint(filepath);
-    }
+    QString filename = currentWidget->getFilePath();
+    int line = currentWidget->getCursorPosition().x();
+    // in edit
+    bool created = currentWidget->toggleBreakPoint(line);
 
+    // in debugger
+    if(!filename.isEmpty()){
+        // created
+        if(created){
+            debuggerView->showSetManualBreakPoint(filename);
+        }
+        // removed meaningless
+    }
 }
 
 void MainWindow::slotShowBreakpointsList() {
@@ -1118,5 +1161,4 @@ void MainWindow::slotShowAttachToProcess() {
 void MainWindow::slotRestart() {
     // find how to
 }
-
 

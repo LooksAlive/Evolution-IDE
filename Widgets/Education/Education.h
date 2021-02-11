@@ -2,19 +2,14 @@
 #define EVOLUTION_IDE_EDUCATION_H
 
 #include <QWidget>
-#include <QFormLayout>
 #include <QListWidget>
-#include <QSettings>
-#include <QIcon>
+#include <QList>
 
 #include <iostream>
 #include <vector>
 
-#include <QList>
-
 #include "Widgets/Tab/tab.h"
 #include "Widgets/PlainTextEdit/plaintextedit.h"
-#include "icons/IconFactory.h"
 #include "CodeSamples.h"
 
 class Education : public QWidget{

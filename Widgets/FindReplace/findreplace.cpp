@@ -201,8 +201,7 @@ void FindReplaceWidget::slotForwardToResult(const QModelIndex &index) {
 void FindReplaceWidget::slotVisible(bool visible) {
     if(!visible){
         m_Edit->clearSelectionsBySearch = visible;
-        // consider, the cursor might not move or text changed ...
-        // m_Edit->manageExtraSelections();
+        m_Edit->updateExtraSelections();
     }
 }
 

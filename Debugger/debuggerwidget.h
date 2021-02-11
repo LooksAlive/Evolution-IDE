@@ -62,7 +62,8 @@ public:
     // task view to attach running already process
     void showTaskManager();
     void showSetManualBreakPoint(const QString &filepath);
-    QWidget *window;
+    QWidget *show_window;
+    QWidget *manual_window;
     QLineEdit *line_input;
     const char *file_path;
 
@@ -150,14 +151,14 @@ public:
     void pause();    // when breakpoint is hit
     void Continue();
 
-    void setBreakpoint(const char *file_name, const int &line);
+    void createBreakpoint(const char *file_name, const int &line);
     void removeBreakpoint(const char *file_name, const int &line);
     void removeBreakpoint(const break_id_t &id);
 
     void storeFrameData(SBFrame frame);
     SBThread getCurrentThread();
     SBFrame getCurrentFrame();
-    std::string frameGetLocation(SBFrame frame);
+    std::string frameGetLocation(const SBFrame& frame);
     SBValue findSymbol(const char *name);
 
     void stepOver();
@@ -212,7 +213,7 @@ private:
     bool HandleProcessStateChangeEvent(SBEvent &event);
     void HandleProcessStopped(SBEvent &event, SBProcess &process);
 
-    const char *getAssembly(SBThread &thread);
+    const char *getAssembly(SBThread thread);
 
     QThread *worker = nullptr;
 

@@ -1,3 +1,8 @@
+#include <QSettings>
+#include <QIcon>
+#include <QFormLayout>
+
+#include "icons/IconFactory.h"
 #include "Education.h"
 
 Education::Education(Tab *tab, QWidget *parent) : QWidget(parent), m_Tab(tab)

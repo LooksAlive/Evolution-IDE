@@ -256,6 +256,8 @@ private slots:
     void slotRedo();
     void slotPaste();
     void slotSelectAll();
+    void slotExpand();
+    void slotCollapse();
     void slotRemoveAll();
     void slotFormat();
 
@@ -282,8 +284,12 @@ private slots:
     void slotStepInstruction();
     void slotStepOut();
 
+    // to and from edit, debugger
     void slotToggleBreakPoint();
-    void slotDeleteBreakPoint();
+    // from edit to debugger;      signals: breakPointCreated, breakPointRemoved
+    void slotCreateBreakPoint(const int&);
+    void slotDeleteBreakPoint(const int&);
+
     void slotSetBreakpointAtLine();
     void slotShowBreakpointsList();
     void slotShowAttachToProcess();

@@ -302,20 +302,20 @@ void DebuggerWidget::setExecutable(const std::string &exe_file_path) {
 }
 
 void DebuggerWidget::showBreakPointsList() {
-    auto *window = new QWidget(this);
+    show_window = new QWidget(this);
     auto *tree = new QTreeWidget(this);
     //QListWidget *break_list = new QListWidget(this);
     auto *layout = new QVBoxLayout();
-    window->setFixedWidth(500);
+    show_window->setFixedWidth(500);
     tree->setColumnCount(3);
     tree->setHeaderLabels(QStringList() << "ID" << "File" << "Line");
     //layout->addWidget(break_list);
     layout->addWidget(tree);
-    window->setWindowFlags(Qt::Dialog);
+    show_window->setWindowFlags(Qt::Dialog);
     for (int i = 0; i < BreakPointList.size(); i++) {
         //QListWidgetItem *item = new QListWidgetItem(break_list, i);
         auto *item = new QTreeWidgetItem(i);
-        item->setIcon(0, QIcon(IconFactory::BreakPoint));  // icon to begining
+        item->setIcon(0, QIcon(IconFactory::BreakPoint));  // icon to beginning
         //QString info = QString("ID: ") + QString::number(debugger.BreakPointList[i].break_id) + ", line: " +
         //        QString::number(debugger.BreakPointList[i].line) + " File: " + debugger.BreakPointList[i].filename;
         item->setText(0, QString::number(BreakPointList[i].break_id));
@@ -325,35 +325,35 @@ void DebuggerWidget::showBreakPointsList() {
         tree->addTopLevelItem(item);
     }
 
-    window->setLayout(layout);
-    window->show();
+    show_window->setLayout(layout);
+    show_window->show();
 }
 
 void DebuggerWidget::showSetManualBreakPoint(const QString &filepath) {
     file_path = filepath.toStdString().c_str();
-    window = new QWidget(this);
+    manual_window = new QWidget(this);
     line_input = new QLineEdit(this);
-    QVBoxLayout *layout = new QVBoxLayout();
-    QFormLayout *form = new QFormLayout();
-    window->setWindowFlags(Qt::Dialog);
+    auto *layout = new QVBoxLayout();
+    auto *form = new QFormLayout();
+    manual_window->setWindowFlags(Qt::Dialog);
     form->addRow("line: ", line_input);
     layout->addLayout(form);
     connect(line_input, SIGNAL(returnPressed()), this, SLOT(slotSetBreakPointByManualLine()));
 
-    window->setLayout(layout);
-    window->show();
+    manual_window->setLayout(layout);
+    manual_window->show();
 }
 
 void DebuggerWidget::slotSetBreakPointByManualLine() {
     int line = line_input->text().toInt();
     if(line != 0){
-        setBreakpoint(file_path, line);
+        createBreakpoint(file_path, line);
     }
-    window->close();
+    manual_window->close();
 }
 
 void DebuggerWidget::showTaskManager() {
-    TaskWidget *task = new TaskWidget(this);
+    auto *task = new TaskWidget(this);
     task->setFilterVisable(true);
     task->show();
     // debugger.attachToRunningProcess(some id);    // add signal from task and slot from here
@@ -492,7 +492,7 @@ void DebuggerWidget::start() {
     }
 
     //setBreakpoint("/home/adam/Desktop/sources/Evolution-IDE/main.cpp", 23);
-    setBreakpoint("/home/adam/Desktop/sources/Evolution-IDE/main.cpp", 27);
+    createBreakpoint("/home/adam/Desktop/sources/Evolution-IDE/main.cpp", 27);
 
     //Process = Target.LaunchSimple(nullptr, nullptr, nullptr);
     //Process = Target.Launch(launch_info, error);
@@ -593,7 +593,7 @@ bool DebuggerWidget::HandleProcessStateChangeEvent(SBEvent &event) {
 
             HandleProcessStopped(event, process);
             // since from this point the process will stop i can only stepping or continue
-            process.Stop();
+            //Process.Stop();
             return true;
             //break;
         case eStateRunning:   ///< Process is now running and can't be examined
@@ -644,6 +644,7 @@ void DebuggerWidget::HandleProcessStopped(SBEvent &event, SBProcess &process) {
     }
 
     std::string position = frameGetLocation(getCurrentFrame());
+    //std::cout << getAssembly(getCurrentThread());
 
     const uint32_t num_threads = process.GetNumThreads();
     for (uint32_t thread_idx=0; thread_idx<num_threads; ++thread_idx) {
@@ -652,6 +653,7 @@ void DebuggerWidget::HandleProcessStopped(SBEvent &event, SBProcess &process) {
         SBStream description_stream;
         thread.GetDescription(description_stream, true);
         const char *description = description_stream.GetData();
+        debug_output->appendPlainText(description);
         // You can look at description and use this string in your GUI if it has the contents you want.
         // This will be formatted using the "thread-format" which can be changed with "settings set":
         //   settings set thread-format ....
@@ -666,9 +668,7 @@ void DebuggerWidget::HandleProcessStopped(SBEvent &event, SBProcess &process) {
         const size_t stop_reason_data_count = thread.GetStopReasonDataCount();
         switch (thread_stop_reason) {
             case eStopReasonInvalid:
-                break;
             case eStopReasonNone:
-                break;
             case eStopReasonTrace:
                 break;
             case eStopReasonBreakpoint:
@@ -677,7 +677,7 @@ void DebuggerWidget::HandleProcessStopped(SBEvent &event, SBProcess &process) {
                 // hit by the same thread, so we will want to report all breakpoints that were hit
                 std::cout << "breakpoint was hit";
                 debug_output->appendPlainText("breakpoint was hit: ");
-                if(position != ""){
+                if(!position.empty()){
                     debug_output->appendPlainText(QString::fromStdString(position));
                 }
                 for (size_t i=0; i<stop_reason_data_count; i+=2) {
@@ -690,24 +690,18 @@ void DebuggerWidget::HandleProcessStopped(SBEvent &event, SBProcess &process) {
                 }
                 break;
             case eStopReasonWatchpoint:
-                break;
             case eStopReasonSignal:
-                break;
             case eStopReasonException:
-                break;
             case eStopReasonExec:
-                break;
             case eStopReasonPlanComplete:
-                break;
             case eStopReasonThreadExiting:
-                break;
             case eStopReasonInstrumentation:
                 break;
         }
     }
 }
 
-const char *DebuggerWidget::getAssembly(SBThread &thread) {
+const char *DebuggerWidget::getAssembly(SBThread thread) {
     lldb::SBFrame frame = thread.GetFrameAtIndex(0);
     lldb::SBFunction function = frame.GetFunction();
     lldb::SBInstructionList instructions;
@@ -789,7 +783,7 @@ void DebuggerWidget::storeFrameData(SBFrame frame) {
     */
 }
 
-std::string DebuggerWidget::frameGetLocation(SBFrame frame) {
+std::string DebuggerWidget::frameGetLocation(const SBFrame& frame) {
     // set view to file and line
     const char *filename = frame.GetLineEntry().GetFileSpec().GetFilename();
     SBFunction function = frame.GetFunction();
@@ -811,7 +805,7 @@ std::string DebuggerWidget::frameGetLocation(SBFrame frame) {
     return description;
 }
 
-void DebuggerWidget::setBreakpoint(const char *file_name, const int &line) {
+void DebuggerWidget::createBreakpoint(const char *file_name, const int &line) {
 
     SBBreakpoint breakpoint = Target.BreakpointCreateByLocation(file_name, line);
     // make sure that it's good
@@ -832,23 +826,20 @@ void DebuggerWidget::setBreakpoint(const char *file_name, const int &line) {
 void DebuggerWidget::removeBreakpoint(const break_id_t &id) {
     if(!Target.BreakpointDelete(id)){
         debug_output->appendPlainText("Breakpoint was not deleted !");
-        //return;
     }
 }
 
 void DebuggerWidget::removeBreakpoint(const char *file_name, const int &line) {
 
     break_id_t ID;
-    for (int i = 0; i < BreakPointList.size(); i++) {
-        if(BreakPointList[i].filename == file_name && BreakPointList[i].line == line){
-            ID = BreakPointList[i].break_id;
+    for (const auto& b_point : BreakPointList) {
+        if(b_point.filename == file_name && b_point.line == line){
+            ID = b_point.break_id;
         }
     }
     if(!Target.BreakpointDelete(ID)){
         debug_output->appendPlainText("Breakpoint was not deleted !");
-        //return;
     }
-
 }
 
 std::vector<DebuggerWidget::framedata> get_var_func_info() {
@@ -892,17 +883,17 @@ void DebuggerWidget::pause() {
 void DebuggerWidget::Continue() {
     if (Process.IsValid()) {
         auto err = Process.Continue();
-        if (err.Success()) {
+        if (err.Fail()) {
+            debug_output->appendPlainText("Process Ended");
+            //setProcessInterruptFeatures();
+            disableDebuggerButtons();
+        }
+        else{
             SBStream str;
             err.GetDescription(str);
             std::cout << "Failed to continue process" + std::string(str.GetData());
             debug_output->appendPlainText("Failed to continue process" + QString(str.GetData()));
             // {{"Error Code", err.GetError()}, {"Error String", err.GetCString()}};
-            disableDebuggerButtons();
-        }
-        else{
-            debug_output->appendPlainText("Finished");
-            //setProcessInterruptFeatures();
             disableDebuggerButtons();
         }
     }
@@ -913,6 +904,9 @@ void DebuggerWidget::stepOver() {
     getCurrentThread().StepOver();
     //setProcessInterruptFeatures();
     //std::cout << "after\n";
+    SBStream str;
+    getCurrentFrame().GetDescription(str);
+    std::cout << str.GetData();
     //std::string pos = frameGetLocation(getCurrentFrame());
     //debug_output->appendPlainText(QString::fromStdString(pos));
     //std::cout << pos;
