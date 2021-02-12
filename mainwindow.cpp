@@ -3,6 +3,8 @@
 #include "icons/IconFactory.h"
 #include "Clang/ClangBridge.h"
 
+//#include "qconsole.h"
+
 /*
 keyword this always represents parent in which class it is declared, also
 want to show exact widget into this section(mainwindow - app)
@@ -355,7 +357,7 @@ void MainWindow::showDebuggerView(){
     // for now, starting with current file, later track    ;  not i only care for line
     // file_manager.current_full_filepath, 0
     //file_manager.executable_file_path = "/home/adam/Desktop/SKK/cmake-build/executable";
-    debuggerView->setStartFilePosition(path, currentWidget->getCursorPosition().x());   // ???
+    debuggerView->setStartFilePosition(path, currentWidget->getCursorPosition().x());
     //debuggerView->setExecutable(file_manager.executable_file_path.toStdString());
 }
 
@@ -434,6 +436,13 @@ void MainWindow::SetupFileExplorer() {
 
     connect(Explorer->FileView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(OpenFile(QModelIndex)));
     addDockWidget(Qt::LeftDockWidgetArea, Explorer); /* show at left side; function for MainWindow */
+    /*
+    auto *dock = new QDockWidget(this);
+    auto *console = new QConsole(this);
+    dock->setWidget(console);
+    addDockWidget(Qt::BottomDockWidgetArea, dock);
+    dock->setVisible(true);
+    */
 }
 
 void MainWindow::SetupFileDocker() {
@@ -751,7 +760,7 @@ void MainWindow::CloseWindow() {
 
     QMessageBox::StandardButton reply = QMessageBox::question(
             this, "Exit",
-            "Are you sure, you want to exit Evolution-IDE ?", QMessageBox::Yes|QMessageBox::No);
+            "Are you sure, you want to exit Evolution-IDE ?", QMessageBox::Yes | QMessageBox::No);
     if (reply == QMessageBox::No)
         return;
 
@@ -854,7 +863,7 @@ void MainWindow::UpdateCurrentIndex(int new_selection_index) {
 void MainWindow::slotBuild(){
 
     // clear terminal window
-    console_dock->clear();
+    console_dock->slotClearConsole();
     // deactivate action build
 
     bool cmake = true;
@@ -912,6 +921,9 @@ void MainWindow::slotBuild(){
     qDebug() << "build done";
 }
 void MainWindow::slotRun(){
+
+    // clear terminal window
+    console_dock->slotClearConsole();
 
     bool cmake = true;
     if(CHANGES_IN_PROJECT){
@@ -1039,8 +1051,9 @@ void MainWindow::slotAbout() {
                            "\n"
                            "Newly contain Educational system, which could provide convenient code samples with brief \n"
                            "comments. There are also provided many stuffs i personally always want to know quicker. \n"
-                           "If you are interested, you can provide your own sample: "
-                           "https://github.com/adamko222/Evolution-IDE.";
+                           "If you are interested, you can provide your own sample. \n"
+                           "Web:  \n"
+                           "Github: https://github.com/adamko222/Evolution-IDE. \n";
 
     QMessageBox::information(this, "About Evolution", about, QMessageBox::Close);
 }
@@ -1062,7 +1075,7 @@ void MainWindow::slotStopProcess() {
 void MainWindow::slotStartDebug() {
     if(!debuggerView->isVisible()){
         showDebuggerView();
-        // TODO: wait some time
+        // wait some time
         // unistd.h   -> linux header
         sleep(1);
         debuggerView->start();
@@ -1107,15 +1120,16 @@ void MainWindow::slotToggleBreakPoint() {
     // in edit
     bool created = currentWidget->toggleBreakPoint(line);
 
+
     // in debugger
     if(!filename.isEmpty()){
         // created
         if(created){
-            debuggerView->createBreakpoint(filename.toStdString().c_str(), line);
+            debuggerView->createBreakpoint(filename.toLatin1().data(), line);
         }
             // removed
         else{
-            debuggerView->removeBreakpoint(filename.toStdString().c_str(), line);
+            debuggerView->removeBreakpoint(filename.toLatin1().data(), line);
         }
     }
 }
@@ -1123,14 +1137,14 @@ void MainWindow::slotToggleBreakPoint() {
 void MainWindow::slotCreateBreakPoint(const int& line) {
     QString filename = currentWidget->getFilePath();
     if(!filename.isEmpty()){
-        debuggerView->createBreakpoint(filename.toStdString().c_str(), line);
+        debuggerView->createBreakpoint(filename.toLatin1().data(), line);
     }
 }
 
 void MainWindow::slotDeleteBreakPoint(const int& line) {
     QString filename = currentWidget->getFilePath();
     if(!filename.isEmpty()){
-        debuggerView->removeBreakpoint(filename.toStdString().c_str(), line);
+        debuggerView->removeBreakpoint(filename.toLatin1().data(), line);
     }
 }
 

@@ -63,8 +63,11 @@ public:
     static constexpr auto Back = "/home/adam/Desktop/sources/Evolution-IDE/icons/back.svg";
     static constexpr auto Search = "/home/adam/Desktop/sources/Evolution-IDE/icons/search.svg";
     static constexpr auto NewDirectory = "/home/adam/Desktop/sources/Evolution-IDE/icons/new_directory.svg";
-    static constexpr auto Remove = "/home/adam/Desktop/sources/Evolution-IDE/icons/remove.svg";
+    static constexpr auto Remove = "/home/adam/Desktop/sources/Evolution-IDE/icons/remove2.svg";
     static constexpr auto Done = "/home/adam/Desktop/sources/Evolution-IDE/icons/done.svg";
+    static constexpr auto ScrollUp = "/home/adam/Desktop/sources/Evolution-IDE/icons/scroll_up.svg";
+    static constexpr auto ScrollDown = "/home/adam/Desktop/sources/Evolution-IDE/icons/scroll_down.svg";
+    static constexpr auto TrashBin = "/home/adam/Desktop/sources/Evolution-IDE/icons/trash_bin.svg";
 
     // DEBUGGER
     static constexpr auto StartDebug = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/StartDebug.png";

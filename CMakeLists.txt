@@ -201,6 +201,8 @@ set(SOURCE_FILES
                 Widgets/FindReplace/findreplace.h
                 Widgets/BinaryInfo/binaryview.cpp
                 Widgets/BinaryInfo/binaryview.h
+                qconsole.cpp
+                qconsole.h
                 ${HEX_VIEW}
                 #${CLANGD_SOURCES} # in the future will be more accurate, now only takes much storage and time
                 ${TASK_VIEW}

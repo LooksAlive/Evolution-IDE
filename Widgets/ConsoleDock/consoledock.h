@@ -2,11 +2,12 @@
 #define COMPILEDOCK_H
 
 #include <QDockWidget>
-
 #include <QTabWidget>
 #include <QPlainTextEdit>
-
+#include <QToolBar>
 #include <QWidget>
+
+#include <QHBoxLayout>
 
 #include "customtabstyle.h"
 
@@ -22,15 +23,23 @@ class  ConsoleDock : public QDockWidget
     Q_OBJECT
 public:
     explicit ConsoleDock(QWidget *parent = nullptr);
-    ~ConsoleDock();
+    ~ConsoleDock() = default;
 
     void setRawOutput(const QString &raw);
-    void clear();
 
 private:
+    QHBoxLayout *MainLayout;
     QPlainTextEdit *ConsoleOutput;
-
+    QToolBar *title_bar;
+    QToolBar *tool_bar;
+    
     void BuildConsole();
+
+public slots:
+    void slotScrollUp();
+    void slotScrollDown();
+    void slotClearConsole();
+
 
 };
 

@@ -52,7 +52,7 @@ QLayout *SettingsWindow::buildForm()
     OptionsList->addItem(new QListWidgetItem("Appearance"));
     OptionsList->addItem(new QListWidgetItem("Cmake"));
     OptionsList->addItem(new QListWidgetItem("Debugger"));
-    OptionsList->addItem(new QListWidgetItem("Formater"));
+    OptionsList->addItem(new QListWidgetItem("Formatter"));
     OptionsList->addItem(new QListWidgetItem("Git"));
 
     OptionsList->setCurrentRow(0);

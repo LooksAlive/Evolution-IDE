@@ -1,12 +1,18 @@
+#include <QShortcut>
+
 #include "NewWindow.h"
 
 
-NewWindow::NewWindow(QWidget *parent) : QWidget(parent){}
+NewWindow::NewWindow(QWidget *parent) : QWidget(parent){
+    // escape sequence
+    connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [=] {close();});
+}
 
 void NewWindow::dir_Window() {
     dir_layout = new QFormLayout();
     dir_input = new QLineEdit(this);
-    dir_layout->addRow("Directory: ", dir_input);
+    dir_input->setPlaceholderText("Directory");
+    dir_layout->addRow(dir_input);
 
     setFixedSize(250, 50);
     setWindowFlags(Qt::Dialog);
@@ -27,7 +33,8 @@ void NewWindow::slotDir() {
 void NewWindow::file_Window() {
     file_layout = new QFormLayout();
     file_input = new QLineEdit(this);
-    file_layout->addRow("File name: ", file_input);
+    file_input->setPlaceholderText("Name");
+    file_layout->addRow(file_input);
 
     setFixedSize(250, 50);
     setWindowFlags(Qt::Dialog);
@@ -53,7 +60,8 @@ void NewWindow::C_CPP_CLASS_Window() {
     H_tag = new QLabel(this);
     CPP_tag->setText(".cpp");   // initial text
     H_tag->setText(".h");       // initial text
-    C_CPP_CLASS_layout->addRow("Class name: ", ClassName_input);
+    ClassName_input->setPlaceholderText("Class");
+    C_CPP_CLASS_layout->addRow(ClassName_input);
     C_CPP_CLASS_layout->addRow(CPP_tag);
     C_CPP_CLASS_layout->addRow(H_tag);
 
@@ -88,7 +96,8 @@ void NewWindow::rename_Window(const QString &old) {
     old_tag = new QLabel(this);
     old_tag->setText(old);
     rename_layout->addRow("Old name: ", old_tag);
-    rename_layout->addRow("New name: ", rename_input);
+    rename_input->setPlaceholderText("New name");
+    rename_layout->addRow(rename_input);
 
     setFixedSize(250, 100);
     setWindowFlags(Qt::Dialog);

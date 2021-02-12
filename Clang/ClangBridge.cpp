@@ -48,6 +48,8 @@
 #include <mutex>
 #include <string>
 #include <type_traits>
+#include <iostream>
+#include <thread>
 
 #include "ClangBridge.h"
 
@@ -67,7 +69,8 @@ void ClangBridge::setCompilationArguments(const std::string &args) {
 
 void ClangBridge::addDocument(PathRef File, StringRef Contents, llvm::StringRef Version, WantDiagnostics WD,
                               bool ForceRebuild) {
-
+    //std::thread t;
+    //t.detach();
 }
 
 void ClangBridge::removeDocument(PathRef File) {

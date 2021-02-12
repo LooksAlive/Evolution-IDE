@@ -4,6 +4,7 @@
 #include <QVBoxLayout>
 #include <QShortcut>
 #include <QStandardItem>
+#include <QToolBar>
 
 #include "icons/IconFactory.h"
 #include "findreplace.h"
@@ -13,27 +14,26 @@ FindReplaceWidget::FindReplaceWidget(Tab *tab, QWidget *parent)
 {
     createWindow();
 
-    MainLayout->setContentsMargins(0, 5, 0, 0);
+    MainLayout->setContentsMargins(0, 0, 0, 0);
     MainLayout->setSpacing(2);
 
     base = new QWidget(this);
     base->setLayout(MainLayout);
     base->setContentsMargins(5, 5, 5, 5);
     base->setFixedWidth(700);
-    //base->setFixedHeight(100);
+    //base->setFixedHeight(150);
     setWidget(base);
-    this->setVisible(false);
+    setVisible(false);
 
     setWindowTitle("Find & Replace");
 
-
-    auto *btn = new QToolButton(this);
-    btn->setIcon(QIcon(IconFactory::Remove));
-    btn->setFixedWidth(30);
-    btn->setWindowFlags(Qt::FramelessWindowHint);
-    //btn->setSizePolicy(QWidget::Expanding);
-    connect(btn, SIGNAL(clicked()), this, SLOT(close()));
-    setTitleBarWidget(btn);
+    auto *t_bar = new QToolBar(this);
+    
+    t_bar->addAction(QIcon(IconFactory::Remove), "Close", this, SLOT(close()));
+    t_bar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
+    t_bar->setFixedHeight(35);
+    t_bar->setIconSize(QSize(25, 35));
+    setTitleBarWidget(t_bar);
 
     // escape shortcut  -> will close the window
     connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [=] {this->setVisible(false);});

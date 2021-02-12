@@ -330,7 +330,7 @@ void DebuggerWidget::showBreakPointsList() {
 }
 
 void DebuggerWidget::showSetManualBreakPoint(const QString &filepath) {
-    file_path = filepath.toStdString().c_str();
+    file_path = filepath.toLatin1().data();
     manual_window = new QWidget(this);
     line_input = new QLineEdit(this);
     auto *layout = new QVBoxLayout();
