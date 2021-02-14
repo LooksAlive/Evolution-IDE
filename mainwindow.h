@@ -100,6 +100,8 @@ namespace Ui {
 class MainWindow;
 }
 
+class ClangBridge;
+
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
@@ -109,7 +111,7 @@ public:
 
     // describes what iss happening at moment in statusbar beside progressbar
     std::string progress_action;
-    
+
 private:
 
     // top menu bar
@@ -137,7 +139,6 @@ private:
     // Status Bar
     QStatusBar *statusbar;
     ProgressBar *progress_bar;
-    QLabel *progress_tag;
     QToolButton *btn_position;
     QToolButton *btn_encoding;
 
@@ -149,7 +150,7 @@ private:
     // tracking current Tab widget for many other actions on it
     // connected when new file is created and tab changed, disconnected when deleted
     PlainTextEdit *currentWidget;
-    /* file manager */
+    // file manager, get recursive files from dir only if dir is opened, provided
     FileDirManager file_manager;
 
     /* explorer stuffs */
@@ -163,7 +164,7 @@ private:
 
     /* code info related stuffs dock */
     CodeInfoDock *codeInfoDock;
-    //ClangBridge clang_parser;     // need some arguments
+    ClangBridge *clangBridge;     // initialized in SetupCodeInfoDock;   has to be pointer, on heap
 
     /* Converter - small widget */
     Converter *converter;
@@ -182,7 +183,7 @@ private:
     void SetupFileDocker();
     void SetupCompileDock();
     void SetupCodeInfoDock();
-    void SetupEducationWidget();
+    void SetupEducationDock();
 
     void SetupVerticalBar();
     void SetupNodeView();
@@ -269,9 +270,6 @@ private slots:
 
     void slotStopProcess();
     void slotTextPositionChanged();
-
-    void slotShowEducation();
-
 
     // debugger
     void slotStartDebug();

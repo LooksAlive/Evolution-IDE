@@ -26,9 +26,12 @@
 #include <iostream>
 #include <vector>
 
+#include "Widgets/CodeInfoDock/CodeInfoDock.h"
+
 class LineNumberArea;
 class BreakPointArea;
 class Arrow;
+class ClangBridge;
 
 class PlainTextEdit : public QPlainTextEdit
 {
@@ -39,6 +42,13 @@ public:
 
     BreakPointArea *BreakpointArea;
     Arrow *ArrowArea;
+    // data insertions
+    CodeInfoDock *code_info;
+    // parsing
+    ClangBridge *clang;
+    
+    void setCodeInfoWidget(CodeInfoDock *code_info_widget){code_info = code_info_widget;}
+    void setClang(ClangBridge *clang_bridge){clang = clang_bridge;}
 
     // tab width
     static constexpr unsigned int TAB_STOP_WIDTH = 4;
@@ -86,7 +96,7 @@ public:
     QString getFilePath();
 
     // false -> removed;   true -> created
-    bool toggleBreakPoint(const int& line);
+    bool toggleBreakPoint(const int& line) const;
 
     // completer words, will get from clang parser
     void setCompletionData(const std::vector<std::string> &data);
@@ -100,19 +110,13 @@ public:
     // redundancy and updating each selection list is done within functions/slots they are filled ...  .clear()
     void updateExtraSelections();
     QList<QTextEdit::ExtraSelection> extra_selections_search_results;
-    // search selections; false -> clear them when find widget is closed && ??
-    bool clearSelectionsBySearch = false;
     QList<QTextEdit::ExtraSelection> extra_selections_search_touched_results;  // also {} contained here
-    // mouse click 1 file selections;  false -> clear when text cursor is no longer on the text && typing
-    bool clearSelectionsByTouch = false;
     // current word
     QString wordUnderCursor;
     // word after next mouse touch
     QString tempWordUnderCursor;
     QList<QTextEdit::ExtraSelection> extra_selections_warning_line;
-    bool clearWarningLineSelections = false;
     QList<QTextEdit::ExtraSelection> extra_selections_error_line;
-    bool clearErrorLineSelections = false;
     // this one is fixed
     QList<QTextEdit::ExtraSelection> extra_selections_current_line;
 
@@ -123,8 +127,8 @@ public:
     // remove specific line selection is tricky, so remove them all and again call this for all selections
     // clears warning or error selection list
     void setLineSelection(const int &line, const lineSelection& type, const bool& removeAll = false);
+    // milliseconds, when touched and within 3sec will not be the same word
     QTimer *touchSearchTimer;
-    // milliseconds, when touched and within 3s will not be the same word,
     static constexpr unsigned int MouseTouchTimeOut = 3000;
     // works with extra_selections_search_touched_results, select pairs, nested also
     // lookup pairs like <> () {} ""
@@ -132,6 +136,14 @@ public:
     // missing selected text for return -> no use for now
     void highlight(QList<QTextEdit::ExtraSelection> &selections, const bool &Background, const int &line,
                    const QColor &color = QColor::fromRgb(0, 255, 0));
+                   
+    // code info dock:
+    // timer for usages search: 6sec
+    QTimer *usagesSearchTimer;
+    static constexpr unsigned int usagesSearchTimeOut = 6000;
+    // timer for actions 5sec
+    QTimer *actionsTimer;
+    static constexpr unsigned int ActionsTimeOut = 5000;
 
 protected:
     void keyReleaseEvent(QKeyEvent *event) override;
@@ -170,6 +182,8 @@ public slots:
     void completerInsertText(const QString &text);
     // search and select mouse touched word in this file, for now, do nothing
     void searchByMouseTouch();
+    void searchUsages();
+    void actions();
 
     void toggleComment();
     void formatFile();

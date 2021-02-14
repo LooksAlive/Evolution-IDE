@@ -29,21 +29,34 @@
 #include <QVBoxLayout>
 
 
+class ClangBridge;
+class PlainTextEdit;
+
 class CodeInfoDock : public QDockWidget{
     Q_OBJECT
 
 public:
     explicit CodeInfoDock(QWidget *parent = nullptr);
     ~CodeInfoDock() = default;
+    
+    void setEditor(PlainTextEdit *editor){edit = editor;}
+    void setClang(ClangBridge *clang_bridge){clang = clang_bridge;}
 
 
 private:
+    // generates, fixits, moving between errors requires instance as well as
+    // edit requires this dock for data insertions
+    PlainTextEdit *edit;
+    // parsing
+    ClangBridge *clang;
+
     QWidget *MainWidget;
     
     QHBoxLayout *MainLayout;
     QVBoxLayout *SignatureActionLayout;
     
     QLabel *signature;
+    QLabel *documentation;
     // represents where function, var, instance is called
     QListWidget *calls;
     // double click, consider TreeView, since there could be more actions available

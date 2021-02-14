@@ -25,11 +25,12 @@ public:
     explicit ConsoleDock(QWidget *parent = nullptr);
     ~ConsoleDock() = default;
 
+    QPlainTextEdit *ConsoleOutput;
+
     void setRawOutput(const QString &raw);
 
 private:
     QHBoxLayout *MainLayout;
-    QPlainTextEdit *ConsoleOutput;
     QToolBar *title_bar;
     QToolBar *tool_bar;
     

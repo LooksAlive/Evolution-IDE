@@ -7,6 +7,9 @@
 #include <QTextBlock>
 #include <QTextStream>
 
+// have to be there, parsing error with some .inc files
+#include "Clang/ClangBridge.h"
+
 #include "icons/IconFactory.h"
 #include "plaintextedit.h"
 
@@ -42,6 +45,9 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
     setTabChangesFocus(false);
     setWordWrapMode(QTextOption::WordWrap);
     setReadOnly(false);
+    setMouseTracking(true);
+    setEnabled(true);
+    setCenterOnScroll(true);    // ??? what does this ?
 
     // LineArea
     connect(this, &QPlainTextEdit::cursorPositionChanged, this, &PlainTextEdit::slotHighlightCurrentLine);
@@ -670,7 +676,8 @@ void PlainTextEdit::createMenu() {
 
 void PlainTextEdit::SetupCompleter() {
     QStringList words;
-    words << "void" << "bool" << "int";
+    words << "void" << "bool" << "int" << "uint" << "unsigned" << "short" << "char" << "wchar" << "const"
+    << "constexpr" << "noexcept" << "if" << "else" << "switch" << "case" << "for" << "while";
     //completer->setModel(new QStringListModel(words, completer));
 
     completer = new QCompleter(words, this);
@@ -711,7 +718,7 @@ QString PlainTextEdit::getFilePath(){
     return file;
 }
 
-bool PlainTextEdit::toggleBreakPoint(const int& line) {
+bool PlainTextEdit::toggleBreakPoint(const int& line) const {
     if(BreakpointArea->containBlock(line)){
         return false;
     }
@@ -733,22 +740,36 @@ void PlainTextEdit::searchPairsSelections(const QString &first){
     if(first == "\'")
         second = "\'";
 
+    if(second.isEmpty()){
+        qDebug() << "empty second pair with " + first;
+        return;
+    }
+
     int pos = textCursor().position();
 
     QColor highlight = Qt::darkGreen;
     highlight.setAlpha(25);
-    // first pair ASC, (DESC) ; solved with nested occurrences
-    while(find(first)) {
-        QTextEdit::ExtraSelection selection;
+    // first pair insert,   ASC, (DESC) ; solved with nested occurrences
+    QTextEdit::ExtraSelection selection;
 
-        selection.cursor = textCursor();
-        selection.format.setBackground(highlight);
-        //selection.format.setProperty(QTextCharFormat::FullWidthSelection, true);
-        extra_selections_search_touched_results.append(selection);
-        selection.cursor.clearSelection();
-    }
+    selection.cursor = textCursor();
+    selection.format.setBackground(highlight);
+    //selection.format.setProperty(QTextCharFormat::FullWidthSelection, true);
+    extra_selections_search_touched_results.append(selection);
+    selection.cursor.clearSelection();
+
+
+    QTextEdit::ExtraSelection selection2;
+
+    find(second);
+    selection2.cursor = textCursor();
+    selection2.format.setBackground(highlight);
+    //selection.format.setProperty(QTextCharFormat::FullWidthSelection, true);
+    extra_selections_search_touched_results.append(selection2);
+    selection.cursor.clearSelection();
 
     // pos before
+    /*
     int temp_pos = textCursor().position();
     find(first);
     int pos_f = textCursor().position();
@@ -775,6 +796,7 @@ void PlainTextEdit::searchPairsSelections(const QString &first){
             selection.cursor.clearSelection();
         }
     }
+    */
 }
 
 void PlainTextEdit::setLineSelection(const int &line, const PlainTextEdit::lineSelection& type, const bool& removeAll) {
@@ -811,28 +833,24 @@ void PlainTextEdit::setLineSelection(const int &line, const PlainTextEdit::lineS
 }
 
 void PlainTextEdit::updateExtraSelections() {
-    if(clearSelectionsBySearch){
-        extra_selections_search_results.clear();
-    }
-    if(clearSelectionsByTouch){
-        extra_selections_search_touched_results.clear();
-    }
-    if(clearWarningLineSelections){
-        extra_selections_warning_line.clear();
-    }
-    if(clearErrorLineSelections){
-        extra_selections_error_line.clear();
-    }
-
     setExtraSelections(extra_selections_current_line + extra_selections_search_results +
-                        extra_selections_warning_line + extra_selections_error_line);
-
+                               extra_selections_search_touched_results + extra_selections_warning_line +
+                               extra_selections_error_line);
 }
 
 void PlainTextEdit::setTimers() {
     touchSearchTimer = new QTimer(this);
     connect(touchSearchTimer, SIGNAL(timeout()), this, SLOT(searchByMouseTouch()));
     touchSearchTimer->setInterval(MouseTouchTimeOut);
+
+    usagesSearchTimer = new QTimer(this);
+    connect(touchSearchTimer, SIGNAL(timeout()), this, SLOT(searchUsages()));
+    touchSearchTimer->setInterval(usagesSearchTimeOut);
+
+    actionsTimer = new QTimer(this);
+    connect(touchSearchTimer, SIGNAL(timeout()), this, SLOT(actions()));
+    touchSearchTimer->setInterval(ActionsTimeOut);
+
 }
 
 
@@ -963,6 +981,15 @@ void PlainTextEdit::searchByMouseTouch(){
         }
     }
     updateExtraSelections();
+    //touchSearchTimer->stop();
+}
+
+void PlainTextEdit::searchUsages() {
+
+}
+
+void PlainTextEdit::actions() {
+
 }
 
 /* PlainTextEdit protected functions
@@ -980,13 +1007,13 @@ void PlainTextEdit::mousePressEvent(QMouseEvent *e){
         // touched 2 times in 3sec, stop and wait for third touch (later just continue)
         if(touchSearchTimer->isActive()){
             touchSearchTimer->stop();
-            qDebug() << "acitve, stopped\n";
+            qDebug() << "stopped";
             QPlainTextEdit::mousePressEvent(e);
             return;
         }
         // when we are still on the same word ... search it
         wordUnderCursor = getWordUnderCursor();
-        qDebug() << "activated with " + wordUnderCursor + " \n";
+        qDebug() << "activated with " + wordUnderCursor;
         touchSearchTimer->start();
         QPlainTextEdit::mousePressEvent(e);
     }
@@ -1041,6 +1068,10 @@ void PlainTextEdit::resizeEvent(QResizeEvent *event)
 void PlainTextEdit::keyReleaseEvent(QKeyEvent *event)
 {
     QTextCursor cursor = textCursor();
+
+    //if(event->type() == QEvent::MouseButtonPress && event->modifiers() == Qt::ControlModifier){
+    //    this->cursor().setShape(Qt::PointingHandCursor);
+    //}
     /*
     if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Space){
         auto popup = completer->popup();
@@ -1055,22 +1086,27 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event)
         this->cursor().setShape(Qt::PointingHandCursor);
     }
     */
+
+    QString completionPrefix = getWordUnderCursor();
     /*
-    bool isShortcut = ((event->modifiers() && Qt::ControlModifier) && event->key() == Qt::Key_E); // CTRL+E
-    if (!completer || !isShortcut) // do not process the shortcut when we have a completer
-        QPlainTextEdit::keyReleaseEvent(event);
     const bool ctrlOrShift = event->modifiers() && (Qt::ControlModifier | Qt::ShiftModifier);
-    if (!completer || (ctrlOrShift && event->text().isEmpty()))
+    if (!completer || (ctrlOrShift && event->text().isEmpty())) {
         return;
+    }
+    static QString eow("~!@#$%^&*()_+{}|:\"<>?,./;'[]\\-="); // end of word
+    bool hasModifier = (event->modifiers() != Qt::NoModifier) && !ctrlOrShift;
+
+    bool isShortcut = ((event->modifiers() && Qt::ControlModifier) && event->key() == Qt::Key_Space);
+    if (!completer || !isShortcut) // do not process the shortcut when we have a completer
+    {
+        QPlainTextEdit::keyReleaseEvent(event);
+    }
     if (!isShortcut && (hasModifier || event->text().isEmpty()|| completionPrefix.length() < 3
                         || eow.contains(event->text().right(1)))) {
         completer->popup()->hide();
         return;
     }
-    static QString eow("~!@#$%^&*()_+{}|:\"<>?,./;'[]\\-="); // end of word
-    bool hasModifier = (event->modifiers() != Qt::NoModifier) && !ctrlOrShift;
     */
-    QString completionPrefix = getWordUnderCursor();
 
     if (event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Space &&
         completionPrefix != completer->completionPrefix())
@@ -1104,8 +1140,14 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event)
                 QPlainTextEdit::keyReleaseEvent(event);
                 break;
         }
+        QPlainTextEdit::keyReleaseEvent(event);
     }
 
+    // select and copy whole line
+    if (event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_C && cursor.selectedText().isEmpty()) {
+        selectLineUnderCursor();
+        copy();
+    }
 
     switch (event->key()) {
         case Qt::Key_Backtab:
@@ -1225,7 +1267,6 @@ void PlainTextEdit::focusOutEvent(QFocusEvent *e){
         QPlainTextEdit::focusOutEvent(e);
     }
 }
-
 
 
 /* LineNumberArea widget

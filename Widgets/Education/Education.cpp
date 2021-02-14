@@ -1,20 +1,25 @@
 #include <QSettings>
 #include <QIcon>
 #include <QFormLayout>
+#include <QToolBar>
 
 #include "icons/IconFactory.h"
 #include "Education.h"
 
-Education::Education(Tab *tab, QWidget *parent) : QWidget(parent), m_Tab(tab)
+Education::Education(Tab *tab, QWidget *parent) : QDockWidget(parent), m_Tab(tab)
 {
-    setMinimumSize(400, 200);
+    //setMinimumSize(400, 200);
     setContentsMargins(0, 0, 0, 0);
-    setWindowFlag(Qt::Dialog);
+    //setWindowFlag(Qt::Dialog);
+    setWindowTitle("Samples");
     //setWindowFlags(Qt::FramelessWindowHint);
 
     createWindow();
 
     // loadOpenedSamples();
+    setFeatures(AllDockWidgetFeatures);
+    setVisible(false);
+    setWidget(CppCodeSamples);
 }
 
 void Education::createWindow() {
@@ -39,9 +44,17 @@ void Education::createWindow() {
     CppCodeSamples->insertItem(16, "Lambdas");
     CppCodeSamples->insertItem(17, "Operator Overloading");
 
-    CppCodeSamples->setMinimumSize(width(), height());
-
     connect(CppCodeSamples, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotOpenFile(QListWidgetItem *)));
+
+    auto *t_bar = new QToolBar(this);
+    auto *spacer = new QWidget(this);   // align to right with blank widget
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    t_bar->addWidget(spacer);
+    t_bar->addAction(QIcon(IconFactory::Remove), "Close", this, SLOT(close()));
+    t_bar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
+    t_bar->setFixedHeight(35);
+    t_bar->setIconSize(QSize(25, 35));
+    setTitleBarWidget(t_bar);
 }
 
 void Education::slotOpenFile(QListWidgetItem *item){

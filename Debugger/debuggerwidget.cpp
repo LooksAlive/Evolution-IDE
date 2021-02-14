@@ -336,7 +336,8 @@ void DebuggerWidget::showSetManualBreakPoint(const QString &filepath) {
     auto *layout = new QVBoxLayout();
     auto *form = new QFormLayout();
     manual_window->setWindowFlags(Qt::Dialog);
-    form->addRow("line: ", line_input);
+    line_input->setPlaceholderText("Line");
+    form->addRow(line_input);
     layout->addLayout(form);
     connect(line_input, SIGNAL(returnPressed()), this, SLOT(slotSetBreakPointByManualLine()));
 

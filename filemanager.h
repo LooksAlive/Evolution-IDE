@@ -17,11 +17,20 @@
 #include <QDirIterator>
 #include <QStringList>
 
+class ClangBridge;
+
 class FileDirManager
 {
 public:
     FileDirManager();
     ~FileDirManager() = default;
+
+    // source files adding, removing from index
+    ClangBridge *clang;
+    void setClang(ClangBridge *clang_bridge) {clang = clang_bridge;}
+    // registry settings and other
+    void addFileToIndex(const QString &filepath);
+    void removeFileFromIndex(const QString &filepath);
 
     void getFilesRecursively(const QString &Project_RootDir);
     QString getFileExtension(const QString &filename); // set source_files
@@ -41,7 +50,8 @@ public:
     bool project_cmake_file_exists = false;
 
     QStringList other_files;       // filled with absolute paths
-    QStringList source_files;    // later into cmdexecutor or cmake -> strip front known path or not, however
+    QStringList source_files;    // whole path
+    QStringList source_files_names; // only file name
 
 private:
 

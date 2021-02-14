@@ -1,9 +1,17 @@
-#include "filemanager.h"
 #include <QDebug>
 #include <QSettings>
+
+#include "Clang/ClangBridge.h"      // add source files to index
+#include "filemanager.h"
+
 FileDirManager::FileDirManager()
 {
-    // QSettings settings;
+    // set stored project dir , if is empty leave default home dir
+    QSettings settings("Evolution");
+    Project_Dir = settings.value("Evolution/Project_Root_Dir").toString();
+    source_files = settings.value("Evolution/sources").toStringList();
+    source_files_names = settings.value("Evolution/sources_names").toStringList();
+    executable_file_path = settings.value("Evolution/executable_path").toString();
 }
 
 // run on new thread
@@ -12,8 +20,9 @@ void FileDirManager::getFilesRecursively(const QString &Project_RootDir){
     QSettings settings("Evolution");
     settings.setValue("Evolution/Project_Root_Dir", Project_RootDir);
     Project_Dir = Project_RootDir;
-    other_files.reserve(128);
-    source_files.reserve(128);
+    other_files.reserve(25);
+    source_files.reserve(25);
+    source_files_names.reserve(25);
 
     // FileExplorer_RootDir;
     QDirIterator directories(Project_RootDir, QDir::Files/*Dirs*/ | QDir::NoSymLinks | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
@@ -23,10 +32,11 @@ void FileDirManager::getFilesRecursively(const QString &Project_RootDir){
 
         if(directories.fileName() == "CMakeLists.txt"){
             project_cmake_file_exists = true;
+            settings.setValue("Evolution/CMakeLists.txt", directories.fileName().remove(0, 2));
         }
         if(directories.fileInfo().dir().dirName() == "cmake-build"){
             if(directories.fileInfo().isExecutable()){ // binary file
-                executable_file_path = directories.filePath(); // here it takes all executables in cmake dir
+                executable_file_path = directories.filePath().remove(0, 2); // here it takes all executables in cmake dir
                 settings.setValue("Evolution/executable_path", executable_file_path);
             }
             else{
@@ -51,7 +61,9 @@ void FileDirManager::getFilesRecursively(const QString &Project_RootDir){
                 getFileExtension(directories.filePath()) == "c"|
                 getFileExtension(directories.filePath()) == "cxx")
         {
-            source_files.push_back(directories.filePath());
+            // remove // in ///somedir/simefile.cxx
+            source_files.push_back(directories.filePath().remove(0, 2));
+            source_files_names.push_back(directories.fileName());
         }
         else{
             other_files.push_back(directories.filePath());
@@ -64,6 +76,7 @@ void FileDirManager::getFilesRecursively(const QString &Project_RootDir){
     }
     settings.setValue("Evolution/other_files", other_files);
     settings.setValue("Evolution/sources", source_files);
+    settings.setValue("Evolution/sources_names", source_files_names);
 }
 
 QString FileDirManager::getFileExtension(const QString &filename){
@@ -78,8 +91,8 @@ void FileDirManager::appendFileExtension(){
         current_full_filepath.append(".txt");
     }
 
-    if (QFileInfo(current_full_filepath).suffix() == "bin" |
-            QFileInfo(current_full_filepath).suffix() == "exe" |
+    if (QFileInfo(current_full_filepath).suffix() == "bin" ||
+            QFileInfo(current_full_filepath).suffix() == "exe" ||
             QFileInfo(current_full_filepath).suffix() == "elf"){
         // do something like open hexview, return bool or something
     }
@@ -209,5 +222,13 @@ void FileDirManager::move(const QString &old_path, const QString &new_path) {
         return;  // for now , later copy all files recursively ...
     }
 
+}
+
+void FileDirManager::addFileToIndex(const QString &filepath) {
+    //clang->addDocument();
+}
+
+void FileDirManager::removeFileFromIndex(const QString &filepath) {
+    //clang->removeDocument(filepath.toLatin1().data());
 }
 

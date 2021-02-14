@@ -40,7 +40,7 @@ FileExplorer::FileExplorer(QWidget *parent) : QDockWidget(parent)
     bar_buttons->setOrientation(Qt::Horizontal);
 
     MainLayout->setContentsMargins(0, 0, 0, 0);
-    setContentsMargins(0, 0, 0, 0);
+    //setContentsMargins(0, 0, 0, 0);
     MainLayout->setSpacing(0);
 
     bar_buttons->addWidget(searchBox);
@@ -105,11 +105,13 @@ void FileExplorer::setRootDirectory(const QString &path){
 
     QSettings settings("Evolution");
     settings.setValue("Evolution/Project_Root_Dir", path);
+    /*
     bool def = settings.value("Evolution/SetDefaultSettings").toBool();
     if(def){
         // set to default path /root
         FileView->setRootIndex(FileModel->index(QDir::homePath()));
     }
+    */
 
 }
 

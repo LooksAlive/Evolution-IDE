@@ -28,7 +28,10 @@ FindReplaceWidget::FindReplaceWidget(Tab *tab, QWidget *parent)
     setWindowTitle("Find & Replace");
 
     auto *t_bar = new QToolBar(this);
-    
+    auto *spacer = new QWidget(this);   // align to right with blank widget
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    t_bar->addWidget(spacer);
     t_bar->addAction(QIcon(IconFactory::Remove), "Close", this, SLOT(close()));
     t_bar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
     t_bar->setFixedHeight(35);
@@ -200,7 +203,7 @@ void FindReplaceWidget::slotForwardToResult(const QModelIndex &index) {
 
 void FindReplaceWidget::slotVisible(bool visible) {
     if(!visible){
-        m_Edit->clearSelectionsBySearch = visible;
+        m_Edit->extra_selections_search_results.clear();
         m_Edit->updateExtraSelections();
     }
 }

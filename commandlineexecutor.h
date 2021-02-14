@@ -1,6 +1,8 @@
 #ifndef COMMANDLINEEXECUTOR_H
 #define COMMANDLINEEXECUTOR_H
 
+#include <QPlainTextEdit>
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -20,14 +22,17 @@ public:
         Release = 2,
     };
     
-    std::string ExecuteCommand(std::string cmd);
+    // second argument represents output widget to append data constantly
+    std::string ExecuteCommand(const std::string& cmd, QPlainTextEdit *edit = nullptr);
 
     void setCompiler(const std::string &compiler, const BuildMode &mode, const std::string &addflags);
     void setExecutableName(const std::string &name, const std::string &path);
     void setSourceFiles(const std::vector<std::string> &sources);
     void setLibraryPaths(const std::vector<std::string> &library_paths);
-    std::string Build(bool cmake);
-    std::string Execute(bool cmake);
+    std::string Build(const bool &cmake, QPlainTextEdit *edit = nullptr);
+    std::string Execute(const bool &cmake, QPlainTextEdit *edit = nullptr);
+    // kill running process with pid
+    // TODO: set argument executable name to avoid QSettings usage here
     int getPid();
     void killProcess();
 
@@ -57,7 +62,7 @@ private:
 
     std::string executable_name = "a.out";   //    executable.elf
     int proc_id;
-    std::string executable_path = "";        //    /home/adam/Desktop/SKUSKA/
+    std::string Project_Dir = "";        //    /home/adam/Desktop/SKUSKA/
 
 };
 

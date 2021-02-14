@@ -2,6 +2,7 @@
 #include <iostream>
 #include <QDebug>
 #include <QShortcut>
+#include <QScrollBar>
 
 #include "icons/IconFactory.h"
 #include "consoledock.h"
@@ -36,6 +37,8 @@ void ConsoleDock::BuildConsole()
     MainLayout = new QHBoxLayout();
     tool_bar = new QToolBar(this);
     title_bar = new QToolBar(this);
+    auto *spacer = new QWidget(this);   // align title_bar to right with blank widget
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     ConsoleOutput = new QPlainTextEdit(this);
     ConsoleOutput->setReadOnly(true);   // for now
     ConsoleOutput->appendPlainText("This is Evolution-IDE");
@@ -53,14 +56,15 @@ void ConsoleDock::BuildConsole()
     tool_bar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
     tool_bar->setContentsMargins(0, 0, 0, 0);
 
-    title_bar->addAction(QIcon(IconFactory::Remove), "Close", this, SLOT(close()));
-
     title_bar->setMovable(false);
     title_bar->setFixedHeight(35);
     title_bar->setFloatable(false);
     title_bar->setAcceptDrops(false);
     title_bar->setIconSize(QSize(25, 35));
     title_bar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
+    title_bar->addWidget(spacer);
+    title_bar->addAction(QIcon(IconFactory::Remove), "Close", this, SLOT(close()));
+
 
     MainLayout->addWidget(tool_bar);
     MainLayout->addWidget(ConsoleOutput);
@@ -78,11 +82,13 @@ void ConsoleDock::slotClearConsole(){
 }
 
 void ConsoleDock::slotScrollUp(){
-    QPoint pos = ConsoleOutput->viewport()->pos();
-    ConsoleOutput->scroll(0, pos.y() - 5);
+    QTextCursor cursor = ConsoleOutput->textCursor();
+    int line = cursor.blockNumber();
+    ConsoleOutput->verticalScrollBar()->setValue(line - 5);
 }
 
 void ConsoleDock::slotScrollDown(){
-    QPoint pos = ConsoleOutput->viewport()->pos();
-    ConsoleOutput->scroll(0, pos.y() + 5);
+    QTextCursor cursor = ConsoleOutput->textCursor();
+    int line = cursor.blockNumber();
+    ConsoleOutput->verticalScrollBar()->setValue(line + 5);
 }

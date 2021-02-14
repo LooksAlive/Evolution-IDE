@@ -2,6 +2,7 @@
 #define EVOLUTION_IDE_EDUCATION_H
 
 #include <QWidget>
+#include <QDockWidget>
 #include <QListWidget>
 #include <QList>
 
@@ -12,11 +13,11 @@
 #include "Widgets/PlainTextEdit/plaintextedit.h"
 #include "CodeSamples.h"
 
-class Education : public QWidget{
+class Education : public QDockWidget{
 Q_OBJECT
 public:
     explicit Education(Tab *tab, QWidget *parent = nullptr);
-    ~Education() = default;   // change later
+    ~Education() = default;
 
 
 private:
