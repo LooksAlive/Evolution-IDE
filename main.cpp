@@ -25,6 +25,7 @@ int main(int argc, char *argv[]) {
     }
 
     QString theme = settings.value("Evolution/theme").toString();
+
     /*
     theme = "Dark";
     if(theme == "Dark"){
