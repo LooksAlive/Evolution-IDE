@@ -285,19 +285,22 @@ private slots:
     // to and from edit, debugger
     void slotToggleBreakPoint();
     // from edit to debugger;      signals: breakPointCreated, breakPointRemoved
-    void slotCreateBreakPoint(const int&);
-    void slotDeleteBreakPoint(const int&);
+    void slotCreateBreakPoint(const int &);
+    void slotDeleteBreakPoint(const int &);
 
     void slotSetBreakpointAtLine();
     void slotShowBreakpointsList();
     void slotShowAttachToProcess();
+
+    // Education dock --- doubleclick
+    void slotOpenCppSample(QListWidgetItem *item);
+    void slotOpenCppUserSample(QListWidgetItem *item);
 
 
 private:
     // files operation variables
     bool CHANGES_IN_PROJECT = false;
     bool ALWAYS_SAVE = false;
-
 };
 
 

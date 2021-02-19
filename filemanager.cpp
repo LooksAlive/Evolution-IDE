@@ -4,74 +4,75 @@
 #include "Clang/ClangBridge.h"      // add source files to index
 #include "filemanager.h"
 
-FileDirManager::FileDirManager()
-{
+FileDirManager::FileDirManager() {
+    other_files.reserve(25);
+    source_files.reserve(25);
+    source_files_names.reserve(25);
     // set stored project dir , if is empty leave default home dir
     QSettings settings("Evolution");
     Project_Dir = settings.value("Evolution/Project_Root_Dir").toString();
     source_files = settings.value("Evolution/sources").toStringList();
     source_files_names = settings.value("Evolution/sources_names").toStringList();
     executable_file_path = settings.value("Evolution/executable_path").toString();
+    clang_format_path = settings.value("Evolution/clang-format_path").toString();
+    clang_tidy_path = settings.value("Evolution/clang-tidy_path").toString();
 }
 
 // run on new thread
-void FileDirManager::getFilesRecursively(const QString &Project_RootDir){
+void FileDirManager::getFilesRecursively(const QString &Project_RootDir) {
+    source_files.clear();
+    source_files_names.clear();
+    other_files.clear();
 
     QSettings settings("Evolution");
     settings.setValue("Evolution/Project_Root_Dir", Project_RootDir);
     Project_Dir = Project_RootDir;
-    other_files.reserve(25);
-    source_files.reserve(25);
-    source_files_names.reserve(25);
 
     // FileExplorer_RootDir;
-    QDirIterator directories(Project_RootDir, QDir::Files/*Dirs*/ | QDir::NoSymLinks | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+    QDirIterator directories(Project_RootDir, QDir::Files /*Dirs*/ | QDir::NoSymLinks | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
     //QStringList dirs;
-    while(directories.hasNext()){
+    while (directories.hasNext()) {
         directories.next();
 
-        if(directories.fileName() == "CMakeLists.txt"){
+        if (directories.fileName() == "CMakeLists.txt") {
             project_cmake_file_exists = true;
-            settings.setValue("Evolution/CMakeLists.txt", directories.fileName().remove(0, 2));
+            settings.setValue("Evolution/CMakeLists_path", directories.filePath().remove(0, 2));
         }
-        if(directories.fileInfo().dir().dirName() == "cmake-build"){
-            if(directories.fileInfo().isExecutable()){ // binary file
-                executable_file_path = directories.filePath().remove(0, 2); // here it takes all executables in cmake dir
+        if (directories.fileInfo().dir().dirName() == "cmake-build") {
+            if (directories.fileInfo().isExecutable() && directories.fileInfo().fileName() == "executable") {// binary file
+                executable_file_path = directories.filePath().remove(0, 2);                                  // here it takes all executables in cmake dir
                 settings.setValue("Evolution/executable_path", executable_file_path);
-            }
-            else{
+            } else {
                 break;
             }
-            /*
-            if(directories.fileInfo().isExecutable()){ // binary file
-                executable_file_path = directories.filePath();
-                settings.setValue("Evolution/executable_path", executable_file_path);
-                break;
-            }
-            else{
-                break; // in build dir -> do not want generated files from here, only executable
-            }
-            */
         }
 
-
-        if(getFileExtension(directories.filePath()) == "cpp" |
-                getFileExtension(directories.filePath()) == "h" |
-                getFileExtension(directories.filePath()) == "hpp" |
-                getFileExtension(directories.filePath()) == "c"|
-                getFileExtension(directories.filePath()) == "cxx")
-        {
+        if (getFileExtension(directories.filePath()) == "cpp" ||
+            getFileExtension(directories.filePath()) == "h" ||
+            getFileExtension(directories.filePath()) == "hpp" ||
+            getFileExtension(directories.filePath()) == "c" ||
+            getFileExtension(directories.filePath()) == "cxx") {
             // remove // in ///somedir/simefile.cxx
             source_files.push_back(directories.filePath().remove(0, 2));
             source_files_names.push_back(directories.fileName());
-        }
-        else{
+        } else {
             other_files.push_back(directories.filePath());
         }
-        if(directories.fileInfo().isExecutable()){ // binary file
+        if (directories.fileInfo().isExecutable() && directories.fileInfo().fileName() == "executable") {// binary file
             qDebug() << directories.filePath();
-            executable_file_path = directories.filePath(); // here it takes all executables in cmake dir
+            executable_file_path = directories.filePath().remove(0, 2);// here it takes all executables in cmake dir
             settings.setValue("Evolution/executable_path", executable_file_path);
+        }
+        if (directories.fileInfo().isDir() && directories.fileInfo().dir().dirName() == ".git") {
+            settings.setValue("Evolution/git_dir", directories.filePath().remove(0, 2));
+        }
+        if (directories.fileInfo().isFile() && directories.fileInfo().fileName() == ".clang-format") {
+            settings.setValue("Evolution/clang-format_path", directories.filePath().remove(0, 2));
+            clang_format_path = directories.filePath().remove(0, 2);
+        }
+        if (directories.fileInfo().isFile() && directories.fileInfo().fileName() == ".clang-tidy") {
+            settings.setValue("Evolution/clang-tidy_path", directories.filePath().remove(0, 2));
+            clang_tidy_path = directories.filePath().remove(0, 2);
         }
     }
     settings.setValue("Evolution/other_files", other_files);

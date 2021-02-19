@@ -9,30 +9,29 @@
 int main(int argc, char *argv[]) {
 
     QCoreApplication::setAttribute(Qt::AA_DontUseNativeMenuBar);
-    QSettings settings("Evolution");
-    bool def = settings.value("Evolution/SetDefaultSettings").toBool();
-    if(!def){
-        settings.setValue("Evolution/SetDefaultSettings", true);
-    }
 
     QApplication app(argc, argv);
     MainWindow window;
     // /home/adam/Desktop/sources/Evolution-IDE/stylesheets/Combinear.qss
     QFile file("/home/adam/Desktop/sources/Evolution-IDE/stylesheet.qss");
-    QString darktheme; // Adaptic.qss, SyNet.qss
-    if(file.open(QFile::ReadOnly)){
+    QString darktheme;// Adaptic.qss, SyNet.qss
+    if (file.open(QFile::ReadOnly)) {
         darktheme = file.readAll();
     }
 
-    QString theme = settings.value("Evolution/theme").toString();
+    QString theme;
 
+    // if it goes out of scope, will destroy !
+    {
+        QSettings settings("Evolution");
+        theme = settings.value("Evolution/theme").toString();
+    }
     /*
     theme = "Dark";
     if(theme == "Dark"){
-        // app.setStyleSheet(darktheme);
+        //app.setStyleSheet(darktheme);
         DarkStyle *style = new DarkStyle();
         app.setStyle(style);
-        //app.setStyleSheet(darktheme);
     }
     */
 

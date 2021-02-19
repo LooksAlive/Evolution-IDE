@@ -2,13 +2,10 @@
 
 #include "AppearenceWidget.h"
 
-AppearenceWidget::AppearenceWidget(QWidget *parent) : QWidget(parent){
+AppearenceWidget::AppearenceWidget(QWidget *parent) : QWidget(parent) {
     createWindow();
-    QSettings settings("Evolution");
-    bool def = settings.value("Evolution/SetDefaultSettings").toBool();
-    if(def){
-        setDefaultSettings();
-    }
+
+    setDefaultSettings();
 
     //setLayout(MainLayout); // layout
     //setFixedSize(300, 300);
@@ -47,7 +44,7 @@ void AppearenceWidget::setDefaultSettings() {
     // add WhiteSpaces
 
     QSettings settings("Evolution");
-    settings.setValue("Evolution/theme", "White"); // default theme
+    settings.setValue("Evolution/theme", "Light");// default theme
     settings.setValue("Evolution/font_family", font.defaultFamily());
     settings.setValue("Evolution/font_weight", font.weight());
 }
@@ -59,7 +56,7 @@ void AppearenceWidget::saveData() {
     if (radioThemeDark->isChecked()) {
         settings.setValue("Evolution/theme", "Dark");
     } else {
-        settings.setValue("Evolution/theme", "White");
+        settings.setValue("Evolution/theme", "Light");
     }
     settings.setValue("Evolution/font_family", comboFont->currentText());
     settings.setValue("Evolution/font_weight", spinFontSize->value());

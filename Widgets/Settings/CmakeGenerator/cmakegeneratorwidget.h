@@ -38,13 +38,13 @@ public:
     void saveData();
 
 
-// later checkbox for debug and release option and flags associated with it
+    // later checkbox for debug and release option and flags associated with it
 
 private:
-
     void createMainWindow();
 
-    void setDefaultSettings();  // new project, no registry values
+    // always set at beginning, it is rewritten by registers(loadData, saveData)
+    void setDefaultSettings();
     void manageSourceFiles();
     void getCompilerVersion();
 

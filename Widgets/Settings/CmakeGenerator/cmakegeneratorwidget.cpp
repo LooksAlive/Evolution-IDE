@@ -2,14 +2,11 @@
 
 #include "cmakegeneratorwidget.h"
 
-CMakeGeneratorWidget::CMakeGeneratorWidget(QWidget *parent) : QWidget(parent){
+CMakeGeneratorWidget::CMakeGeneratorWidget(QWidget *parent) : QWidget(parent) {
     createMainWindow();
-    QSettings settings("Evolution");
-    bool def = settings.value("Evolution/SetDefaultSettings").toBool();
-    if(def){
-        setDefaultSettings();
-    }
-    manageSourceFiles();
+
+    setDefaultSettings();
+
     getCompilerVersion();
 
     MainLayout->setContentsMargins(0, 0, 0, 0);
@@ -35,7 +32,6 @@ void CMakeGeneratorWidget::createMainWindow() {
     MainLayout->setContentsMargins(10, 10, 10, 10);
     MainLayout->setSpacing(5);
     generate_cmake->setCheckable(true);
-    setDefaultSettings();       // *********************************************************************
 
     MainLayout->addRow("Generate cmake: ", generate_cmake);
     MainLayout->addRow("CmakeLists path: ", cmakelists_path);
@@ -58,6 +54,12 @@ void CMakeGeneratorWidget::setDefaultSettings() {
     compiler->setText("clang++-10");
     compile_flags->setText("-O0 -g -Wall");
     cpu_cores->setText("3");
+
+    QSettings settings("Evolution");
+    settings.setValue("Evolution/generate_cmake", true);
+    settings.setValue("Evolution/compiler", "clang++-10");
+    settings.setValue("Evolution/compile_flags", "-O0 -g -Wall");
+    settings.setValue("Evolution/cpu_cores", "3");
 }
 
 void CMakeGeneratorWidget::manageSourceFiles() {
@@ -77,10 +79,11 @@ void CMakeGeneratorWidget::manageSourceFiles() {
 
 
 void CMakeGeneratorWidget::loadData() {
+    manageSourceFiles();
 
     QSettings settings("Evolution");
     bool generate = settings.value("Evolution/generate_cmake").toBool();
-    QString cmakePath = settings.value("Evolution/cmake_path").toString();
+    QString cmakePath = settings.value("Evolution/CMakeLists_path").toString();
     QString co = settings.value("Evolution/compiler").toString();
     QString cf = settings.value("Evolution/compile_flags").toString();
     QString cr = settings.value("Evolution/cpu_cores").toString();

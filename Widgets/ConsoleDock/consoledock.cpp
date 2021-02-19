@@ -42,6 +42,7 @@ void ConsoleDock::BuildConsole()
     ConsoleOutput = new QPlainTextEdit(this);
     ConsoleOutput->setReadOnly(true);   // for now
     ConsoleOutput->appendPlainText("This is Evolution-IDE");
+    ConsoleOutput->setUpdatesEnabled(true);
 
     tool_bar->addAction(QIcon(IconFactory::ScrollUp), "Scroll Up", this, SLOT(slotScrollUp()));
     tool_bar->addAction(QIcon(IconFactory::ScrollDown), "Scroll Down", this, SLOT(slotScrollDown()));
@@ -52,7 +53,7 @@ void ConsoleDock::BuildConsole()
     tool_bar->setFixedWidth(35);
     tool_bar->setFloatable(false);
     tool_bar->setAcceptDrops(false);
-    tool_bar->setIconSize(QSize(35, 25));
+    //tool_bar->setIconSize(QSize(35, 25));
     tool_bar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
     tool_bar->setContentsMargins(0, 0, 0, 0);
 
@@ -60,7 +61,7 @@ void ConsoleDock::BuildConsole()
     title_bar->setFixedHeight(35);
     title_bar->setFloatable(false);
     title_bar->setAcceptDrops(false);
-    title_bar->setIconSize(QSize(25, 35));
+    //title_bar->setIconSize(QSize(25, 35));
     title_bar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
     title_bar->addWidget(spacer);
     title_bar->addAction(QIcon(IconFactory::Remove), "Close", this, SLOT(close()));
@@ -73,22 +74,18 @@ void ConsoleDock::BuildConsole()
     MainLayout->setSpacing(0);
 }
 
-void ConsoleDock::setRawOutput(const QString &raw){
-    ConsoleOutput->appendPlainText(raw);
-}
-
-void ConsoleDock::slotClearConsole(){
+void ConsoleDock::slotClearConsole() const {
     ConsoleOutput->clear();
 }
 
-void ConsoleDock::slotScrollUp(){
-    QTextCursor cursor = ConsoleOutput->textCursor();
-    int line = cursor.blockNumber();
-    ConsoleOutput->verticalScrollBar()->setValue(line - 5);
+void ConsoleDock::slotScrollUp() const {
+    for (int i = 0; i <= 5; i++) {
+        ConsoleOutput->verticalScrollBar()->triggerAction(QAbstractSlider::SliderSingleStepSub);
+    }
 }
 
-void ConsoleDock::slotScrollDown(){
-    QTextCursor cursor = ConsoleOutput->textCursor();
-    int line = cursor.blockNumber();
-    ConsoleOutput->verticalScrollBar()->setValue(line + 5);
+void ConsoleDock::slotScrollDown() const {
+    for (int i = 0; i <= 5; i++) {
+        ConsoleOutput->verticalScrollBar()->triggerAction(QAbstractSlider::SliderSingleStepAdd);
+    }
 }

@@ -132,7 +132,6 @@ void MainWindow::SetupVerticalBar() {
     vertical_bar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
     vertical_bar->setFocusPolicy(Qt::ClickFocus);
 
-
     vertical_stack = new QStackedWidget(this);
     vertical_stack->setParent(this);
 
@@ -319,6 +318,10 @@ void MainWindow::SetupToolBar() {
     topToolBar->addAction(QIcon(IconFactory::Undo), "undo", this, SLOT(slotUndo()));
     topToolBar->addAction(QIcon(IconFactory::Redo), "redo", this, SLOT(slotRedo()));
 
+    auto *spacer = new QWidget(this);// blank Widget to align other action to right
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    topToolBar->addWidget(spacer);
     topToolBar->addAction(QIcon(IconFactory::Build), "Build", this, SLOT(slotBuild()));
     topToolBar->addAction(QIcon(IconFactory::Run), "Run", this, SLOT(slotRun()));
     topToolBar->addAction(QIcon(IconFactory::Stop), "Stop Process", this, SLOT(slotStopProcess()));
@@ -500,7 +503,7 @@ void MainWindow::SetupCodeInfoDock() {
 /* external windows */
 
 void MainWindow::SetupSettingsWindow() {
-    Settings = new SettingsWindow(this);// if there will be this --> not working ...
+    Settings = new SettingsWindow(this);
     Settings->show();
 }
 
@@ -510,10 +513,14 @@ void MainWindow::SetupConverter() {
 }
 
 void MainWindow::SetupEducationDock() {
-    education = new Education(Tabs, this);
+    education = new Education(this);
     addDockWidget(Qt::RightDockWidgetArea, education);
-}
+    // has to be outside bc. i will use option to add a sample in editor so cannot import them cross
 
+    connect(education->CppCodeSamples, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotOpenCppSample(QListWidgetItem *)));
+    connect(education->CppUsersSamples, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotOpenCppUserSample(QListWidgetItem *)));
+    // should there be a disconnection when main window is destructed ?
+}
 
 void MainWindow::SetupNodeView() {
     nodeview = new NodeView(this);
@@ -545,7 +552,8 @@ void MainWindow::CreateFile() {
     Tabs->setTabWhatsThis(index, "No changes");
 
     currentWidget = qobject_cast<PlainTextEdit *>(Tabs->widget(index));
-    currentWidget->setCodeInfoWidget(codeInfoDock);
+    currentWidget->setCodeInfo(codeInfoDock);
+    currentWidget->setEducation(education);
     //currentWidget->setClang(clangBridge);
     // go to line/column
     connect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotTextPositionChanged()));
@@ -620,7 +628,7 @@ void MainWindow::OpenFile(const QString &filepath) {
 
 
     // tab
-    // icon fro tab
+    // icons for tab, like in file view
     QFileIconProvider provider;
     int index = Tabs->addTab(new_text_edit, provider.icon(QFileInfo(filepath)), file_manager.current_file_name);
     Tabs->setCurrentIndex(index);
@@ -628,6 +636,7 @@ void MainWindow::OpenFile(const QString &filepath) {
     Tabs->setTabWhatsThis(index, "No changes");
     connect(new_text_edit, SIGNAL(textChanged()), this, SLOT(UpdateParameter()));
 
+    // file Docker
     auto *new_item = new QListWidgetItem();
     new_item->setText(Tabs->tabText(index));
     new_item->setToolTip(Tabs->tabToolTip(index));
@@ -700,6 +709,7 @@ void MainWindow::SaveAllFiles() {
 
 /* help function for tab index close action */
 void MainWindow::CloseFile(int index_) {
+    // TODO: here implement format_afterFileClosed, when closing file
 
     // untitled tab, first ask, before opening savedialog in savefile function
     if (Tabs->tabText(index_) == NEW_TAB_NAME && Tabs->tabWhatsThis(index_) != "No changes") {
@@ -761,12 +771,6 @@ void MainWindow::CloseAllFiles() {
 /* close all files, prevent memory leak */
 void MainWindow::CloseWindow() {
 
-    QMessageBox::StandardButton reply = QMessageBox::question(
-            this, "Exit",
-            "Are you sure, you want to exit Evolution-IDE ?", QMessageBox::Yes | QMessageBox::No);
-    if (reply == QMessageBox::No)
-        return;
-
     // reopen project not closed tabs later.
     QStringList opened_tabs;
     QList<int> tabs_cursor_positions;
@@ -795,6 +799,13 @@ void MainWindow::CloseWindow() {
 
 /* X --> close app - virtual func. */
 void MainWindow::closeEvent(QCloseEvent *) {
+    QMessageBox::StandardButton reply = QMessageBox::question(
+            this, "Exit",
+            "Are you sure, you want to exit Evolution-IDE ?", QMessageBox::Yes | QMessageBox::No);
+    if (reply == QMessageBox::No) {
+        return;
+    }
+
     CloseWindow();
 }
 
@@ -818,7 +829,8 @@ void MainWindow::OpenFile(QModelIndex file_index) {
         OpenFile(Explorer->FileModel->filePath(file_index));
 
         currentWidget = qobject_cast<PlainTextEdit *>(Tabs->widget(Tabs->currentIndex()));
-        currentWidget->setCodeInfoWidget(codeInfoDock);
+        currentWidget->setCodeInfo(codeInfoDock);
+        currentWidget->setEducation(education);
         //currentWidget->setClang(clangBridge);
         connect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotTextPositionChanged()));
         // breakpoints
@@ -877,7 +889,6 @@ void MainWindow::slotBuild() {
         return;
     }
     */
-    CommandLineExecutor executor;
 
     if (cmake) {// set option flags to some default
         CmakeGenerator generator;
@@ -888,37 +899,22 @@ void MainWindow::slotBuild() {
             generator.addSourceFile((file_manager.source_files[i].toStdString()));
         }
         generator.createCmakeLists(file_manager.Project_Dir.toStdString());
-        executor.ProjectRootDir = file_manager.Project_Dir.toStdString();
+        CommandLineExecutor::Build(cmake, file_manager.Project_Dir.toStdString(), console_dock->ConsoleOutput);
 
-        console_dock->setRawOutput(QString::fromStdString(executor.cmake_build));
-        executor.Build(cmake, console_dock->ConsoleOutput);
-        qDebug() << QString::fromStdString(executor.cmake_build);
+        // non static function need also an object to call it
+
     } else {
-        executor.setCompiler("clang++", CommandLineExecutor::Debug, "");
-        executor.setExecutableName("executable", file_manager.Project_Dir.toStdString());// watch for / at the end
         std::vector<std::string> sources;
         sources.reserve(10);
         for (int i = 0; i < file_manager.source_files.size(); i++) {
             sources.push_back(file_manager.source_files[i].toStdString());
         }
-        executor.setSourceFiles(sources);
-        QString raw = QString::fromStdString(executor.Build(cmake));
-        // works perfectly, check unprintable characters
-        /*
-        std::string s = "test";
-        QString q = QString::fromStdString(s);
-        qDebug() << q;
-        qDebug() << q.size();
-        */
-        qDebug() << QString::fromStdString(executor.compile_args);
-        console_dock->setRawOutput(raw);
-        qDebug() << raw;
     }
 
     QSettings settings("Evolution");
     settings.setValue("Evolution/executable_path/", file_manager.Project_Dir + "/executable");
 
-    console_dock->setRawOutput("Build done");
+    console_dock->ConsoleOutput->appendPlainText("Build done");
     qDebug() << "build done";
 }
 
@@ -932,53 +928,42 @@ void MainWindow::slotRun() {
         slotBuild();
     }
 
-    CommandLineExecutor executor;
     // TODO: if currentWidget has "" filepath -> dry run, set up temp dir for only 1 file
 
     if (cmake) {
-        executor.setExecutableName("executable", file_manager.Project_Dir.toStdString());
+        // file_manager.executable_file_path;
+        CommandLineExecutor::Execute(cmake, file_manager.Project_Dir.toStdString() + "/cmake-build/" + "executable", console_dock->ConsoleOutput);
+    } else {
+        //executor.setExecutableName("executable", file_manager.Project_Dir.toStdString());
         //int pid = executor.getPid();
         //QString process = QString("launched ") + QString("executable,  PID:") + QString::number(pid);
         //console_dock->setRawOutput(process);
-        //console_dock->setRawOutput(QString::fromStdString(executor.cmake_exec));
-        qDebug() << QString::fromStdString(executor.cmake_exec);
-        console_dock->setRawOutput(QString::fromStdString(executor.cmake_exec));
-        executor.Execute(cmake, console_dock->ConsoleOutput);
-    } else {
-        console_dock->setRawOutput(QString::fromStdString(executor.exec_args));
-        qDebug() << QString::fromStdString(executor.exec_args);
-        executor.setExecutableName("executable", file_manager.Project_Dir.toStdString());
-        console_dock->setRawOutput(QString::fromStdString(executor.Execute(cmake)));
-        int pid = executor.getPid();
-        QString process = QString("launched ") + QString("executable,  PID:") + QString::number(pid);
-        console_dock->setRawOutput(process);
     }
 }
 void MainWindow::slotClangFormat() {
     CommandLineExecutor executor;
     std::vector<std::string> sources;
-    console_dock->setRawOutput(QString::fromStdString(executor.ClangFormat(sources)));
+    console_dock->ConsoleOutput->appendPlainText(QString::fromStdString(CommandLineExecutor::ClangFormat(sources, file_manager.clang_format_path.toStdString())));
 }
 void MainWindow::slotClangTidy() {
     CommandLineExecutor executor;
     std::vector<std::string> sources;
-    console_dock->setRawOutput(QString::fromStdString(executor.ClangTidy(sources)));
+    console_dock->ConsoleOutput->appendPlainText(QString::fromStdString(CommandLineExecutor::ClangTidy(sources)));
 }
 void MainWindow::slotClangCheck() {
     CommandLineExecutor executor;
     std::vector<std::string> sources;
-    console_dock->setRawOutput(QString::fromStdString(executor.ClangCheck(sources)));
+    console_dock->ConsoleOutput->appendPlainText(QString::fromStdString(CommandLineExecutor::ClangCheck(sources)));
 }
 void MainWindow::slotValgrind() {
     CommandLineExecutor executor;
-    console_dock->setRawOutput(QString::fromStdString(executor.Valgrind()));
+    console_dock->ConsoleOutput->appendPlainText(QString::fromStdString(CommandLineExecutor::Valgrind(std::string())));
 }
 void MainWindow::slotClangDocGenerate() {
     // clang-doc
 }
 void MainWindow::slotGdbGui() {
-    CommandLineExecutor executor;
-    executor.OpenGdbGui();
+    CommandLineExecutor::OpenGdbGui(std::string());
 }
 
 
@@ -1054,14 +1039,13 @@ void MainWindow::slotAbout() {
 }
 
 void MainWindow::slotStopProcess() {
-    CommandLineExecutor executor;
     // executable is in registers -> no need to set it here, will be called in function
-    int pid = executor.getPid();
+    int pid = CommandLineExecutor::getPid(std::string());
     if (pid != 0) {
-        executor.killProcess();
-        console_dock->setRawOutput("Process killed , PID: " + QString::number(pid));
+        CommandLineExecutor::killProcess(0);
+        console_dock->ConsoleOutput->appendPlainText("Process killed , PID: " + QString::number(pid));
     } else {
-        console_dock->setRawOutput("No Process attached");
+        console_dock->ConsoleOutput->appendPlainText("No Process attached");
     }
 }
 
@@ -1166,4 +1150,46 @@ void MainWindow::slotShowAttachToProcess() {
 
 void MainWindow::slotRestart() {
     // find how to
+}
+
+void MainWindow::slotOpenCppSample(QListWidgetItem *item) {
+    // represents sample to take
+    int index = item->listWidget()->currentRow();
+    int num_files = education->cpp_code_samples[index].fileNames.size();
+
+    if (num_files == 1) {
+        auto *edit = new PlainTextEdit;
+        edit->setPlainText(education->cpp_code_samples[index].content[0]);// 0 -> only 1 file
+        Tabs->addTab(edit, education->cpp_code_samples[index].fileNames[0]);
+        Tabs->setCurrentIndex(Tabs->count());// since we add new tab at the end
+        // ensure that we can also make all functions accessible from sample
+        currentWidget = edit;
+    }
+    // 2 and more files
+    if (num_files > 1) {
+        for (int i = 0; i <= num_files; i++) {
+            auto *edit = new PlainTextEdit;
+            edit->setPlainText(education->cpp_code_samples[index].content[i]);
+            Tabs->addTab(edit, education->cpp_code_samples[index].fileNames[i]);
+            Tabs->setCurrentIndex(Tabs->count());// since we add new tab at the end
+            currentWidget = edit;
+        }
+    }
+
+    // set icon that it was opened + add its index into registry
+    //item->setIcon(QIcon(IconFactory::Done));
+
+    // also solve current widget in tab here !!!
+    // take care of opening the same sample twice and more
+}
+
+void MainWindow::slotOpenCppUserSample(QListWidgetItem *item) {
+    int index = item->listWidget()->currentRow();
+    QString content = education->cpp_user_samples[index];
+
+    auto *edit = new PlainTextEdit;
+    edit->setPlainText(content);
+    Tabs->addTab(edit, item->text());
+    Tabs->setCurrentIndex(Tabs->count());// since we add new tab at the end
+    currentWidget = edit;
 }

@@ -2,17 +2,22 @@
 #include "icons/IconFactory.h"
 #include "debuggerwidget.h"
 
-DebuggerWidget::DebuggerWidget(QWidget *parent) : QWidget(parent)
-{
-    MainWindowLayout = new QHBoxLayout();
-    SourceConsoleLayout = new QVBoxLayout();
+DebuggerWidget::DebuggerWidget(QWidget *parent) : QWidget(parent) {
+    MainWindowLayout = new QVBoxLayout();
+    SourceWatchLayout = new QHBoxLayout();
     setWindowTitle("Debugger View");
     createConsole();
-    createDebugVariableWindow();
+    createDebugWatchWindow();
     source_view = new PlainTextEdit(this);
 
-    SourceConsoleLayout->addWidget(source_view);
-    SourceConsoleLayout->addWidget(Console);
+    SourceWatchLayout->addWidget(source_view);
+    SourceWatchLayout->addWidget(WatchWindow);
+
+    SourceWatchLayout->setContentsMargins(0, 0, 0, 0);
+    SourceWatchLayout->setSpacing(0);
+
+    MainWindowLayout->addLayout(SourceWatchLayout);
+    MainWindowLayout->addWidget(Console);
 
     /*
     splitter = new QSplitter(this);
@@ -22,42 +27,39 @@ DebuggerWidget::DebuggerWidget(QWidget *parent) : QWidget(parent)
 
     SourceConsoleLayout->addWidget(splitter);
     */
-    MainWindowLayout->addLayout(SourceConsoleLayout);
-    MainWindowLayout->addWidget(debug_variable_window);
 
-    MainWindowLayout->setContentsMargins(0,0,0,0);
+    MainWindowLayout->setContentsMargins(0, 0, 0, 0);
+    MainWindowLayout->setSpacing(0);
 
     setLayout(MainWindowLayout);
 }
 
 void DebuggerWidget::createConsole(){
 
-    tab = new QTabWidget(this);
+    ConsoleTab = new QTabWidget(this);
     Console = new QWidget(this);
     MainConsoleLayout = new QHBoxLayout(this);
     console_out_in = new QVBoxLayout();
     debug_output = new QPlainTextEdit(this);
-    args_input = new QLineEdit(this);
+    DebuggerPrompt = new QLineEdit(this);
     completer = new QCompleter(this);
 
-    auto *debugger = new QWidget(this);
+    DebuggerOutput = new QWidget(this);
     //auto *variables = new QWidget(this);
-    view = new QTreeView(this);
-    view->setHeaderHidden(true);
+    VariablesView = new QTreeView(this);
+    VariablesView->setHeaderHidden(true);
     // not editable yet, later possible to change values
-    view->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    VariablesView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     debug_output->setReadOnly(true);
     completer->setCaseSensitivity(Qt::CaseInsensitive);
     // TODO: set data to completer somehow
-    args_input->setCompleter(completer);
+    DebuggerPrompt->setCompleter(completer);
     // enter
-    connect(args_input, SIGNAL(returnPressed()), this, SLOT(slotCmdlineExecute()));
+    connect(DebuggerPrompt, SIGNAL(returnPressed()), this, SLOT(slotCmdlineExecute()));
 
     console_out_in->addWidget(debug_output);
-    console_out_in->addWidget(args_input);
-    debug_output->setContentsMargins(0, 0, 0, 0);
-    args_input->setContentsMargins(0, 0, 0, 0);
+    console_out_in->addWidget(DebuggerPrompt);
     console_out_in->setContentsMargins(0, 0, 0, 0);
     Console->setFixedHeight(200);
     /*
@@ -69,17 +71,19 @@ void DebuggerWidget::createConsole(){
     //Console->setStyleSheet("border: 1px solid rgb(0, 255, 0);");
 
     createControlPanel();
+    createCallStackWindow();
 
-    debugger->setLayout(console_out_in);
-    debugger->setContentsMargins(0, 0, 0, 0);
+    DebuggerOutput->setLayout(console_out_in);
+    DebuggerOutput->setContentsMargins(0, 0, 0, 0);
 
 
-    tab->addTab(debugger, "Debugger");
-    tab->addTab(view, "Variables");
+    ConsoleTab->addTab(DebuggerOutput, "Debugger Output");
+    ConsoleTab->addTab(VariablesView, "Variables");
 
+    MainConsoleLayout->addLayout(CallStackLayout);
     MainConsoleLayout->addLayout(ControlPanel);
     //MainConsoleLayout->addLayout(console_out_in);
-    MainConsoleLayout->addWidget(tab);
+    MainConsoleLayout->addWidget(ConsoleTab);
 
     Console->setLayout(MainConsoleLayout);
 }
@@ -87,7 +91,7 @@ void DebuggerWidget::createConsole(){
 void DebuggerWidget::createToolBar()
 {
     DebugToolBar = new QToolBar(this);
-    DebugToolBar->setContentsMargins(0,0,0,0);
+    //DebugToolBar->setContentsMargins(0,0,0,0);
 
     btn_StartDebug = new QToolButton(this);
     btn_StartDebug->setIcon(QIcon(IconFactory::StartDebug));
@@ -100,7 +104,7 @@ void DebuggerWidget::createToolBar()
     btn_StopDebug->setFixedSize(26, 26);
     connect(btn_StopDebug, SIGNAL(clicked()), this, SLOT(slotStopDebug()));
     DebugToolBar->addWidget(btn_StopDebug);
-    DebugToolBar->addSeparator();
+    //DebugToolBar->addSeparator(); // cause of error
 
     btn_RunToCursor = new QToolButton(this);
     btn_RunToCursor->setIcon(QIcon(IconFactory::RunToCursor));
@@ -115,15 +119,13 @@ void DebuggerWidget::createToolBar()
     ControlPanel->addWidget(DebugToolBar);
 }
 
-void DebuggerWidget::createControlPanel()
-{
-
-    ControlPanel=new QVBoxLayout;
-    ControlPanel->setContentsMargins(0,0,0,0);
+void DebuggerWidget::createControlPanel() {
+    ControlPanel = new QVBoxLayout();
+    ControlPanel->setContentsMargins(0, 0, 0, 0);
 
     createToolBar();
 
-    btn_StepOver=new QToolButton(this);
+    btn_StepOver = new QToolButton(this);
     btn_StepOver->setText(" Step Over");
     btn_StepOver->setIcon(QIcon(IconFactory::NextLine));
     btn_StepOver->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
@@ -173,45 +175,17 @@ void DebuggerWidget::createControlPanel()
     ControlPanel->addStretch();
 }
 
-void DebuggerWidget::createDebugVariableWindow() {
+void DebuggerWidget::createDebugWatchWindow() {
 
-    debug_variable_window = new QWidget(this);
-    var_layout = new QVBoxLayout(this);
-    thread_box = new QComboBox(this);
-    debug_variable_window->setMaximumWidth(250); // for now ... later change responsibly
+    WatchWindow = new QWidget(this);
+    WatchLayout = new QVBoxLayout(this);
+    WatchListView = new QListWidget(this);
+    WatchWindow->setMaximumWidth(250);// for now ... later change responsibly
 
-    all_variables = new QListWidget(this);
-    variable_description = new QListWidget(this);
-    /*
-    for (int i = 0; i <= 5; i++) {
-        all_variables->addItem("nieco nabuduce");
-        variable_description->addItem("nieco nabuduce");
-    }
-    */
-
-    /*
-    auto data = debugger.get_var_func_info();
-
-    for (int i=0; i< data.size(); i++){
-        all_variables->addItem(new QListWidgetItem(data[i].name.c_str()));
-        QString type = "type: " + data[i].type.c_str();
-        variable_description->addItem(new QListWidgetItem(type));
-        for (int z=0; z< data[i].values.size(); z++){
-            variable_description->addItem(new QListWidgetItem(data[i].values[z].c_str()));
-        }
-    }
-
-    // small update var func also implement later
-    */
-
-    // connect(OptionsList, &QListWidget::currentRowChanged, WidgetStack, &QStackedWidget::setCurrentIndex);
-
-    var_layout->addWidget(thread_box);
-    var_layout->addWidget(all_variables);
-    var_layout->addWidget(variable_description);
-
+    WatchLayout->addWidget(WatchListView);
+    WatchLayout->setContentsMargins(0, 0, 0, 0);
     //var_layout->addWidget(new PlainTextEdit);
-    debug_variable_window->setLayout(var_layout);
+    WatchWindow->setLayout(WatchLayout);
 
     /*
     QSplitter *watchDockContainer=new QSplitter(this);
@@ -229,6 +203,31 @@ void DebuggerWidget::createDebugVariableWindow() {
 
     customWatchControl->addWidget(removewatch);
     */
+}
+
+void DebuggerWidget::createCallStackWindow() {
+    CallStackLayout = new QVBoxLayout();
+    ThreadBox = new QComboBox(this);
+    CallStack = new QListWidget(this);
+
+    CallStackLayout->setContentsMargins(0, 0, 5, 0);
+    CallStackLayout->setSpacing(0);
+    ThreadBox->setFixedWidth(300);
+    CallStack->setFixedWidth(300);
+    connect(CallStack, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotOpenCallStackFile(QListWidgetItem *)));
+
+    CallStackLayout->addWidget(ThreadBox);
+    CallStackLayout->addWidget(CallStack);
+}
+
+void DebuggerWidget::fillCallStack() {
+    for (int i = 0; i <= 5; i++) {
+        CallStack->insertItem(i, "some call");
+    }
+}
+
+void DebuggerWidget::slotOpenCallStackFile(QListWidgetItem *item) {
+    //item->text();
 }
 
 // -----------------------------------------------------------------------------------------
@@ -272,9 +271,9 @@ void DebuggerWidget::slotContinue() {
 // -----------------------------------------------------------------------------------------
 
 void DebuggerWidget::slotCmdlineExecute() {
-    std::string res = executeDebuggerCommand(args_input->text().toStdString());
+    std::string res = executeDebuggerCommand(DebuggerPrompt->text().toStdString());
     debug_output->appendPlainText(res.c_str()); // hope QString takes a C string and no implicit conversion is needed
-    args_input->clear();
+    DebuggerPrompt->clear();
 }
 // -----------------------------------------------------------------------------------------
 
@@ -302,31 +301,33 @@ void DebuggerWidget::setExecutable(const std::string &exe_file_path) {
 }
 
 void DebuggerWidget::showBreakPointsList() {
-    show_window = new QWidget(this);
-    auto *tree = new QTreeWidget(this);
+    BreakPointListWindow = new QWidget(this);
+    BreakPoint_List = new QTreeWidget(this);
     //QListWidget *break_list = new QListWidget(this);
     auto *layout = new QVBoxLayout();
-    show_window->setFixedWidth(500);
-    tree->setColumnCount(3);
-    tree->setHeaderLabels(QStringList() << "ID" << "File" << "Line");
+    BreakPointListWindow->setFixedWidth(500);
+    BreakPoint_List->setColumnCount(3);
+    BreakPoint_List->setHeaderLabels(QStringList() << "ID"
+                                                   << "File"
+                                                   << "Line");
     //layout->addWidget(break_list);
-    layout->addWidget(tree);
-    show_window->setWindowFlags(Qt::Dialog);
+    layout->addWidget(BreakPoint_List);
+    BreakPointListWindow->setWindowFlags(Qt::Dialog);
     for (int i = 0; i < BreakPointList.size(); i++) {
         //QListWidgetItem *item = new QListWidgetItem(break_list, i);
         auto *item = new QTreeWidgetItem(i);
-        item->setIcon(0, QIcon(IconFactory::BreakPoint));  // icon to beginning
+        item->setIcon(0, QIcon(IconFactory::BreakPoint));// icon to beginning
         //QString info = QString("ID: ") + QString::number(debugger.BreakPointList[i].break_id) + ", line: " +
         //        QString::number(debugger.BreakPointList[i].line) + " File: " + debugger.BreakPointList[i].filename;
         item->setText(0, QString::number(BreakPointList[i].break_id));
         item->setText(1, BreakPointList[i].filename);
         item->setText(2, QString::number(BreakPointList[i].line));
         //break_list->addItem(item);
-        tree->addTopLevelItem(item);
+        BreakPoint_List->addTopLevelItem(item);
     }
 
-    show_window->setLayout(layout);
-    show_window->show();
+    BreakPointListWindow->setLayout(layout);
+    BreakPointListWindow->show();
 }
 
 void DebuggerWidget::showSetManualBreakPoint(const QString &filepath) {
@@ -360,12 +361,12 @@ void DebuggerWidget::showTaskManager() {
     // debugger.attachToRunningProcess(some id);    // add signal from task and slot from here
 }
 
-void DebuggerWidget::addThread() {
+void DebuggerWidget::fillThreadBox() {
     //int num = Process.GetNumThreads();
     //std::cout << num;
     for (int i = 0; i < Process.GetNumThreads(); i++) {
         auto thread = Process.GetThreadAtIndex(i);
-        thread_box->insertItem(thread.GetThreadID(), QString::fromStdString(thread.GetName()));
+        ThreadBox->insertItem(thread.GetThreadID(), QString::fromStdString(thread.GetName()));
     }
 
 
@@ -478,9 +479,8 @@ void DebuggerWidget::init() {
 void DebuggerWidget::start() {
     // clear all first
     debug_output->clear();
-    thread_box->clear();
-    variable_description->clear();
-    all_variables->clear();
+    ThreadBox->clear();
+    WatchListView->clear();
 
     init();
 
@@ -500,7 +500,7 @@ void DebuggerWidget::start() {
     Process = Target.Launch(listener, nullptr, nullptr, nullptr, nullptr,
                             nullptr, nullptr, 0, false, error);
 
-    if(!Process.IsValid()){
+    if (!Process.IsValid()) {
         debug_output->appendPlainText("Process is invalid \n");
         std::cout << "Process is invalid \n";
         SBStream str;
@@ -510,15 +510,16 @@ void DebuggerWidget::start() {
     }
 
 
-    //worker = new QThread(this);
-    //worker->create(&DebuggerWidget::setProcessInterruptFeatures, this);
-    //moveToThread(worker);
+    worker = new QThread(this);
+    runner = new Runner();
+    //QThread::create(&DebuggerWidget::setProcessInterruptFeatures, this);
 
-    //connect(worker, &QThread::started, this, &DebuggerWidget::setProcessInterruptFeatures);
-    //connect(worker, &QThread::finished, worker, &QObject::deleteLater);
-    //worker->start();
+    connect(worker, &QThread::started, this, &DebuggerWidget::setProcessInterruptFeatures);
+    connect(worker, &QThread::finished, this, &QObject::deleteLater);// worker ---> this
+    runner->moveToThread(worker);
+    worker->start();
     // when process stopped, return true, pause process
-    setProcessInterruptFeatures();
+    //setProcessInterruptFeatures();
     //std::thread debug_thread(&DebuggerWidget::setProcessInterruptFeatures, this); // , "Debug_session"
     //debug_thread.detach(); // join
     // do not join, since i do not want to want for thread to end
@@ -549,7 +550,7 @@ bool DebuggerWidget::HandleProcessEvent(SBEvent &event) {
     switch (event.GetType()) {
         case lldb::SBProcess::eBroadcastBitStateChanged:
             // add all threads into threads view
-            addThread();
+            fillThreadBox();
             storeFrameData(getCurrentFrame());
 
             return HandleProcessStateChangeEvent(event);
@@ -738,7 +739,7 @@ void DebuggerWidget::attachToRunningProcess(const int &proc_id){
 
 void DebuggerWidget::storeFrameData(SBFrame frame) {
     // clear
-    view->reset();
+    VariablesView->reset();
     auto *model = new QStandardItemModel(this);
 
     QStandardItem *rootNode = model->invisibleRootItem();
@@ -760,8 +761,6 @@ void DebuggerWidget::storeFrameData(SBFrame frame) {
         //value.GetSummary();
         //value.GetThread();
         */
-        variable_description->insertItem(idx, value.GetValue());
-        all_variables->insertItem(idx, value.GetName());
 
         //defining a couple of items
         auto *var = new QStandardItem(QString(value.GetName()));
@@ -770,18 +769,10 @@ void DebuggerWidget::storeFrameData(SBFrame frame) {
         //building up the hierarchy
         rootNode->appendRow(var);
         var->appendRow(val);
-
     }
 
-    view->setModel(model);
-    view->collapseAll();
-
-    /*
-     //selection changes shall trigger a slot
-    QItemSelectionModel *selectionModel = treeView->selectionModel();
-    connect(selectionModel, &QItemSelectionModel::selectionChanged,
-            this, &MainWindow::selectionChangedSlot);
-    */
+    VariablesView->setModel(model);
+    VariablesView->collapseAll();
 }
 
 std::string DebuggerWidget::frameGetLocation(const SBFrame& frame) {

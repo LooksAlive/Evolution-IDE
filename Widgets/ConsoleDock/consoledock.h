@@ -27,21 +27,17 @@ public:
 
     QPlainTextEdit *ConsoleOutput;
 
-    void setRawOutput(const QString &raw);
-
 private:
     QHBoxLayout *MainLayout;
     QToolBar *title_bar;
     QToolBar *tool_bar;
-    
+
     void BuildConsole();
 
 public slots:
-    void slotScrollUp();
-    void slotScrollDown();
-    void slotClearConsole();
-
-
+    void slotScrollUp() const;
+    void slotScrollDown() const;
+    void slotClearConsole() const;
 };
 
 #endif // COMPILEDOCK_H

@@ -7,63 +7,66 @@
 #include <string>
 #include <vector>
 
-#include <QDir> // only for build section to find out if cmake-build already exists...
+#include <QDir>// only for build section to find out if cmake-build already exists...
 #include <QString>
+#include <QThread>
 
-class CommandLineExecutor
-{
+class ExecutionRunner : public QObject {
+    Q_OBJECT
 public:
-    CommandLineExecutor();
+    explicit ExecutionRunner(QObject *parent = nullptr) : QObject(parent) {}
+    ~ExecutionRunner() = default;
+};
+
+
+class CommandLineExecutor : public QObject {
+    Q_OBJECT
+public:
+    explicit CommandLineExecutor(QObject *parent = nullptr);
     ~CommandLineExecutor() = default;
-    bool GenerateCmake = false;
 
     enum BuildMode {
         Debug = 1,
         Release = 2,
     };
-    
-    // second argument represents output widget to append data constantly
-    std::string ExecuteCommand(const std::string& cmd, QPlainTextEdit *edit = nullptr);
 
-    void setCompiler(const std::string &compiler, const BuildMode &mode, const std::string &addflags);
-    void setExecutableName(const std::string &name, const std::string &path);
+    // TODO: multithreading example which works is only through connections in debugger...
+    // TODO: it requires inherit QObject, make non-static, store edit object etc., no other way yet
+    // second argument represents output widget to append data constantly
+    // ????????? will there be any conflict with edit class ?? since it is Qt
+    static void ExecuteCommand(const std::string &cmd, QPlainTextEdit *edit = nullptr);
+    // basic command on the main thread to take no longer than second
+    static std::string ExecuteSimpleCommand(const std::string &cmd);
+
     void setSourceFiles(const std::vector<std::string> &sources);
     void setLibraryPaths(const std::vector<std::string> &library_paths);
-    std::string Build(const bool &cmake, QPlainTextEdit *edit = nullptr);
-    std::string Execute(const bool &cmake, QPlainTextEdit *edit = nullptr);
+    static void Build(const bool &cmake, const std::string &ProjectRootDir, QPlainTextEdit *edit = nullptr);
+    static void Execute(const bool &cmake, const std::string &executable_path, QPlainTextEdit *edit = nullptr);
     // kill running process with pid
     // TODO: set argument executable name to avoid QSettings usage here
-    int getPid();
-    void killProcess();
+    static int getPid(const std::string &executable_path);
+    static void killProcess(const int &proc_id);
 
-    std::string ClangFormat(const std::vector<std::string> &sources);
-    std::string ClangTidy(const std::vector<std::string> &sources);
-    std::string ClangCheck(const std::vector<std::string> &sources);
+    // clang_format_file_path -> .clang-format file with conf-s
+    static std::string ClangFormat(const std::vector<std::string> &sources, const std::string &clang_format_file_path);
+    static std::string ClangTidy(const std::vector<std::string> &sources);
+    static std::string ClangCheck(const std::vector<std::string> &sources);
 
-    std::string Valgrind();
+    static std::string Valgrind(const std::string &executable_path);
 
-    void OpenGdbGui();
-
-    std::string ProjectRootDir = "";
-    std::string cmake_build = "";
-    std::string cmake_exec = "";
-
+    static void OpenGdbGui(const std::string &executable_path);
 
     std::string compile_args = "/usr/bin/";
-    std::string exec_args = "";
 
 private:
+    static void DetermineCompilerVersion(const std::string &tool);
 
-    void DetermineCompilerVersion(const std::string &tool);
+    // consider only stack allocation
+    QThread *QThread;
+    ExecutionRunner *runner;
 
-
-    std::string version = "";
-    std::string flags = "";
-
-    std::string executable_name = "a.out";   //    executable.elf
-    int proc_id;
-    std::string Project_Dir = "";        //    /home/adam/Desktop/SKUSKA/
-
+private slots:
+    //void slotRunExecution();
 };
 
 

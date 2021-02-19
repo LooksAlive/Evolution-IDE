@@ -16,7 +16,7 @@ void GoToLineColumn::createWindow() {
 }
 
 void GoToLineColumn::storeData() {
-    int line = line_input->text().toInt();
+    int line = line_input->text().toLatin1().toInt();
     edit->setCursorAtLine(line);
     close();
     deleteLater();

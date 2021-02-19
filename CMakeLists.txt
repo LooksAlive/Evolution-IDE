@@ -230,27 +230,27 @@ set(SOURCE_FILES
                 Widgets/Settings/CmakeGenerator/cmakegenerator.h
                 Widgets/Settings/CmakeGenerator/cmakegeneratorwidget.cpp
                 Widgets/Settings/CmakeGenerator/cmakegeneratorwidget.h
-                Widgets/Settings/git/gitbridge.cpp
-                Widgets/Settings/git/gitbridge.h
-                Widgets/Settings/git/gitwidget.cpp
-                Widgets/Settings/git/gitwidget.h
-                icons/IconFactory.h
-                Widgets/Settings/Appearence/AppearenceWidget.cpp
-                Widgets/Settings/Appearence/AppearenceWidget.h
-                Widgets/CodeInfoDock/CodeInfoDock.cpp
-                Widgets/CodeInfoDock/CodeInfoDock.h
-                Widgets/FileExplorer/NewWindow.cpp
-                Widgets/FileExplorer/NewWindow.h
-                Widgets/Settings/Debugger/DebuggerSettings.cpp
-                Widgets/Settings/Debugger/DebuggerSettings.h
-                Widgets/FileExplorer/SourceTemplates.h
-                Widgets/NodeView/NodeView.cpp
-                Widgets/NodeView/NodeView.h
-                Widgets/PlainTextEdit/GoToLineColumn.cpp
-                Widgets/PlainTextEdit/GoToLineColumn.h
-                Widgets/ProgressBar/ProgressBar.cpp
-                Widgets/ProgressBar/ProgressBar.h
-        Widgets/Education/Education.cpp Widgets/Education/Education.h Widgets/Education/CodeSamples.h)
+        Widgets/Settings/git/gitbridge.cpp
+        Widgets/Settings/git/gitbridge.h
+        Widgets/Settings/git/gitwidget.cpp
+        Widgets/Settings/git/gitwidget.h
+        icons/IconFactory.h
+        Widgets/Settings/Appearence/AppearenceWidget.cpp
+        Widgets/Settings/Appearence/AppearenceWidget.h
+        Widgets/CodeInfoDock/CodeInfoDock.cpp
+        Widgets/CodeInfoDock/CodeInfoDock.h
+        Widgets/FileExplorer/NewWindow.cpp
+        Widgets/FileExplorer/NewWindow.h
+        Widgets/Settings/Debugger/DebuggerSettings.cpp
+        Widgets/Settings/Debugger/DebuggerSettings.h
+        Widgets/FileExplorer/SourceTemplates.h
+        Widgets/NodeView/NodeView.cpp
+        Widgets/NodeView/NodeView.h
+        Widgets/PlainTextEdit/GoToLineColumn.cpp
+        Widgets/PlainTextEdit/GoToLineColumn.h
+        Widgets/ProgressBar/ProgressBar.cpp
+        Widgets/ProgressBar/ProgressBar.h
+        Widgets/Education/Education.cpp Widgets/Education/Education.h Widgets/Education/CodeSamples.h Widgets/Settings/ClangFormat/ClangFormat.cpp Widgets/Settings/ClangFormat/ClangFormat.h Widgets/Education/NewSampleWindow.cpp Widgets/Education/NewSampleWindow.h Widgets/Settings/Installer/Installer.cpp Widgets/Settings/Installer/Installer.h)
 
 
 

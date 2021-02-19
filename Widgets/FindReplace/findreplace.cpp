@@ -19,31 +19,34 @@ FindReplaceWidget::FindReplaceWidget(Tab *tab, QWidget *parent)
 
     base = new QWidget(this);
     base->setLayout(MainLayout);
-    base->setContentsMargins(5, 5, 5, 5);
+    base->setContentsMargins(5, 0, 5, 0);
     base->setFixedWidth(700);
     //base->setFixedHeight(150);
     setWidget(base);
     setVisible(false);
 
+    setFeatures(AllDockWidgetFeatures);
     setWindowTitle("Find & Replace");
 
     auto *t_bar = new QToolBar(this);
-    auto *spacer = new QWidget(this);   // align to right with blank widget
+    auto *spacer = new QWidget(this);// align to right with blank widget
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    //t_bar->setStyleSheet("background:red;");
+    //spacer->setStyleSheet("background:green;");
 
     t_bar->addWidget(spacer);
     t_bar->addAction(QIcon(IconFactory::Remove), "Close", this, SLOT(close()));
     t_bar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
     t_bar->setFixedHeight(35);
-    t_bar->setIconSize(QSize(25, 35));
+    //t_bar->setIconSize(QSize(25, 35));
     setTitleBarWidget(t_bar);
 
     // escape shortcut  -> will close the window
-    connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [=] {this->setVisible(false);});
-    
+    connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [=] { this->setVisible(false); });
+
     /* same_file == ""  --> means that file has no filepath yet (blank) */
-    if(same_file != m_Tab->tabToolTip(m_Tab->currentIndex()) || same_file == ""){
-        m_Edit = qobject_cast<PlainTextEdit*>(m_Tab->currentWidget());
+    if (same_file != m_Tab->tabToolTip(m_Tab->currentIndex()) || same_file == "") {
+        m_Edit = qobject_cast<PlainTextEdit *>(m_Tab->currentWidget());
         same_file = m_Tab->tabToolTip(m_Tab->currentIndex());
     }
     // clear search selection

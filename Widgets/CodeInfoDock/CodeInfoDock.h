@@ -11,7 +11,8 @@
 
  * third (horizontal, next to vertical) :: sometimes called functions are named 
  * differently for ex. (set, add), (append, insert), (delete, remove) ... 
- * this window will be wider completer view for names
+ * this window will be wider completer view for names +++++
+ * also second part will be clang-tidy and official linter list
 
  * ++ some timer to at least seconds for now 
 
@@ -51,18 +52,20 @@ private:
     ClangBridge *clang;
 
     QWidget *MainWidget;
-    
+
     QHBoxLayout *MainLayout;
     QVBoxLayout *SignatureActionLayout;
-    
+    QVBoxLayout *CompleterLinterLayout;
+
     QLabel *signature;
     QLabel *documentation;
     // represents where function, var, instance is called
     QListWidget *calls;
     // double click, consider TreeView, since there could be more actions available
     QListWidget *actions;
-    
+
     QListWidget *completer;
+    QListWidget *linter;
 
     void createWindow();
 

@@ -32,12 +32,13 @@ private:
     QFormLayout *Main_Layout;
     QHBoxLayout *theme_layout;
     QCheckBox *checkShowWhitespaces;
-    QComboBox *comboFont;
     QRadioButton *radioThemeDark;
     QRadioButton *radio_ThemeLight;
+    QComboBox *comboFont;
     QSpinBox *spinFontSize;
 
     void createWindow();
+    // always set at beginning, it is rewritten by registers(loadData, saveData)
     void setDefaultSettings();
 
     QFont font;  // no use, delete later

@@ -127,11 +127,11 @@ void PlainTextEdit::setCursorPosition(const int &row, const int &col)
     */
 }
 
-QPoint PlainTextEdit::getCursorPosition(){
+QPoint PlainTextEdit::getCursorPosition() {
     QTextCursor cursor = textCursor();
     // there is no 0 col or row in view but it is acts like it is
-    int row = cursor.blockNumber();     // +1
-    int col = cursor.columnNumber();    // +1 , starting from 1
+    int row = cursor.blockNumber(); // + 1
+    int col = cursor.columnNumber();// + 1 , starting from 1
 
     return QPoint(row, col);
 }
@@ -663,6 +663,7 @@ void PlainTextEdit::createMenu() {
     viewMenu->addAction(QIcon(IconFactory::Collapse), "Collapse", this, SLOT(slotCollapse()));
     viewMenu->addAction(QIcon(IconFactory::Expand), "Expand", this, SLOT(slotExpand()));
     viewMenu->addSeparator();
+    viewMenu->addAction("Create Sample", this, SLOT(slotShowNewSampleWindow()));
     viewMenu->addAction(QIcon(IconFactory::Comment), "Comment Code", this, SLOT(toggleComment()), Qt::CTRL + Qt::SHIFT + Qt::Key_C);
     viewMenu->addAction("Toggle BreakPoint", this, SLOT(slotToggleBreakPoint())); // , Qt::Key_F9
     viewMenu->addAction("Generate...", this, SLOT(slotGenerate()), Qt::CTRL + Qt::SHIFT + Qt::Key_G);
@@ -676,8 +677,23 @@ void PlainTextEdit::createMenu() {
 
 void PlainTextEdit::SetupCompleter() {
     QStringList words;
-    words << "void" << "bool" << "int" << "uint" << "unsigned" << "short" << "char" << "wchar" << "const"
-    << "constexpr" << "noexcept" << "if" << "else" << "switch" << "case" << "for" << "while";
+    words << "void"
+          << "bool"
+          << "int"
+          << "uint"
+          << "unsigned"
+          << "short"
+          << "char"
+          << "wchar"
+          << "const"
+          << "constexpr"
+          << "noexcept"
+          << "if"
+          << "else"
+          << "switch"
+          << "case"
+          << "for"
+          << "while";
     //completer->setModel(new QStringListModel(words, completer));
 
     completer = new QCompleter(words, this);
@@ -685,23 +701,27 @@ void PlainTextEdit::SetupCompleter() {
     completer->setMaxVisibleItems(8);
     completer->setCompletionMode(QCompleter::PopupCompletion);
     completer->setWrapAround(false);
-    completer->setFilterMode(Qt::MatchStartsWith); // MatchContains
+    completer->setFilterMode(Qt::MatchStartsWith);// MatchContains
 
+    /*
     auto *view = new QListView(this);
     view->setViewMode(QListView::ListMode);
     view->setLayoutMode(QListView::Batched);
     completer->setPopup(view);
+    */
+    completer->popup()->setMouseTracking(true);
+    completer->popup()->setTabletTracking(true);
     //auto *model = new QFileSystemModel(this);
     //model->setRootPath(QDir::homePath());
     //completer->popup()->setMinimumSize(200, 100);
 
-    connect(completer, SIGNAL(activated(const QString&)), this, SLOT(completerInsertText(const QString&)));
+    connect(completer, SIGNAL(activated(const QString &)), this, SLOT(completerInsertText(const QString &)));
 }
 
 void PlainTextEdit::setCompletionData(const std::vector<std::string> &data) {
     QStringList buffer;
-    for (int i = 0; i < data.size(); i++) {
-        buffer.push_back(QString::fromStdString(data[i]));
+    for (const auto &i : data) {
+        buffer.push_back(QString::fromStdString(i));
     }
     completer->setModel(new QStringListModel(buffer, completer));
 }
@@ -850,7 +870,6 @@ void PlainTextEdit::setTimers() {
     actionsTimer = new QTimer(this);
     connect(touchSearchTimer, SIGNAL(timeout()), this, SLOT(actions()));
     touchSearchTimer->setInterval(ActionsTimeOut);
-
 }
 
 
@@ -860,16 +879,29 @@ void PlainTextEdit::slotShowMenu(const QPoint &pos) {
     viewMenu->exec(viewport()->mapToGlobal(pos));
 }
 
+void PlainTextEdit::slotShowNewSampleWindow() {
+    newSampleWindow = new NewSampleWindow(this);
+    newSampleWindow->newUserSampleWindow();
+    connect(newSampleWindow, SIGNAL(sampleNameRegisterDestroyed()), this, SLOT(slotCreateSample()));
+}
+
+void PlainTextEdit::slotCreateSample() {
+    const QString content = textCursor().selectedText();
+    const QString sampleName = newSampleWindow->newSampleName;
+    if (content.isEmpty() || sampleName.isEmpty()) {
+        return;
+    }
+    education->addUserSample(content, sampleName);
+}
+
 void PlainTextEdit::slotToggleBreakPoint() {
     BreakpointArea->containBlock(getCursorPosition().x());
 }
 
 void PlainTextEdit::formatFile() {
-
 }
 
 void PlainTextEdit::slotGenerate() {
-
 }
 
 void PlainTextEdit::slotGoToDefinition() {
@@ -1065,27 +1097,13 @@ void PlainTextEdit::resizeEvent(QResizeEvent *event)
     QPlainTextEdit::resizeEvent(event);
 }
 
-void PlainTextEdit::keyReleaseEvent(QKeyEvent *event)
-{
+void PlainTextEdit::keyPressEvent(QKeyEvent *event) {
     QTextCursor cursor = textCursor();
 
-    //if(event->type() == QEvent::MouseButtonPress && event->modifiers() == Qt::ControlModifier){
-    //    this->cursor().setShape(Qt::PointingHandCursor);
-    //}
-    /*
-    if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Space){
-        auto popup = completer->popup();
-        popup->setCurrentIndex(completer->completionModel()->index(0,0));
-
-        QRect rect = cursorRect();  // text cursor position
-        rect.setWidth(50);
-        rect.setHeight(30);
-        completer->complete(rect);
-    }
-    if(event->modifiers() == Qt::ControlModifier){
+    if (event->modifiers() == Qt::ControlModifier) {
         this->cursor().setShape(Qt::PointingHandCursor);
     }
-    */
+
 
     QString completionPrefix = getWordUnderCursor();
     /*
@@ -1109,38 +1127,25 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event)
     */
 
     if (event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Space &&
-        completionPrefix != completer->completionPrefix())
-    {
+        completionPrefix != completer->completionPrefix()) {
         completer->setCompletionPrefix(completionPrefix);
         completer->popup()->setCurrentIndex(completer->completionModel()->index(0, 0));
 
         QRect cr = cursorRect();
-        cr.setWidth(completer->popup()->sizeHintForColumn(0)
-                    + completer->popup()->verticalScrollBar()->sizeHint().width());
-        completer->complete(cr); // popup it up!
+        cr.setWidth(/*completer->popup()->sizeHintForColumn(0)
+                    + completer->popup()->verticalScrollBar()->sizeHint().width()*/
+                    300);
+        completer->complete(cr);// popup it up!
     }
 
-    if (completer && completer->popup()->isVisible()) {
+    if (completer && completer->popup()->isActiveWindow()) {
         // The following keys are forwarded by the completer to the widget
-        switch (event->key()) {
-            case Qt::Key_Return:
-            case Qt::Key_Enter:
-                completerInsertText(completionPrefix);
-                completer->popup()->hide();  // complete done, hide popup and continue
-                break;
-            case Qt::Key_Escape:
-            case Qt::Key_Tab:
-            case Qt::Key_Backtab:
-                event->ignore();
-                QPlainTextEdit::keyReleaseEvent(event);
-                //return; // let the completer do default behavior
-                break;
-            default:
-                event->ignore();
-                QPlainTextEdit::keyReleaseEvent(event);
-                break;
+        if (event->key() == Qt::Key_Enter || event->key() == Qt::Key_Tab) {
+            completerInsertText(completionPrefix);
+            completer->popup()->hide();// complete done, hide popup and continue
+        } else {
+            //event->ignore();
         }
-        QPlainTextEdit::keyReleaseEvent(event);
     }
 
     // select and copy whole line
@@ -1239,7 +1244,7 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event)
         default:
             break;
     }
-    QPlainTextEdit::keyReleaseEvent(event);
+    QPlainTextEdit::keyPressEvent(event);
 }
 /*
 void PlainTextEdit::keyPressEvent(QKeyEvent *event) {
@@ -1249,8 +1254,10 @@ void PlainTextEdit::keyPressEvent(QKeyEvent *event) {
 
 void PlainTextEdit::focusInEvent(QFocusEvent *e) {
 
-    if(completer){
+    if (completer) {
         completer->setWidget(this);
+        completer->popup()->setFocus();
+        completer->popup()->installEventFilter(this);
     }
 
     QPlainTextEdit::focusInEvent(e);

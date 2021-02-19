@@ -1,12 +1,9 @@
 #include "settingswindow.h"
 
-
-
-SettingsWindow::SettingsWindow(QWidget *parent) : QDialog(parent)
-{
+SettingsWindow::SettingsWindow(QWidget *parent) : QDialog(parent) {
     // features
-    SettingsWindow::setWindowTitle("Settings");
-    SettingsWindow::setMinimumSize(500, 400);
+    setWindowTitle("Settings");
+    setMinimumSize(500, 400);
 
     OuterLayout = new QVBoxLayout(this);
     createButtons();
@@ -18,11 +15,12 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QDialog(parent)
     slotLoadData();
 }
 
-void SettingsWindow::createButtons()
-{
+void SettingsWindow::createButtons() {
     buttonsLayout = new QHBoxLayout();
     btn_save = new QPushButton(this);
     btn_close = new QPushButton(this);
+    auto *spacer = new QWidget(this);// align to right with blank widget
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     btn_save->setText("Save");
     btn_close->setText("Close");
     btn_save->setFixedWidth(60);
@@ -31,13 +29,12 @@ void SettingsWindow::createButtons()
     connect(btn_save, SIGNAL(clicked()), this, SLOT(slotSaveData()));
     connect(btn_close, SIGNAL(clicked()), this, SLOT(close()));
 
-    buttonsLayout->addWidget(btn_save, Qt::AlignRight);
-    buttonsLayout->addWidget(btn_close, Qt::AlignRight);
-
+    buttonsLayout->addWidget(spacer);
+    buttonsLayout->addWidget(btn_save);
+    buttonsLayout->addWidget(btn_close);
 }
 
-QLayout *SettingsWindow::buildForm()
-{
+QLayout *SettingsWindow::buildForm() {
     InnerLayout = new QHBoxLayout();
     OuterLayout = new QVBoxLayout();
     WidgetStack = new QStackedWidget();
@@ -47,13 +44,16 @@ QLayout *SettingsWindow::buildForm()
     git = new GitWidget(this);
     appearence = new AppearenceWidget(this);
     debugger = new DebuggerSettings(this);
+    clangFormat = new ClangFormat(this);
+    installer = new Installer(this);
 
     InnerLayout->addWidget(OptionsList, 1);
     OptionsList->addItem(new QListWidgetItem("Appearance"));
     OptionsList->addItem(new QListWidgetItem("Cmake"));
     OptionsList->addItem(new QListWidgetItem("Debugger"));
-    OptionsList->addItem(new QListWidgetItem("Formatter"));
+    OptionsList->addItem(new QListWidgetItem("Clang Format"));
     OptionsList->addItem(new QListWidgetItem("Git"));
+    OptionsList->addItem(new QListWidgetItem("Installer"));
 
     OptionsList->setCurrentRow(0);
     OptionsList->setMaximumWidth(125);
@@ -62,8 +62,10 @@ QLayout *SettingsWindow::buildForm()
     WidgetStack->addWidget(appearence);
     WidgetStack->addWidget(cmake);
     WidgetStack->addWidget(debugger);
-    WidgetStack->addWidget(new QPlainTextEdit(this));
+    WidgetStack->addWidget(clangFormat);
     WidgetStack->addWidget(git);
+    WidgetStack->addWidget(installer);
+    // they are in list statically places, so i can switch them simply by index and row
     connect(OptionsList, &QListWidget::currentRowChanged, WidgetStack, &QStackedWidget::setCurrentIndex);
 
     OuterLayout->addLayout(InnerLayout);
@@ -76,6 +78,8 @@ void SettingsWindow::slotSaveData() {
     git->saveData();
     appearence->saveData();
     debugger->saveData();
+    clangFormat->saveData();
+    installer->saveData();
 
     close();
 }
@@ -85,5 +89,6 @@ void SettingsWindow::slotLoadData() {
     git->loadData();
     appearence->loadData();
     debugger->loadData();
+    clangFormat->loadData();
+    installer->loadData();
 }
-

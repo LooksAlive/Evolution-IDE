@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "Widgets/CodeInfoDock/CodeInfoDock.h"
+#include "Widgets/Education/Education.h"
 
 class LineNumberArea;
 class BreakPointArea;
@@ -41,14 +42,17 @@ public:
     ~PlainTextEdit() = default;
 
     BreakPointArea *BreakpointArea;
-    Arrow *ArrowArea;
     // data insertions
     CodeInfoDock *code_info;
     // parsing
     ClangBridge *clang;
-    
-    void setCodeInfoWidget(CodeInfoDock *code_info_widget){code_info = code_info_widget;}
-    void setClang(ClangBridge *clang_bridge){clang = clang_bridge;}
+    // TODO: add option for sample creation into menu
+    Education *education;
+    NewSampleWindow *newSampleWindow;
+
+    void setCodeInfo(CodeInfoDock *code_info_widget) { code_info = code_info_widget; }
+    void setClang(ClangBridge *clang_bridge) { clang = clang_bridge; }
+    void setEducation(Education *edu) { education = edu; }
 
     // tab width
     static constexpr unsigned int TAB_STOP_WIDTH = 4;
@@ -85,6 +89,7 @@ public:
     // text manipulation
     void selectLineUnderCursor();
     QString getLineUnderCursor();
+    // returns content for specified line/row + set cursor there
     QString getLineContent(const int &row);
     void selectWordUnderCursor();
     QString getWordUnderCursor();
@@ -136,7 +141,7 @@ public:
     // missing selected text for return -> no use for now
     void highlight(QList<QTextEdit::ExtraSelection> &selections, const bool &Background, const int &line,
                    const QColor &color = QColor::fromRgb(0, 255, 0));
-                   
+
     // code info dock:
     // timer for usages search: 6sec
     QTimer *usagesSearchTimer;
@@ -146,8 +151,8 @@ public:
     static constexpr unsigned int ActionsTimeOut = 5000;
 
 protected:
-    void keyReleaseEvent(QKeyEvent *event) override;
-    //void keyPressEvent(QKeyEvent *event) override;
+    //void keyReleaseEvent(QKeyEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
     void mousePressEvent(QMouseEvent *e) override;
     void focusInEvent(QFocusEvent *e) override;
     void focusOutEvent(QFocusEvent *e) override;
@@ -156,9 +161,10 @@ protected:
     void wheelEvent(QWheelEvent *event) override;
 
     void dropEvent(QDropEvent *e) override;
-private:
 
+private:
     LineNumberArea *LineArea;
+    Arrow *ArrowArea;
     QMenu *viewMenu;
 
     // setup timers connects -> then call .start() where i want to use exact timer
@@ -194,10 +200,13 @@ public slots:
     void slotExpand();
     void slotCollapse();
 
+    void slotShowNewSampleWindow();
+    void slotCreateSample();
+
 private slots:
     void slotShowMenu(const QPoint &pos);
     void slotBlockCountChanged(const int count);
-    void slotHighlightCurrentLine(); // cursor position changed
+    void slotHighlightCurrentLine();// cursor position changed
     void slotUpdateRequest(const QRect &rect, const int column);
     void slotTextChanged();
 

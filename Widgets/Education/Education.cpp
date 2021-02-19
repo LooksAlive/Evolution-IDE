@@ -1,13 +1,10 @@
 #include <QSettings>
 #include <QIcon>
-#include <QFormLayout>
-#include <QToolBar>
 
 #include "icons/IconFactory.h"
 #include "Education.h"
 
-Education::Education(Tab *tab, QWidget *parent) : QDockWidget(parent), m_Tab(tab)
-{
+Education::Education(QWidget *parent) : QDockWidget(parent) {
     //setMinimumSize(400, 200);
     setContentsMargins(0, 0, 0, 0);
     //setWindowFlag(Qt::Dialog);
@@ -19,11 +16,14 @@ Education::Education(Tab *tab, QWidget *parent) : QDockWidget(parent), m_Tab(tab
     // loadOpenedSamples();
     setFeatures(AllDockWidgetFeatures);
     setVisible(false);
-    setWidget(CppCodeSamples);
 }
 
 void Education::createWindow() {
+    stack = new QStackedWidget(this);
     CppCodeSamples = new QListWidget(this);
+    CppUsersSamples = new QListWidget(this);
+    preview = new QPlainTextEdit(this);
+    cpp_user_samples.reserve(5);
 
     CppCodeSamples->insertItem(0, "Introduction");
     CppCodeSamples->insertItem(1, "Main");
@@ -44,51 +44,50 @@ void Education::createWindow() {
     CppCodeSamples->insertItem(16, "Lambdas");
     CppCodeSamples->insertItem(17, "Operator Overloading");
 
-    connect(CppCodeSamples, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotOpenFile(QListWidgetItem *)));
+    CppCodeSamples->setMinimumHeight(400);
+    CppUsersSamples->setMinimumHeight(400);
+    preview->setReadOnly(true);
+    preview->setCenterOnScroll(true);
+    preview->setUndoRedoEnabled(false);
+    preview->hide();
+    // lower font size, bot possible increase
+    QFont font;
+    font.setPixelSize(3);
+    preview->setFont(font);
 
-    auto *t_bar = new QToolBar(this);
-    auto *spacer = new QWidget(this);   // align to right with blank widget
+    titleBar = new QToolBar(this);
+    language = new QToolButton(this);
+    builtInSamples = new QToolButton(this);
+    usersSamples = new QToolButton(this);
+    auto *spacer = new QWidget(this);// align to right with blank widget
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    t_bar->addWidget(spacer);
-    t_bar->addAction(QIcon(IconFactory::Remove), "Close", this, SLOT(close()));
-    t_bar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
-    t_bar->setFixedHeight(35);
-    t_bar->setIconSize(QSize(25, 35));
-    setTitleBarWidget(t_bar);
-}
+    titleBar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
+    titleBar->setFixedHeight(35);
+    // titleBar->setIconSize(QSize(25, 35));
+    language->setText("C++");
+    builtInSamples->setText("Built in");
+    usersSamples->setText("Users");
 
-void Education::slotOpenFile(QListWidgetItem *item){
-    // represents sample to take
-    int index = item->listWidget()->currentRow();
-    int num_files = samples[index].fileNames.size();
+    connect(builtInSamples, SIGNAL(clicked()), this, SLOT(slotShowCppSamples()));
+    connect(usersSamples, SIGNAL(clicked()), this, SLOT(slotShowCppUsersSamples()));
 
-    if(num_files == 1){
-        auto *edit = new PlainTextEdit;
-        edit->setPlainText(samples[index].content[0]);  // 0 -> only 1 file
-        m_Tab->addTab(edit, samples[index].fileNames[0]);
-        m_Tab->setCurrentIndex(m_Tab->count()); // since we add new tab at the end
-    }
-    // 2 and more files
-    if (num_files > 1){
-        for (int i = 0; i <= num_files; i++) {
-            auto *edit = new PlainTextEdit;
-            edit->setPlainText(samples[index].content[i]);
-            m_Tab->addTab(edit, samples[index].fileNames[i]);
-            m_Tab->setCurrentIndex(m_Tab->count()); // since we add new tab at the end
-        }
-    }
+    stack->addWidget(CppCodeSamples);
+    stack->addWidget(CppUsersSamples);
 
-    // set icon that it was opened + add its index into registry
-    //item->setIcon(QIcon(IconFactory::Done));
+    titleBar->addWidget(language);
+    titleBar->addWidget(builtInSamples);
+    titleBar->addWidget(usersSamples);
+    titleBar->addWidget(spacer);
+    titleBar->addAction(QIcon(IconFactory::Remove), "Close", this, SLOT(close()));
 
-    // also solve current widget in tab here !!!
-    // take care of opening the same sample twice and more
-
+    setTitleBarWidget(titleBar);
+    stack->setCurrentWidget(CppCodeSamples);// starting widget list
+    setWidget(stack);
 }
 
 void Education::loadOpenedSamples() {
     QSettings settings("Evolution-IDE");
-    auto opened_samples = settings.value("Evolution-IDE/opened_samples").toList();
+    auto _opened_samples = settings.value("Evolution-IDE/opened_samples").toList();
     /*
     for (int i = 0; i < CppCodeSamples->count(); i++) {
         if(opened_samples.at(i) == CppCodeSamples->itemAt(0, i)){
@@ -105,5 +104,18 @@ void Education::saveOpenedSamples() {
 
 void Education::closeEvent(QCloseEvent *event) {
     //saveOpenedSamples();
-    QWidget::closeEvent(event);
+    QDockWidget::closeEvent(event);
+}
+
+void Education::addUserSample(const QString &content, const QString &sampleName) {
+    int index = CppUsersSamples->count();// place to last position index
+    CppUsersSamples->insertItem(index, sampleName);
+    cpp_user_samples.push_back(content);
+}
+
+void Education::slotShowCppSamples() {
+    stack->setCurrentWidget(CppCodeSamples);
+}
+void Education::slotShowCppUsersSamples() {
+    stack->setCurrentWidget(CppUsersSamples);
 }
