@@ -24,9 +24,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     SetupCompileDock();
     SetupCodeInfoDock();
     SetupEducationDock();
-    SetupMenuBar();
-    SetupToolBar();
-
 
     SetupNodeView();
     SetupDebuggerView();
@@ -34,15 +31,19 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     SetupHexView();
     SetupVerticalBar();
 
+    SetupMenuBar();
+    SetupToolBar();
+
     CreateFile();
     SetupStatusBar();
 
     SetupDockWidgetsLayering();
 
     setCentralWidget(vertical_stack);
+    //Tabs->setFocus();
+    vertical_stack->setCurrentWidget(Tabs);
     Tabs->currentWidget()->setFocus();
     highlighter = new Highlighter(":/highlights/languages.xml", this);
-
 
     LoadRegisters();
 }
@@ -138,7 +139,7 @@ void MainWindow::SetupVerticalBar() {
     vertical_stack->insertWidget(0, Tabs);
     vertical_stack->insertWidget(3, nodeview);
     vertical_stack->insertWidget(1, binaryView);
-    vertical_stack->insertWidget(2, debuggerView);
+    vertical_stack->insertWidget(2, Tabs);// debuggerBridge
     vertical_stack->insertWidget(3, hexview);
 
     vertical_stack->setCurrentIndex(0);// start with editor
@@ -261,6 +262,8 @@ void MainWindow::SetupMenuBar() {
     viewMenu->addAction(console_dock->toggleViewAction());
     viewMenu->addAction(find_replace->toggleViewAction());
     viewMenu->addAction(codeInfoDock->toggleViewAction());
+    viewMenu->addAction(debuggerDock->toggleViewAction());
+    viewMenu->addAction(debuggerWatchDock->toggleViewAction());
     viewMenu->addSeparator();
     viewMenu->addAction(QIcon(IconFactory::FullScreen), "Full Screen", this, SLOT(slotFullScreen()));
     viewMenu->addAction("Converter", this, SLOT(SetupConverter()));
@@ -340,6 +343,9 @@ void MainWindow::SetupDockWidgetsLayering() {
 // switching views
 void MainWindow::showEditorView() {
     ShowHiddenDockWidgets();
+    // might be visible anyway, if debug view was...
+    debuggerDock->hide();
+    debuggerWatchDock->hide();
     vertical_stack->setCurrentWidget(Tabs);
 }
 
@@ -356,14 +362,16 @@ void MainWindow::showBinaryView() {
 
 void MainWindow::showDebuggerView() {
     HideAllDockWidgets();
+    debuggerDock->setVisible(true);
+    debuggerWatchDock->setVisible(true);
 
-    vertical_stack->setCurrentWidget(debuggerView);
+    vertical_stack->setCurrentWidget(Tabs);// debuggerBridge
 
-    QString path = currentWidget->getFilePath();
+    //QString path = currentWidget->getFilePath();
     // for now, starting with current file, later track    ;  not i only care for line
     // file_manager.current_full_filepath, 0
     //file_manager.executable_file_path = "/home/adam/Desktop/SKK/cmake-build/executable";
-    debuggerView->setStartPosition(path.toLatin1().data(), currentWidget->getCursorPosition().y());
+    //debuggerBridge->setStartPosition(path.toLatin1().data(), currentWidget->getCursorPosition().y());
     //debuggerView->setExecutable(file_manager.executable_file_path.toStdString());
 }
 
@@ -404,6 +412,9 @@ void MainWindow::HideAllDockWidgets() {
         code_info_dock_visible = true;
         codeInfoDock->hide();
     }
+    // want to show only in debug view manually
+    debuggerDock->hide();
+    debuggerWatchDock->hide();
 }
 
 void MainWindow::ShowHiddenDockWidgets() {
@@ -469,6 +480,7 @@ void MainWindow::SetupCompileDock() {
     addDockWidget(Qt::BottomDockWidgetArea, find_replace);
 
     tabifyDockWidget(console_dock, find_replace);
+    tabifyDockWidget(codeInfoDock, find_replace);
 }
 
 void MainWindow::slotFind() {
@@ -527,8 +539,18 @@ void MainWindow::SetupNodeView() {
 }
 
 void MainWindow::SetupDebuggerView() {
-    debuggerView = new DebuggerWidget(this);
-    //addDockWidget(Qt::BottomDockWidgetArea, debuggerView->DebuggerDock);
+    debuggerDock = new DebuggerDock(this);
+    addDockWidget(Qt::BottomDockWidgetArea, debuggerDock);
+    tabifyDockWidget(debuggerDock, find_replace);
+    tabifyDockWidget(debuggerDock, console_dock);
+    tabifyDockWidget(debuggerDock, codeInfoDock);
+
+    debuggerWatchDock = new DebugWatchDock(this);
+    addDockWidget(Qt::RightDockWidgetArea, debuggerWatchDock);
+
+    debuggerBridge = new lldbBridge(debuggerDock, debuggerWatchDock, this);
+    debuggerBridge->setProjectFilePaths(file_manager.source_files);
+    debuggerBridge->setEditors(Tabs, currentWidget);
 }
 void MainWindow::SetupBinaryView() {
     binaryView = new BinaryView(this);
@@ -1049,43 +1071,43 @@ void MainWindow::slotStopProcess() {
 }
 
 void MainWindow::slotStartDebug() {
-    if (!debuggerView->isVisible()) {
+    if (!Tabs->isVisible()) {// debuggerBridge
         showDebuggerView();
         // wait some time
         // unistd.h   -> linux header
         sleep(1);
-        debuggerView->start();
+        debuggerBridge->start();
     } else {
-        debuggerView->start();
+        debuggerBridge->start();
     }
 }
 
 void MainWindow::slotStopDebug() {
-    debuggerView->slotStopDebug();
+    debuggerBridge->slotStopDebug();
 }
 
 void MainWindow::slotContinue() {
-    debuggerView->slotStopDebug();
+    debuggerBridge->slotStopDebug();
 }
 
 void MainWindow::slotRunToCursor() {
-    debuggerView->slotRunToCursor();
+    debuggerBridge->slotRunToCursor();
 }
 
 void MainWindow::slotStepOver() {
-    debuggerView->slotStepOver();
+    debuggerBridge->slotStepOver();
 }
 
 void MainWindow::slotStepInto() {
-    debuggerView->slotStepInto();
+    debuggerBridge->slotStepInto();
 }
 
 void MainWindow::slotStepInstruction() {
-    debuggerView->slotStepInstruction();
+    debuggerBridge->slotStepInstruction();
 }
 
 void MainWindow::slotStepOut() {
-    debuggerView->slotStepOut();
+    debuggerBridge->slotStepOut();
 }
 
 // this might go only through containBlock and decide to create or remove
@@ -1100,11 +1122,11 @@ void MainWindow::slotToggleBreakPoint() {
     if (!filename.isEmpty()) {
         // created
         if (created) {
-            debuggerView->createBreakpoint(filename.toLatin1().data(), line);
+            debuggerBridge->createBreakpoint(filename.toLatin1().data(), line);
         }
         // removed
         else {
-            debuggerView->removeBreakpoint(filename.toLatin1().data(), line);
+            debuggerBridge->removeBreakpoint(filename.toLatin1().data(), line);
         }
     }
 }
@@ -1112,14 +1134,14 @@ void MainWindow::slotToggleBreakPoint() {
 void MainWindow::slotCreateBreakPoint(const int &line) {
     QString filename = currentWidget->getFilePath();
     if (!filename.isEmpty()) {
-        debuggerView->createBreakpoint(filename.toLatin1().data(), line);
+        debuggerBridge->createBreakpoint(filename.toLatin1().data(), line);
     }
 }
 
 void MainWindow::slotDeleteBreakPoint(const int &line) {
     QString filename = currentWidget->getFilePath();
     if (!filename.isEmpty()) {
-        debuggerView->removeBreakpoint(filename.toLatin1().data(), line);
+        debuggerBridge->removeBreakpoint(filename.toLatin1().data(), line);
     }
 }
 
@@ -1133,18 +1155,18 @@ void MainWindow::slotSetBreakpointAtLine() {
         bool created = currentWidget->toggleBreakPoint(line);
         // created
         if (created) {
-            debuggerView->showSetManualBreakPoint(filename);
+            debuggerBridge->showSetManualBreakPoint(filename);
         }
         // removed meaningless
     }
 }
 
 void MainWindow::slotShowBreakpointsList() {
-    debuggerView->showBreakPointsList();
+    debuggerBridge->showBreakPointsList();
 }
 
 void MainWindow::slotShowAttachToProcess() {
-    debuggerView->showTaskManager();
+    debuggerBridge->showTaskManager();
 }
 
 void MainWindow::slotRestart() {
@@ -1188,6 +1210,7 @@ void MainWindow::slotOpenCppUserSample(QListWidgetItem *item) {
 
     auto *edit = new PlainTextEdit;
     edit->setPlainText(content);
+    // TODO: QFileIconProvider provider; --- or not ?
     Tabs->addTab(edit, item->text());
     Tabs->setCurrentIndex(Tabs->count());// since we add new tab at the end
     currentWidget = edit;

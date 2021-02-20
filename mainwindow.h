@@ -59,21 +59,24 @@
 #include "Widgets/CodeInfoDock/CodeInfoDock.h"
 
 #include "EnvironmentSettings.h"
-#include "highlighter.h"
-#include "filemanager.h"
 #include "Widgets/Converter/converter.h"
+#include "Widgets/ProgressBar/ProgressBar.h"
 #include "Widgets/Settings/CmakeGenerator/cmakegenerator.h"
 #include "commandlineexecutor.h"
-#include "Widgets/ProgressBar/ProgressBar.h"
+#include "filemanager.h"
+#include "highlighter.h"
 //#include "Clang/ClangBridge.h"
 
-#include "Widgets/NodeView/NodeView.h"
-#include "Widgets/HexView/hexview.h"
-#include "Debugger/debuggerwidget.h"
+#include "Debugger/lldbBridge.h"
 #include "Widgets/BinaryInfo/binaryview.h"
+#include "Widgets/HexView/hexview.h"
+#include "Widgets/NodeView/NodeView.h"
 //#include "Debugger/Decompiler"
 
 #include "Widgets/Education/Education.h"
+
+#include "Debugger/DebugWatchDock.h"
+#include "Debugger/DebuggerDock.h"
 
 #include <QDebug>
 
@@ -113,6 +116,8 @@ public:
     std::string progress_action;
 
 private:
+    DebuggerDock *debuggerDock;
+    DebugWatchDock *debuggerWatchDock;
 
     // top menu bar
     QMenuBar *menuBar;
@@ -122,7 +127,7 @@ private:
 
     Ui::MainWindow *ui;
     /* base tab widget for plaintext */
-    Highlighter* highlighter;
+    Highlighter *highlighter;
 
     // top tool bar
     QToolBar *topToolBar;
@@ -132,7 +137,7 @@ private:
     // editorView are Tabs
     HexView *hexview;
     NodeView *nodeview;
-    DebuggerWidget *debuggerView;
+    lldbBridge *debuggerBridge;
     BinaryView *binaryView;
     // Decompiler *decompilerView;
 

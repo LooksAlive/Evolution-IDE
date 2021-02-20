@@ -2,9 +2,7 @@
 #define DEBUGGERDOCK_H
 
 /*
- * consist of 2 parts:
- *  1. is GUI representation
- *  2. lldb functions which are used in GUI
+ * lldb functions + connections with private slots are here
 */
 
 #include <QComboBox>
@@ -25,10 +23,10 @@
 #include <QTreeView>
 #include <QWidget>
 
-#include <QHBoxLayout>
-#include <QVBoxLayout>
 #include <QFormLayout>
+#include <QHBoxLayout>
 #include <QTreeWidget>
+#include <QVBoxLayout>
 
 #include <filesystem>
 #include <iostream>
@@ -38,10 +36,15 @@
 #include <utility>
 #include <vector>
 
+#include <QFileIconProvider>
+
 #include "lldb/API/LLDB.h"
 
+#include "DebugWatchDock.h"
+#include "DebuggerDock.h"
 #include "TaskWidget/taskwidget.h"
 #include "Widgets/PlainTextEdit/plaintextedit.h"
+#include "Widgets/Tab/tab.h"
 #include "filemanager.h"
 
 using namespace lldb;
@@ -49,7 +52,7 @@ using namespace lldb;
 
 // sources:  https://stackoverflow.com/questions/8063434/qt-run-independent-thread-from-other-thread
 
-class DebuggerWidget;
+class lldbBridge;
 
 /*
  * blank QObject to move thread here and run asynchronously, independent on the main thread
@@ -61,45 +64,29 @@ class DebuggerWidget;
 class Runner : public QObject {
     Q_OBJECT
 public:
-    explicit Runner(std::shared_ptr<DebuggerWidget> Deb = nullptr, QObject *parent = nullptr);
+    explicit Runner(std::shared_ptr<lldbBridge> Deb = nullptr, QObject *parent = nullptr);
     ~Runner() = default;
 
     void runDebugSession();
 
 private:
-    std::shared_ptr<DebuggerWidget> debugger;
+    std::shared_ptr<lldbBridge> debugger;
 };
 
-class BreakPointListWindow : public QWidget {
+class lldbBridge : public QObject {
     Q_OBJECT
 public:
-    explicit BreakPointListWindow(QWidget *parent = nullptr);
-    ~BreakPointListWindow() = default;
+    explicit lldbBridge(DebuggerDock *dock, DebugWatchDock *watchDock, QObject *parent = nullptr);
+    ~lldbBridge();
 
-    QHBoxLayout *MainLayout;
-    // consider view -> more breaks may be in the same file, but ....
-    QTreeWidget *BpList;
-    QToolBar *BpBar;
-
-    QToolButton *remove;
-    QToolButton *removeAll;
-    QToolButton *mute;
-    QToolButton *muteAll;
-
-    void insertBreakPoint(const break_id_t &ID, const char *filename, const int &line) const;
-    // remove not here, only clear whole list, bc. there can be situation:
-    // ID:  1,2,3,4 --> remove 3  --> 1,2,4  -> will require more stuffs to do
-
-private:
-    void createWindow();
-};
-
-class DebuggerWidget : public QWidget {
-    Q_OBJECT
-public:
-    explicit DebuggerWidget(QWidget *parent = nullptr);
-    ~DebuggerWidget();
-
+    void setProjectFilePaths(const QStringList &paths) { sources = paths; }
+    QStringList sources;
+    void setEditors(Tab *tabs, PlainTextEdit *editor) {
+        tab = tabs;
+        currentEdit = editor;
+    };
+    Tab *tab;
+    PlainTextEdit *currentEdit;
     // all file associated stuffs
     void setStartPosition(const char *filepath, const int &line);
     void setFilePosition(const SBFrame &frame);
@@ -108,66 +95,26 @@ public:
     // task view to attach running already process
     void showTaskManager();
     void showSetManualBreakPoint(const QString &filepath);
-
     // small list widget with information
     void showBreakPointsList();
     // dialog based break point list like in view
-    BreakPointListWindow *DialogBreakPoint_List = nullptr;
+    //BreakPointListWindow *DialogBreakPoint_List = nullptr;
 
     QWidget *manual_window;
     QLineEdit *line_input;
     const char *file_path;
 
 private:
-    QVBoxLayout *MainWindowLayout; // SourceConsoleLayout + debug_variable_window
-    QHBoxLayout *SourceWatchLayout;// source_view + Console
-    PlainTextEdit *source_view;
+    DebuggerDock *Dock;
+    DebugWatchDock *WatchDock;
 
-    // ------------------------------------------------------------------
-
-    QWidget *Console;
-    QHBoxLayout *MainConsoleLayout;// ControlPanel + debug_output
-    QLineEdit *DebuggerPrompt;
-    QCompleter *completer;
-    QPlainTextEdit *debug_output;
-    QVBoxLayout *console_out_in;
-    QSplitter *splitter;
-
-    QToolButton *btn_StartDebug, *btn_StopDebug, *btn_RunToCursor, *btn_StepOver,
-            *btn_StepInto, *btn_StepInstruction, *btn_Continue, *btn_StepOut;
-
-    QToolBar *DebugToolBar;
-    QVBoxLayout *ControlPanel;// DebugToolBar + all buttons
-
-    void createToolBar();
-    void createControlPanel();
-    void createConsole();
-
-    // ------------------------------------------------------------------
-
-    void createDebugWatchWindow();
-    QWidget *WatchWindow;
-    QVBoxLayout *WatchLayout;
-    QListWidget *WatchListView;
-
-    QTabWidget *ConsoleTab;
-    QWidget *DebuggerOutput;
-
-    QTreeView *VariablesView;
-
-    void createCallStackWindow();
-    void fillCallStack();
-    QVBoxLayout *CallStackLayout;
-    // active threads
-    QComboBox *ThreadBox;
-    // absolute file paths
-    QListWidget *CallStack;
+    void connectDockWidgets();
 
     // this will be called when process stopped, insert threads into box
     void collectThreads();
+    void fillCallStack();
 
-    void createBreakPointList();
-    BreakPointListWindow *BreakPoint_List;
+    BreakPointListWindow *DialogBreakPoint_List;
 
 
     // while process pending, i should not touch for ex. step over or else
@@ -195,20 +142,10 @@ private slots:
 
     void slotRemoveBreakPoint();
     void slotRemoveAllBreakPoint();
-    /*
-    void onActionAddWatch();
-    void onActionModifyWatch();
-    void onActionRemoveWatch();
 
-    
-
-    void createStackView();
-    void createGDBConversation();
-    void createWatchLayout();
-    */
-
-
-    // lldb:
+    void slotAddWatch();
+    void slotRemoveWatch();
+    void slotModifyWatch();
 
 public:
     void pause();// when breakpoint is hit
@@ -230,18 +167,6 @@ public:
     void stepInstruction();
 
     std::string executeDebuggerCommand(const std::string &args);
-
-    // data storages
-    struct framedata{
-        std::string type;
-        std::string name;
-        std::string value;
-        std::string description;
-    };
-    // get num of frames in project -> return some data struct vector, this would need to be updated or collected at
-    // once
-    std::vector<framedata> get_var_func_info();         // get names, values and insert into variable widget
-    framedata get_var_func_info_update();         // step by step updating
 
     struct BreakPointData{
         break_id_t break_id;

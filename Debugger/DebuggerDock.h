@@ -1,45 +1,59 @@
 #ifndef EVOLUTION_IDE_DEBUGGERDOCK_H
 #define EVOLUTION_IDE_DEBUGGERDOCK_H
 
-
-#include "debuggerwidget.h"
+#include <QComboBox>
+#include <QCompleter>
 #include <QDockWidget>
+#include <QLineEdit>
 #include <QListWidget>
+#include <QPlainTextEdit>
+#include <QSplitter>
+#include <QToolBar>
+#include <QToolButton>
+#include <QTreeView>
+#include <QTreeWidget>
+#include <QVBoxLayout>
 #include <QWidget>
-#include <QtWidgets/QComboBox>
-#include <QtWidgets/QCompleter>
-#include <QtWidgets/QPlainTextEdit>
-#include <QtWidgets/QSplitter>
-#include <QtWidgets/QToolBar>
-#include <QtWidgets/QToolButton>
-#include <QtWidgets/QTreeView>
-#include <QtWidgets/QVBoxLayout>
-#include <Widgets/PlainTextEdit/plaintextedit.h>
 
-#include "debuggerwidget.h"
+class BreakPointListWindow : public QWidget {
+    Q_OBJECT
+public:
+    explicit BreakPointListWindow(QWidget *parent = nullptr);
+    ~BreakPointListWindow() = default;
+
+    QHBoxLayout *MainLayout;
+    // consider view -> more breaks may be in the same file, but ....
+    QTreeWidget *BpList;
+    QToolBar *BpBar;
+
+    QToolButton *remove;
+    QToolButton *removeAll;
+    QToolButton *mute;
+    QToolButton *muteAll;
+
+    void insertBreakPoint(const uint32_t &ID, const char *filename, const int &line) const;
+    // remove not here, only clear whole list, bc. there can be situation:
+    // ID:  1,2,3,4 --> remove 3  --> 1,2,4  -> will require more stuffs to do
+
+private:
+    void createWindow();
+};
 
 class DebuggerDock : public QDockWidget {
     Q_OBJECT
 public:
     explicit DebuggerDock(QWidget *parent = nullptr);
-    ~DebuggerDock();
+    ~DebuggerDock() = default;
 
 private:
-    void createDock();
     void createConsole();
     void createToolBar();
-    void createControlPanel();
-    void createDebugWatchWindow();
+    void createControlTitleBar();
     void createCallStackWindow();
-
-    void fillCallStack();
-
     void createBreakPointList();
-    BreakPointListWindow *BreakPoint_List;
 
-    QVBoxLayout *MainWindowLayout; // SourceConsoleLayout + debug_variable_window
-    QHBoxLayout *SourceWatchLayout;// source_view + Console
-    PlainTextEdit *source_view;
+public:
+    BreakPointListWindow *BreakPoint_List;
 
     // ------------------------------------------------------------------
 
@@ -49,17 +63,12 @@ private:
     QCompleter *completer;
     QPlainTextEdit *debug_output;
     QVBoxLayout *console_out_in;
-    QSplitter *splitter;
 
     QToolButton *btn_StartDebug, *btn_StopDebug, *btn_RunToCursor, *btn_StepOver,
             *btn_StepInto, *btn_StepInstruction, *btn_Continue, *btn_StepOut;
 
     QToolBar *DebugToolBar;
-    QVBoxLayout *ControlPanel;// DebugToolBar + all buttons
-
-    QWidget *WatchWindow;
-    QVBoxLayout *WatchLayout;
-    QListWidget *WatchListView;
+    QToolBar *TitleControlBar;
 
     QTabWidget *ConsoleTab;
     QWidget *DebuggerOutput;
@@ -71,13 +80,6 @@ private:
     QComboBox *ThreadBox;
     // absolute file paths
     QListWidget *CallStack;
-
-private slots:
-    void slotOpenCallStackFile(QListWidgetItem *item);
-    void slotGoToBreakPointFile(QListWidgetItem *item);
-
-    void slotRemoveBreakPoint();
-    void slotRemoveAllBreakPoint();
 };
 
 

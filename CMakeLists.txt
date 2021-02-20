@@ -203,28 +203,28 @@ set(SOURCE_FILES
                 Widgets/BinaryInfo/binaryview.h
                 qconsole.cpp
                 qconsole.h
-                ${HEX_VIEW}
-                #${CLANGD_SOURCES} # in the future will be more accurate, now only takes much storage and time
-                ${TASK_VIEW}
-                Widgets/HexView/hexview.cpp
-                Widgets/HexView/hexview.h
-                Widgets/Converter/converter.cpp
-                Widgets/Converter/converter.h
+        ${HEX_VIEW}
+        #${CLANGD_SOURCES} # in the future will be more accurate, now only takes much storage and time
+        ${TASK_VIEW}
+        Widgets/HexView/hexview.cpp
+        Widgets/HexView/hexview.h
+        Widgets/Converter/converter.cpp
+        Widgets/Converter/converter.h
 
-                #Debugger/lldbbridge.cpp
-                #Debugger/lldbbridge.h
-                Debugger/debuggerwidget.cpp
-                Debugger/debuggerwidget.h
-                Clang/indexer.cpp
-                Clang/indexer.h
-                Clang/ClangBridge.cpp
-                Clang/ClangBridge.h
-                llvm/llvmbridge.cpp
-                llvm/llvmbridge.h
+        #Debugger/lldbbridge.cpp
+        #Debugger/lldbbridge.h
+        Debugger/lldbBridge.cpp
+        Debugger/lldbBridge.h
+        Clang/indexer.cpp
+        Clang/indexer.h
+        Clang/ClangBridge.cpp
+        Clang/ClangBridge.h
+        llvm/llvmbridge.cpp
+        llvm/llvmbridge.h
 
-                commandlineexecutor.cpp
-                commandlineexecutor.h
-                filemanager.cpp
+        commandlineexecutor.cpp
+        commandlineexecutor.h
+        filemanager.cpp
                 filemanager.h
                 Widgets/Settings/CmakeGenerator/cmakegenerator.cpp
                 Widgets/Settings/CmakeGenerator/cmakegenerator.h
@@ -250,7 +250,7 @@ set(SOURCE_FILES
         Widgets/PlainTextEdit/GoToLineColumn.h
         Widgets/ProgressBar/ProgressBar.cpp
         Widgets/ProgressBar/ProgressBar.h
-        Widgets/Education/Education.cpp Widgets/Education/Education.h Widgets/Education/CodeSamples.h Widgets/Settings/ClangFormat/ClangFormat.cpp Widgets/Settings/ClangFormat/ClangFormat.h Widgets/Education/NewSampleWindow.cpp Widgets/Education/NewSampleWindow.h Widgets/Settings/Installer/Installer.cpp Widgets/Settings/Installer/Installer.h Debugger/DebuggerDock.cpp Debugger/DebuggerDock.h)
+        Widgets/Education/Education.cpp Widgets/Education/Education.h Widgets/Education/CodeSamples.h Widgets/Settings/ClangFormat/ClangFormat.cpp Widgets/Settings/ClangFormat/ClangFormat.h Widgets/Education/NewSampleWindow.cpp Widgets/Education/NewSampleWindow.h Widgets/Settings/Installer/Installer.cpp Widgets/Settings/Installer/Installer.h Debugger/DebuggerDock.cpp Debugger/DebuggerDock.h Debugger/DebugWatchDock.cpp Debugger/DebugWatchDock.h)
 
 
 

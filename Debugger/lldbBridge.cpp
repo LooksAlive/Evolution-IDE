@@ -1,8 +1,8 @@
-#include "debuggerwidget.h"
+#include "lldbBridge.h"
 #include "icons/IconFactory.h"
 #include <QSettings>
 
-Runner::Runner(std::shared_ptr<DebuggerWidget> Deb, QObject *parent)
+Runner::Runner(std::shared_ptr<lldbBridge> Deb, QObject *parent)
     : QObject(parent), debugger(std::move(Deb)) {}
 
 void Runner::runDebugSession() {
@@ -10,381 +10,98 @@ void Runner::runDebugSession() {
 }
 
 
-BreakPointListWindow::BreakPointListWindow(QWidget *parent) : QWidget(parent) {
-    createWindow();
+lldbBridge::lldbBridge(DebuggerDock *dock, DebugWatchDock *watchDock, QObject *parent) : QObject(parent), Dock(dock), WatchDock(watchDock) {
+    connectDockWidgets();
 }
 
-void BreakPointListWindow::createWindow() {
-    MainLayout = new QHBoxLayout();
-    BpList = new QTreeWidget(this);
-    BpBar = new QToolBar(this);
-
-    setMaximumWidth(700);
-    BpList->setMinimumWidth(300);
-    BpList->setColumnCount(3);
-    BpList->setHeaderLabels(QStringList() << "ID"
-                                          << "File"
-                                          << "Line");
-    BpList->setColumnWidth(0, 20); // ID
-    BpList->setColumnWidth(1, 250);// filename
-    BpList->setColumnWidth(0, 30); // line
-
-    BpBar->setOrientation(Qt::Vertical);
-    BpBar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
-    BpBar->setFixedWidth(30);
-    // connect outside, we have to join editor
-
-    remove = new QToolButton(this);
-    remove->setToolTip("Remove");
-    remove->setIcon(QIcon(IconFactory::Remove));
-    removeAll = new QToolButton(this);
-    removeAll->setToolTip("Remove All");
-    removeAll->setIcon(QIcon(IconFactory::Remove));
-    mute = new QToolButton(this);
-    mute->setToolTip("Mute");
-    mute->setIcon(QIcon(IconFactory::Remove));
-    muteAll = new QToolButton(this);
-    muteAll->setToolTip("Mute All");
-    muteAll->setIcon(QIcon(IconFactory::Remove));
-
-    BpBar->addWidget(remove);
-    BpBar->addWidget(removeAll);
-    BpBar->addWidget(mute);
-    BpBar->addWidget(muteAll);
-
-    MainLayout->addWidget(BpBar);
-    MainLayout->addWidget(BpList);
-
-    MainLayout->setContentsMargins(0, 0, 0, 0);
-    MainLayout->setSpacing(0);
-
-    setLayout(MainLayout);
-}
-void BreakPointListWindow::insertBreakPoint(const break_id_t &ID, const char *filename, const int &line) const {
-    auto *item = new QTreeWidgetItem(ID);            // any type
-    item->setIcon(0, QIcon(IconFactory::BreakPoint));// BP. icon
-    item->setText(0, QString::number(ID));
-    item->setText(1, filename);
-    item->setText(2, QString::number(line));
-    BpList->addTopLevelItem(item);
-}
-
-
-DebuggerWidget::DebuggerWidget(QWidget *parent) : QWidget(parent) {
-    MainWindowLayout = new QVBoxLayout();
-    SourceWatchLayout = new QHBoxLayout();
-    setWindowTitle("Debugger View");
-    createConsole();
-    createDebugWatchWindow();
-    source_view = new PlainTextEdit(this);
-
-    SourceWatchLayout->addWidget(source_view);
-    SourceWatchLayout->addWidget(WatchWindow);
-
-    SourceWatchLayout->setContentsMargins(0, 0, 0, 0);
-    SourceWatchLayout->setSpacing(0);
-
-    MainWindowLayout->addLayout(SourceWatchLayout);
-    MainWindowLayout->addWidget(Console);
-
-
-    /*
-    splitter = new QSplitter(this);
-    splitter->setOrientation(Qt::Vertical);
-    splitter->addWidget(Console);
-    splitter->addWidget(source_view);
-
-    SourceConsoleLayout->addWidget(splitter);
-    */
-
-    MainWindowLayout->setContentsMargins(0, 0, 0, 0);
-    MainWindowLayout->setSpacing(0);
-
-    setLayout(MainWindowLayout);
-}
-
-void DebuggerWidget::createConsole(){
-
-    ConsoleTab = new QTabWidget(this);
-    Console = new QWidget(this);
-    MainConsoleLayout = new QHBoxLayout(this);
-    console_out_in = new QVBoxLayout();
-    debug_output = new QPlainTextEdit(this);
-    DebuggerPrompt = new QLineEdit(this);
-    completer = new QCompleter(this);
-
-    DebuggerOutput = new QWidget(this);
-    //auto *variables = new QWidget(this);
-    VariablesView = new QTreeView(this);
-    VariablesView->setHeaderHidden(true);
-    // not editable yet, later possible to change values
-    VariablesView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-
-    debug_output->setReadOnly(true);
-    completer->setCaseSensitivity(Qt::CaseInsensitive);
-    // TODO: set data to completer somehow
-    DebuggerPrompt->setCompleter(completer);
-    // enter
-    connect(DebuggerPrompt, SIGNAL(returnPressed()), this, SLOT(slotCmdlineExecute()));
-
-    console_out_in->addWidget(debug_output);
-    console_out_in->addWidget(DebuggerPrompt);
-    console_out_in->setContentsMargins(0, 0, 0, 0);
-    Console->setFixedHeight(200);
-
-    createControlPanel();
-    createCallStackWindow();
-    createBreakPointList();
-
-    DebuggerOutput->setLayout(console_out_in);
-    DebuggerOutput->setContentsMargins(0, 0, 0, 0);
-
-
-    ConsoleTab->addTab(DebuggerOutput, "Debugger Output");
-    ConsoleTab->addTab(VariablesView, "Variables");
-
-    MainConsoleLayout->addLayout(CallStackLayout);
-    MainConsoleLayout->addLayout(ControlPanel);
-    MainConsoleLayout->addWidget(ConsoleTab);
-    MainConsoleLayout->addWidget(BreakPoint_List);
-
-    Console->setLayout(MainConsoleLayout);
-}
-
-void DebuggerWidget::createToolBar()
-{
-    DebugToolBar = new QToolBar(this);
-    //DebugToolBar->setContentsMargins(0,0,0,0);
-
-    btn_StartDebug = new QToolButton(this);
-    btn_StartDebug->setIcon(QIcon(IconFactory::StartDebug));
-    btn_StartDebug->setFixedSize(26, 26);
-    connect(btn_StartDebug, SIGNAL(clicked()), this, SLOT(slotStartDebug()));
-    DebugToolBar->addWidget(btn_StartDebug);
-
-    btn_StopDebug = new QToolButton(this);
-    btn_StopDebug->setIcon(QIcon(IconFactory::StopDebug));
-    btn_StopDebug->setFixedSize(26, 26);
-    connect(btn_StopDebug, SIGNAL(clicked()), this, SLOT(slotStopDebug()));
-    DebugToolBar->addWidget(btn_StopDebug);
-    //DebugToolBar->addSeparator(); // cause of error
-
-    btn_RunToCursor = new QToolButton(this);
-    btn_RunToCursor->setIcon(QIcon(IconFactory::RunToCursor));
-    btn_RunToCursor->setFixedSize(26, 26);
-    connect(btn_RunToCursor, SIGNAL(clicked()), this, SLOT(slotRunToCursor()));
-    DebugToolBar->addWidget(btn_RunToCursor);
-
-    btn_StartDebug->setEnabled(true);  // at start i can run a process, but not stop it
-    btn_StopDebug->setEnabled(false);
-    btn_RunToCursor->setEnabled(false);
-
-    ControlPanel->addWidget(DebugToolBar);
-}
-
-void DebuggerWidget::createControlPanel() {
-    ControlPanel = new QVBoxLayout();
-    ControlPanel->setContentsMargins(0, 0, 0, 0);
-
-    createToolBar();
-
-    btn_StepOver = new QToolButton(this);
-    btn_StepOver->setText(" Step Over");
-    btn_StepOver->setIcon(QIcon(IconFactory::NextLine));
-    btn_StepOver->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    btn_StepOver->setFixedSize(160, 30);
-    connect(btn_StepOver, SIGNAL(clicked()), this, SLOT(slotStepOver()));
-    ControlPanel->addWidget(btn_StepOver);
-
-    btn_StepInto=new QToolButton(this);
-    btn_StepInto->setText(" Step Into");
-    btn_StepInto->setIcon(QIcon(IconFactory::StepInto));
-    btn_StepInto->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    btn_StepInto->setFixedSize(160, 30);
-    connect(btn_StepInto, SIGNAL(clicked()), this, SLOT(slotStepInto()));
-    ControlPanel->addWidget(btn_StepInto);
-
-    btn_StepOut=new QToolButton(this);
-    btn_StepOut->setText(" Step Out");
-    btn_StepOut->setIcon(QIcon(IconFactory::GetOutOfFunction));
-    btn_StepOut->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    btn_StepOut->setFixedSize(160, 30);
-    connect(btn_StepOut, SIGNAL(clicked()), this, SLOT(slotStepOut()));
-    ControlPanel->addWidget(btn_StepOut);
-
-    btn_StepInstruction=new QToolButton(this);
-    btn_StepInstruction->setText(" Step Instruction");
-    btn_StepInstruction->setIcon(QIcon(IconFactory::StepInstruction));
-    btn_StepInstruction->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    btn_StepInstruction->setFixedSize(160, 30);
-    connect(btn_StepInstruction, SIGNAL(clicked()), this, SLOT(slotStepInstruction()));
-    ControlPanel->addWidget(btn_StepInstruction);
-
-    btn_Continue=new QToolButton(this);
-    btn_Continue->setText(" Continue");
-    btn_Continue->setIcon(QIcon(IconFactory::Resume));
-    btn_Continue->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    btn_Continue->setFixedSize(160, 30);
-    connect(btn_Continue, SIGNAL(clicked()), this, SLOT(slotContinue()));
-    ControlPanel->addWidget(btn_Continue);
-
-    // at start i can not do anything, only when the process is in progress and breakpoint is hit or else
-    btn_StepOver->setEnabled(false);
-    btn_StepInto->setEnabled(false);
-    btn_StepInstruction->setEnabled(false);
-    btn_Continue->setEnabled(false);
-    btn_StepOut->setEnabled(false);
-
-    ControlPanel->addStretch();
-}
-
-void DebuggerWidget::createDebugWatchWindow() {
-
-    WatchWindow = new QWidget(this);
-    WatchLayout = new QVBoxLayout(this);
-    WatchListView = new QListWidget(this);
-    WatchWindow->setMaximumWidth(250);// for now ... later change responsibly
-
-    WatchLayout->addWidget(WatchListView);
-    WatchLayout->setContentsMargins(0, 0, 0, 0);
-    //var_layout->addWidget(new PlainTextEdit);
-    WatchWindow->setLayout(WatchLayout);
-
-    /*
-    QSplitter *watchDockContainer=new QSplitter(this);
-    watchDockContainer->setOrientation(Qt::Vertical);
-    QToolBar *customWatchControl=new QToolBar(watchDockContainer);
-    QToolButton *addwatch =new QToolButton(watchDockContainer);
-    addwatch->setIcon(QPixmap(":/DebugToolBar/image/Debug Docks/AddWatch.png"));
-    customWatchControl->addWidget(addwatch);
-    QToolButton *modifywatch=new QToolButton(watchDockContainer);
-    modifywatch->setIcon(QPixmap(":/DebugToolBar/image/Debug Docks/ModifyWatch.png"));
-    customWatchControl->addWidget(modifywatch);
-    customWatchControl->addSeparator();
-    QToolButton *removewatch=new QToolButton(watchDockContainer);
-    removewatch->setIcon(QPixmap(":/DebugToolBar/image/Debug Docks/RemoveWatch.png"));
-
-    customWatchControl->addWidget(removewatch);
-    */
-}
-
-void DebuggerWidget::createCallStackWindow() {
-    CallStackLayout = new QVBoxLayout();
-    ThreadBox = new QComboBox(this);
-    CallStack = new QListWidget(this);
-
-    CallStackLayout->setContentsMargins(0, 0, 5, 0);
-    CallStackLayout->setSpacing(0);
-    ThreadBox->setFixedWidth(200);
-    CallStack->setFixedWidth(200);
-    connect(CallStack, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotOpenCallStackFile(QListWidgetItem *)));
-
-    CallStackLayout->addWidget(ThreadBox);
-    CallStackLayout->addWidget(CallStack);
-}
-
-void DebuggerWidget::fillCallStack() {
+void lldbBridge::fillCallStack() {
     for (int i = 0; i <= 5; i++) {
-        CallStack->insertItem(i, "some call");
+        Dock->CallStack->insertItem(i, "some call");
     }
 }
 
-void DebuggerWidget::slotOpenCallStackFile(QListWidgetItem *item) {
-    //item->text();
-}
-
-void DebuggerWidget::createBreakPointList() {
-    BreakPoint_List = new BreakPointListWindow(this);
-    // connect tool buttons + some new slots
-    connect(BreakPoint_List->BpList, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotGoToBreakPointFile(QListWidgetItem *)));
-    connect(BreakPoint_List->remove, SIGNAL(clicked()), this, SLOT(slotRemoveBreakPoint()));
-    connect(BreakPoint_List->removeAll, SIGNAL(clicked()), this, SLOT(slotRemoveAllBreakPoint()));
-    //connect(BreakPoint_List->mute, SIGNAL(clicked()), this, SLOT(slotMuteBreakPoint()));
-    //connect(BreakPoint_List->muteAll, SIGNAL(clicked()), this, SLOT(slotMuteAllBreakPoint()));
-}
-
-void DebuggerWidget::slotGoToBreakPointFile(QListWidgetItem *item) {
-    const char *filepath = BreakPoint_List->BpList->currentItem()->text(1).toLatin1().data();
-    const int line = BreakPoint_List->BpList->currentItem()->text(2).toInt();
+void lldbBridge::slotGoToBreakPointFile(QListWidgetItem *item) {
+    const char *filepath = Dock->BreakPoint_List->BpList->currentItem()->text(1).toLatin1().data();
+    const int line = Dock->BreakPoint_List->BpList->currentItem()->text(2).toInt();
     setStartPosition(filepath, line);
 }
 
-void DebuggerWidget::slotRemoveBreakPoint() {
-    if (!BreakPoint_List->BpList->selectedItems().isEmpty()) {
-        const int ID = BreakPoint_List->BpList->currentItem()->text(0).toInt();// ID
+void lldbBridge::slotRemoveBreakPoint() {
+    if (!Dock->BreakPoint_List->BpList->selectedItems().isEmpty()) {
+        const int ID = Dock->BreakPoint_List->BpList->currentItem()->text(0).toInt();// ID
         removeBreakpoint(ID);
     }
     // otherwise raises error, of course no selected item cannot be removed or ... selected at 0
     else {
         // no idea this will works :)
-        BreakPoint_List->BpList->setCurrentIndex(BreakPoint_List->BpList->rootIndex());
+        Dock->BreakPoint_List->BpList->setCurrentIndex(Dock->BreakPoint_List->BpList->rootIndex());
     }
 }
 
-void DebuggerWidget::slotRemoveAllBreakPoint() {
+void lldbBridge::slotRemoveAllBreakPoint() {
     for (int i = 0; i < BreakPointList.size(); i++) {
         //const int ID = BreakPoint_List->BpList->currentItem()->text(0).toInt(); // ID
         // assume that break IDs are increasing constantly
         if (!Target.BreakpointDelete(i)) {
-            debug_output->appendPlainText("Breakpoint was not removed !");
+            Dock->debug_output->appendPlainText("Breakpoint was not removed !");
         }
         //BreakPointList.erase(BreakPointList.begin() + i);
     }
     // TODO: figure out how to get specific item in list and remove them 1 by 1
     // clear whole list and insert remaining break points
-    BreakPoint_List->BpList->clear();
+    Dock->BreakPoint_List->BpList->clear();
     BreakPointList.clear();
 }
 
 // -----------------------------------------------------------------------------------------
 
-void DebuggerWidget::slotStartDebug() {
+void lldbBridge::slotStartDebug() {
     start();
     // running
     // also make sure this feature is done by program to exit normally, but remain in error states
 }
 
-void DebuggerWidget::slotStopDebug() {
+void lldbBridge::slotStopDebug() {
     stop();
     // can run again
-    btn_StartDebug->setEnabled(true);
+    Dock->btn_StartDebug->setEnabled(true);
 }
 
-void DebuggerWidget::slotRunToCursor() {
+void lldbBridge::slotRunToCursor() {
     // later
 }
 // -----------------------------------------------------------------------------------------
 
-void DebuggerWidget::slotStepOver() {
+void lldbBridge::slotStepOver() {
     stepOver();
 }
 
-void DebuggerWidget::slotStepInto() {
+void lldbBridge::slotStepInto() {
     stepInto();
 }
 
-void DebuggerWidget::slotStepOut() {
+void lldbBridge::slotStepOut() {
     stepOut();
 }
 
-void DebuggerWidget::slotStepInstruction() {
+void lldbBridge::slotStepInstruction() {
     stepInstruction();
 }
 
-void DebuggerWidget::slotContinue() {
+void lldbBridge::slotContinue() {
     Continue();
 }
 // -----------------------------------------------------------------------------------------
 
-void DebuggerWidget::slotCmdlineExecute() {
-    std::string res = executeDebuggerCommand(DebuggerPrompt->text().toStdString());
-    debug_output->appendPlainText(res.c_str()); // hope QString takes a C string and no implicit conversion is needed
-    DebuggerPrompt->clear();
+void lldbBridge::slotCmdlineExecute() {
+    std::string res = executeDebuggerCommand(Dock->DebuggerPrompt->text().toStdString());
+    Dock->debug_output->appendPlainText(res.c_str());// hope QString takes a C string and no implicit conversion is needed
+    Dock->DebuggerPrompt->clear();
 }
 // -----------------------------------------------------------------------------------------
 
 
-void DebuggerWidget::setExecutable(const std::string &exe_file_path) {
+void lldbBridge::setExecutable(const std::string &exe_file_path) {
     executable = exe_file_path.c_str();
     qDebug() << exe_file_path.c_str();
     // debugger instance must be initialized before -->  void init()
@@ -394,8 +111,8 @@ void DebuggerWidget::setExecutable(const std::string &exe_file_path) {
     //qDebug() << debugger.executable;
 }
 
-void DebuggerWidget::showBreakPointsList() {
-    DialogBreakPoint_List = new BreakPointListWindow(this);
+void lldbBridge::showBreakPointsList() {
+    DialogBreakPoint_List = new BreakPointListWindow();
     DialogBreakPoint_List->setWindowFlags(Qt::Dialog);
     for (const auto &i : BreakPointList) {
         DialogBreakPoint_List->insertBreakPoint(i.break_id, i.filepath, i.line);
@@ -408,10 +125,14 @@ void DebuggerWidget::showBreakPointsList() {
     DialogBreakPoint_List->show();
 }
 
-void DebuggerWidget::showSetManualBreakPoint(const QString &filepath) {
+void lldbBridge::slotOpenCallStackFile(QListWidgetItem *item) {
+    //item->text();
+}
+
+void lldbBridge::showSetManualBreakPoint(const QString &filepath) {
     file_path = filepath.toLatin1().data();
-    manual_window = new QWidget(this);
-    line_input = new QLineEdit(this);
+    manual_window = new QWidget();
+    line_input = new QLineEdit();
     auto *layout = new QVBoxLayout();
     auto *form = new QFormLayout();
     manual_window->setWindowFlags(Qt::Dialog);
@@ -424,88 +145,117 @@ void DebuggerWidget::showSetManualBreakPoint(const QString &filepath) {
     manual_window->show();
 }
 
-void DebuggerWidget::slotSetBreakPointByManualLine() {
+void lldbBridge::slotSetBreakPointByManualLine() {
     int line = line_input->text().toInt();
     manual_window->close();
-    if(line != 0){
+    if (line != 0) {
         createBreakpoint(file_path, line);
     }
 }
 
-void DebuggerWidget::showTaskManager() {
-    auto *task = new TaskWidget(this);
+void lldbBridge::showTaskManager() {
+    auto *task = new TaskWidget();
     task->setFilterVisable(true);
     task->show();
     // debugger.attachToRunningProcess(some id);    // add signal from task and slot from here
 }
 
-void DebuggerWidget::collectThreads() {
+void lldbBridge::collectThreads() {
     //int num = Process.GetNumThreads();
     //std::cout << num;
     for (int i = 0; i < Process.GetNumThreads(); i++) {
         auto thread = Process.GetThreadAtIndex(i);
-        ThreadBox->insertItem(thread.GetThreadID(), QString::fromStdString(thread.GetName()));
+        Dock->ThreadBox->insertItem(thread.GetThreadID(), QString::fromStdString(thread.GetName()));
     }
-
-
     //auto t = Process.GetSelectedThread();
     //thread_box->insertItem(t.GetThreadID(), QString::fromStdString(t.GetName()));
 }
 
-void DebuggerWidget::enableDebuggerButtons(){
-    btn_StartDebug->setEnabled(false);
-    btn_StopDebug->setEnabled(true);
-    btn_RunToCursor->setEnabled(true);
+void lldbBridge::enableDebuggerButtons() {
+    Dock->btn_StartDebug->setEnabled(false);
+    Dock->btn_StopDebug->setEnabled(true);
+    Dock->btn_RunToCursor->setEnabled(true);
 
-    btn_StepOver->setEnabled(true);
-    btn_StepInto->setEnabled(true);
-    btn_StepInstruction->setEnabled(true);
-    btn_Continue->setEnabled(true);
-    btn_StepOut->setEnabled(true);
+    Dock->btn_StepOver->setEnabled(true);
+    Dock->btn_StepInto->setEnabled(true);
+    Dock->btn_StepInstruction->setEnabled(true);
+    Dock->btn_Continue->setEnabled(true);
+    Dock->btn_StepOut->setEnabled(true);
 }
 
-void DebuggerWidget::disableDebuggerButtons(){
-    btn_StartDebug->setEnabled(true);
-    btn_StopDebug->setEnabled(false);
-    btn_RunToCursor->setEnabled(false);
+void lldbBridge::disableDebuggerButtons() {
+    Dock->btn_StartDebug->setEnabled(true);
+    Dock->btn_StopDebug->setEnabled(false);
+    Dock->btn_RunToCursor->setEnabled(false);
 
-    btn_StepOver->setEnabled(false);
-    btn_StepInto->setEnabled(false);
-    btn_StepInstruction->setEnabled(false);
-    btn_Continue->setEnabled(false);
-    btn_StepOut->setEnabled(false);
+    Dock->btn_StepOver->setEnabled(false);
+    Dock->btn_StepInto->setEnabled(false);
+    Dock->btn_StepInstruction->setEnabled(false);
+    Dock->btn_Continue->setEnabled(false);
+    Dock->btn_StepOut->setEnabled(false);
 }
 
+void lldbBridge::slotAddWatch() {
+}
 
+void lldbBridge::slotRemoveWatch() {
+}
 
+void lldbBridge::slotModifyWatch() {
+}
 
+void lldbBridge::connectDockWidgets() {
+    // console;    enter
+    connect(Dock->DebuggerPrompt, SIGNAL(returnPressed()), this, SLOT(slotCmdlineExecute()));
 
+    // BP List view
+    connect(Dock->BreakPoint_List->BpList, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotGoToBreakPointFile(QListWidgetItem *)));
+    connect(Dock->BreakPoint_List->remove, SIGNAL(clicked()), this, SLOT(slotRemoveBreakPoint()));
+    connect(Dock->BreakPoint_List->removeAll, SIGNAL(clicked()), this, SLOT(slotRemoveAllBreakPoint()));
+    //connect(BreakPoint_List->mute, SIGNAL(clicked()), this, SLOT(slotMuteBreakPoint()));
+    //connect(BreakPoint_List->muteAll, SIGNAL(clicked()), this, SLOT(slotMuteAllBreakPoint()));
 
+    connect(Dock->btn_StartDebug, SIGNAL(clicked()), this, SLOT(slotStartDebug()));
+    connect(Dock->btn_StopDebug, SIGNAL(clicked()), this, SLOT(slotStopDebug()));
+    connect(Dock->btn_RunToCursor, SIGNAL(clicked()), this, SLOT(slotRunToCursor()));
 
+    connect(Dock->btn_StepOver, SIGNAL(clicked()), this, SLOT(slotStepOver()));
+    connect(Dock->btn_StepInto, SIGNAL(clicked()), this, SLOT(slotStepInto()));
+    connect(Dock->btn_StepOut, SIGNAL(clicked()), this, SLOT(slotStepOut()));
+    connect(Dock->btn_StepInstruction, SIGNAL(clicked()), this, SLOT(slotStepInstruction()));
+    connect(Dock->btn_Continue, SIGNAL(clicked()), this, SLOT(slotContinue()));
 
+    // call stack
+    connect(Dock->CallStack, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotOpenCallStackFile(QListWidgetItem *)));
+
+    // WatchDock
+    // slotAddWatch  -> in console, where are all of variables shown
+    connect(WatchDock->removeWatch, SIGNAL(clicked()), this, SLOT(slotRemoveWatch()));
+    connect(WatchDock->modifyWatch, SIGNAL(clicked()), this, SLOT(slotModifyWatch()));
+}
 
 
 // lldb
 // ****************************************************************************************
 
 // have to ensure some things are done, when closed
-DebuggerWidget::~DebuggerWidget() {
+lldbBridge::~lldbBridge() {
     //lldb::pid_t pid = Process.GetProcessID();
-    debug_output->appendPlainText("Killing process ");
+    Dock->debug_output->appendPlainText("Killing process ");
     Process.Kill();
     SBDebugger::Terminate();
 }
 
-void DebuggerWidget::init() {
+void lldbBridge::init() {
 
     error = SBDebugger::InitializeWithErrorHandling();
     Debugger = SBDebugger::Create();
     // Create a debugger instance so we can create a target
-    if (!Debugger.IsValid()){
-        debug_output->appendPlainText("Error: failed to create a debugger object\n");
+    if (!Debugger.IsValid()) {
+        Dock->debug_output->appendPlainText("Error: failed to create a debugger object\n");
         SBStream str;
         Debugger.GetDescription(str);
-        debug_output->appendPlainText(str.GetData());
+        Dock->debug_output->appendPlainText(str.GetData());
         std::cout << str.GetData();
         //return;
     }
@@ -521,7 +271,7 @@ void DebuggerWidget::init() {
 
 
     if(addr_cstr == nullptr) {
-        debug_output->appendPlainText("empty address");
+        Dock->debug_output->appendPlainText("empty address");
         //return;
     }
 // The second argument in the address that we want to lookup
@@ -554,19 +304,19 @@ void DebuggerWidget::init() {
     }
 }
 
-void DebuggerWidget::start() {
+void lldbBridge::start() {
     // clear all first
-    debug_output->clear();
-    ThreadBox->clear();
-    WatchListView->clear();
+    Dock->debug_output->clear();
+    Dock->ThreadBox->clear();
+    //WatchListView->clear();
 
     init();
 
     if (!Target.IsValid()) {
-        debug_output->appendPlainText("Cannot start a debugger process with an invalid target: ");
+        Dock->debug_output->appendPlainText("Cannot start a debugger process with an invalid target: ");
         std::cout << "Cannot start a debugger process with an invalid target: \n";
         std::cout << executable;
-        debug_output->appendPlainText(executable);
+        Dock->debug_output->appendPlainText(executable);
         //return;
     }
 
@@ -579,7 +329,7 @@ void DebuggerWidget::start() {
                             nullptr, nullptr, 0, false, error);
 
     if (!Process.IsValid()) {
-        debug_output->appendPlainText("Process is invalid \n");
+        Dock->debug_output->appendPlainText("Process is invalid \n");
         std::cout << "Process is invalid \n";
         SBStream str;
         Process.GetDescription(str);
@@ -589,11 +339,11 @@ void DebuggerWidget::start() {
 
 
     worker = new QThread(this);
-    auto ptr = std::make_shared<DebuggerWidget>(this);
-    runner = new Runner(ptr);// QObject::moveToThread: Cannot move objects with a parent
+    //auto ptr = std::make_shared<lldbBridge>(this);
+    runner = new Runner(/*ptr*/);// QObject::moveToThread: Cannot move objects with a parent
     //QThread::create(&DebuggerWidget::setProcessInterruptFeatures, this);
 
-    connect(worker, &QThread::started, this, &DebuggerWidget::setProcessInterruptFeatures);
+    connect(worker, &QThread::started, this, &lldbBridge::setProcessInterruptFeatures);
     connect(worker, &QThread::finished, worker, &QObject::deleteLater);// worker ---> this
     runner->moveToThread(worker);
     worker->setObjectName("DebuggerThread");
@@ -602,12 +352,12 @@ void DebuggerWidget::start() {
     //setProcessInterruptFeatures();
 }
 
-void DebuggerWidget::stop() {
+void lldbBridge::stop() {
     Process.Stop();
 }
 
-void DebuggerWidget::setProcessInterruptFeatures() {
-    const uint32_t event_timeout_secs = 10; // Wait for 10 seconds for an event. You can set this to be longer if you want like UINT32_MAX to wait forever.
+void lldbBridge::setProcessInterruptFeatures() {
+    const uint32_t event_timeout_secs = 10;// Wait for 10 seconds for an event. You can set this to be longer if you want like UINT32_MAX to wait forever.
     bool done = false;
     while (!done) {
         SBEvent event;
@@ -621,7 +371,7 @@ void DebuggerWidget::setProcessInterruptFeatures() {
     //uint32_t lldb::SBEvent::GetType() const;
 }
 
-bool DebuggerWidget::HandleProcessEvent(SBEvent &event) {
+bool lldbBridge::HandleProcessEvent(SBEvent &event) {
 
     // auto thread = getCurrentThread();
     switch (event.GetType()) {
@@ -646,24 +396,24 @@ bool DebuggerWidget::HandleProcessEvent(SBEvent &event) {
     return false; // Not done, don't exit main loop
 }
 
-bool DebuggerWidget::HandleProcessStateChangeEvent(SBEvent &event) {
+bool lldbBridge::HandleProcessStateChangeEvent(SBEvent &event) {
     SBProcess process = SBProcess::GetProcessFromEvent(event);
     StateType state = SBProcess::GetStateFromEvent(event);
 
 
     switch (state) {
-        case eStateAttaching: ///< Process is currently trying to attach
+        case eStateAttaching:///< Process is currently trying to attach
             // Maybe you put up a progress dialog in case attach takes a while?
             std::cout << "attaching to process";
-            debug_output->appendPlainText("attaching to process");
+            Dock->debug_output->appendPlainText("attaching to process");
             break;
         case eStateLaunching: ///< Process is in the process of launching
             // Maybe you put up a progress dialog in case launch takes a while?
             std::cout << "launching";
-            debug_output->appendPlainText("Launching");
+            Dock->debug_output->appendPlainText("Launching");
             break;
         case eStateStopped:   ///< Process is stopped and can be examined
-            debug_output->appendPlainText("Process has stopped and can be examined");
+            Dock->debug_output->appendPlainText("Process has stopped and can be examined");
             enableDebuggerButtons();
 
             // retrieve data first
@@ -677,15 +427,15 @@ bool DebuggerWidget::HandleProcessStateChangeEvent(SBEvent &event) {
         case eStateRunning:   ///< Process is now running and can't be examined
             // Update your UI maybe and disable the play and step buttons so the user
             // can't try to run the program while it is already running
-            btn_StartDebug->setEnabled(false);
+            Dock->btn_StartDebug->setEnabled(false);
             std::cout << "running";
-            debug_output->appendPlainText("Process is running");
+            Dock->debug_output->appendPlainText("Process is running");
             break;
         case eStateDetached:  ///< Process has been detached and can't be examined.
             // Update your GUI top indicate you are no longer debugging since LLDB
             // has detached from your process.
             std::cout << "process has been detached";
-            debug_output->appendPlainText("Process has been detached");
+            Dock->debug_output->appendPlainText("Process has been detached");
 
             // If you return true, then this will cause the event loop the exit.
             // This will work well if you only ever debug one process at a time.
@@ -695,7 +445,7 @@ bool DebuggerWidget::HandleProcessStateChangeEvent(SBEvent &event) {
             // Update your GUI top indicate you are no longer debugging since your
             // process has run to completion and has exited
             std::cout << "Process exited normally";
-            debug_output->appendPlainText("Process exited normally");
+            Dock->debug_output->appendPlainText("Process exited normally");
             disableDebuggerButtons();
 
             // library loaded into memory no needed anymore
@@ -711,7 +461,7 @@ bool DebuggerWidget::HandleProcessStateChangeEvent(SBEvent &event) {
     return false; // Not done, don't exit main loop
 }
 
-void DebuggerWidget::HandleProcessStopped(SBEvent &event, SBProcess &process) {
+void lldbBridge::HandleProcessStopped(SBEvent &event, SBProcess &process) {
     if (SBProcess::GetRestartedFromEvent(event)) {
         // Process is automatically restarted due to script or breakpoint action.
         // Don't update the GUI because we will soon receive a eStateRunning state...
@@ -751,7 +501,7 @@ void DebuggerWidget::HandleProcessStopped(SBEvent &event, SBProcess &process) {
                 // IDs that were hit. There might be more than one breakpoint that was
                 // hit by the same thread, so we will want to report all breakpoints that were hit
                 std::cout << "breakpoint was hit";
-                debug_output->appendPlainText("breakpoint was hit: ");
+                Dock->debug_output->appendPlainText("breakpoint was hit: ");
                 setFilePosition(thread.GetSelectedFrame());
                 //if(!position.empty()){
                 //    debug_output->appendPlainText(QString::fromStdString(position));
@@ -777,7 +527,7 @@ void DebuggerWidget::HandleProcessStopped(SBEvent &event, SBProcess &process) {
     }
 }
 
-const char *DebuggerWidget::getAssembly(SBThread thread) {
+const char *lldbBridge::getAssembly(SBThread thread) {
     lldb::SBFrame frame = thread.GetFrameAtIndex(0);
     lldb::SBFunction function = frame.GetFunction();
     lldb::SBInstructionList instructions;
@@ -793,35 +543,34 @@ const char *DebuggerWidget::getAssembly(SBThread thread) {
 
     lldb::SBStream instruction_stream;
     instructions.GetDescription(instruction_stream);
-    const char *disassembly = instruction_stream.GetData();
 
-    return disassembly;
+    return instruction_stream.GetData();
 }
 
-void DebuggerWidget::attachToRunningProcess(const int &proc_id){
+void lldbBridge::attachToRunningProcess(const int &proc_id) {
     SBAttachInfo attach_info;
     attach_info.SetProcessID(proc_id);
-    if(attach_info.ParentProcessIDIsValid()){
+    if (attach_info.ParentProcessIDIsValid()) {
         Process = Target.Attach(attach_info, error);
     }
-    if(error.Success()){
-        debug_output->appendPlainText("something went wrong when attaching to process");
+    if (error.Success()) {
+        Dock->debug_output->appendPlainText("something went wrong when attaching to process");
         //return;
     }
 }
 
 
-void DebuggerWidget::storeFrameData(SBFrame frame) {
+void lldbBridge::storeFrameData(SBFrame frame) {
     // clear
-    VariablesView->reset();
+    Dock->VariablesView->reset();
     auto *model = new QStandardItemModel(this);
 
     QStandardItem *rootNode = model->invisibleRootItem();
 
-    auto FrameList = frame.GetVariables(true,  // args
-                                        true,  // locals
-                                        true,  // statics
-                                        true   // in scope only
+    auto FrameList = frame.GetVariables(true,// args
+                                        true,// locals
+                                        true,// statics
+                                        true // in scope only
     );
 
     for (uint32_t idx = 0; idx <= FrameList.GetSize(); idx++) {
@@ -845,11 +594,11 @@ void DebuggerWidget::storeFrameData(SBFrame frame) {
         var->appendRow(val);
     }
 
-    VariablesView->setModel(model);
-    VariablesView->collapseAll();
+    Dock->VariablesView->setModel(model);
+    Dock->VariablesView->collapseAll();
 }
 
-std::string DebuggerWidget::frameGetLocation(const SBFrame& frame) {
+std::string lldbBridge::frameGetLocation(const SBFrame &frame) {
     // set view to file and line
     const char *filename = frame.GetLineEntry().GetFileSpec().GetFilename();
     SBFunction function = frame.GetFunction();
@@ -871,50 +620,103 @@ std::string DebuggerWidget::frameGetLocation(const SBFrame& frame) {
     return description;
 }
 
-void DebuggerWidget::setStartPosition(const char *filepath, const int &line) {
-    /*
-    const char *path = frame.GetLineEntry().GetFileSpec().GetFilename();
-    SBFunction function = frame.GetFunction();
-    uint32_t _line = frame.GetLineEntry().GetLine();
-    const char* func_name = function.GetDisplayName();
-    */
+void lldbBridge::setStartPosition(const char *filepath, const int &line) {
+    for (int i = 0; i <= tab->count(); i++) {
+        // already opened file, only set focus on it and line
+        // currentEdit is set automatically when tab focus is changed
+        if (tab->tabToolTip(i) == filepath) {
+            tab->setCurrentIndex(i);
+            currentEdit->setCursorAtLine(line);
+            currentEdit->extra_selections_warning_line.clear();// clear selection if there is some of this king
+            currentEdit->setLineSelection(line, PlainTextEdit::Warning);
+            return;
+        }
+    }
     FileDirManager fmanager;
     QString content = fmanager.simple_read(filepath);
-    source_view->setPlainText(content);
-    source_view->setCursorAtLine(line);// later maybe some effect
-    //source_view->setLineSelection(line, PlainTextEdit::Warning);
+    auto *edit = new PlainTextEdit();
+    edit->setPlainText(content);
+    edit->setCursorAtLine(line);// later maybe some effect
+    edit->setLineSelection(line, PlainTextEdit::Warning);
+    // icon (cpp, h, py, ...)
+    QFileIconProvider provider;
+    tab->addTab(edit, provider.icon(QFileInfo(filepath)), QFileInfo(filepath).fileName());
+    tab->setTabToolTip(tab->currentIndex(), filepath);// required to recognize again later
+    tab->setCurrentIndex(tab->count());
 }
 
-void DebuggerWidget::setFilePosition(const SBFrame &frame) {
+void lldbBridge::setFilePosition(const SBFrame &frame) {
 
-    const char *path = frame.GetLineEntry().GetFileSpec().GetFilename();
+    const char *filename = frame.GetLineEntry().GetFileSpec().GetFilename();
     SBFunction function = frame.GetFunction();
     uint32_t line = frame.GetLineEntry().GetLine();
     //const char* func_name = function.GetDisplayName();
 
-    std::cout << path;
+    std::cout << filename;
     std::cout << "\n";
     std::cout << function.GetName();
     std::cout << "\n";
     std::cout << line;
 
-    // FIXME: this returns only file name "main.cpp" !!!!! NOT GOOD
     // TODO: if file is not contained, get assembly code displayed, jump over read, but remain selection
+    // TODO: tab icon .... isn't it better to just emit signal ??
 
-    FileDirManager fmanager;
-    QString content = fmanager.simple_read(path);
-    source_view->setPlainText(content);
-    source_view->setCursorAtLine(line);// later maybe some effect
-    //source_view->setLineSelection(line, PlainTextEdit::Warning);
+    // frame contains only file names : main.cpp, file.h, ... so i need to find path
+    QString filepath;
+    for (const auto &path : sources) {
+        // we found the exact file path
+        if (QFileInfo(QString::fromLatin1(filename)).fileName() == filename) {
+            filepath = path;
+            break;
+        }
+    }
+
+    // boring file management
+    if (!filepath.isEmpty()) {
+        for (int i = 0; i <= tab->count(); i++) {
+            // already opened file, only set focus on it and line
+            if (tab->tabToolTip(i) == filepath) {
+                tab->setCurrentIndex(i);
+                currentEdit->setCursorAtLine(line);
+                currentEdit->extra_selections_warning_line.clear();// clear selection if there is some of this king
+                currentEdit->setLineSelection(line, PlainTextEdit::Warning);
+                return;
+            }
+        }
+        FileDirManager fmanager;
+        QString content = fmanager.simple_read(filepath);
+        auto *edit = new PlainTextEdit();
+        edit->setPlainText(content);
+        edit->setCursorAtLine(line);// later maybe some effect
+        edit->setLineSelection(line, PlainTextEdit::Warning);
+        // icon (cpp, h, py, ...)
+        QFileIconProvider provider;
+        tab->addTab(edit, provider.icon(QFileInfo(filepath)), filename);
+        tab->setTabToolTip(tab->currentIndex(), filepath);
+        tab->setCurrentIndex(tab->count());
+    }
+    // we need to get assembly code a find source file somehow
+    else {
+        const char *content = getAssembly(getCurrentThread());
+        auto *edit = new PlainTextEdit();
+        edit->setPlainText(content);
+        edit->setCursorAtLine(line);// will there be a line ??
+        edit->setLineSelection(line, PlainTextEdit::Warning);
+        // FIXME: filepath is empty ... fill it and set, or not is frame returns something
+        //filepath = ...;
+        tab->addTab(edit, filename);
+        tab->setTabToolTip(tab->currentIndex(), filepath);// required to recognize again later
+        tab->setCurrentIndex(tab->count());
+    }
 }
 
-void DebuggerWidget::createBreakpoint(const char *filepath, const int &line) {
+void lldbBridge::createBreakpoint(const char *filepath, const int &line) {
 
     SBBreakpoint breakpoint = Target.BreakpointCreateByLocation(filepath, line);
     // make sure that it's good
     if (!breakpoint.IsValid()) {
-        debug_output->appendPlainText("Breakpoint is not valid:  file: ");
-        debug_output->appendPlainText(filepath);
+        Dock->debug_output->appendPlainText("Breakpoint is not valid:  file: ");
+        Dock->debug_output->appendPlainText(filepath);
         //debug_output->appendPlainText(line);
         return;
     }
@@ -924,7 +726,7 @@ void DebuggerWidget::createBreakpoint(const char *filepath, const int &line) {
     BreakPointData data{breakpoint.GetID(), filepath, line};
     BreakPointList.push_back(data);
 
-    BreakPoint_List->insertBreakPoint(breakpoint.GetID(), filepath, line);
+    Dock->BreakPoint_List->insertBreakPoint(breakpoint.GetID(), filepath, line);
     // also take case of this instance to ensure both of them gets created, removed
     /*
     if(DialogBreakPoint_List != nullptr){
@@ -933,7 +735,7 @@ void DebuggerWidget::createBreakpoint(const char *filepath, const int &line) {
     */
 }
 
-void DebuggerWidget::removeBreakpoint(const break_id_t &id) {
+void lldbBridge::removeBreakpoint(const break_id_t &id) {
     int pos;
     for (int i = 0; i < BreakPointList.size(); i++) {
         if (BreakPointList[i].break_id == id) {
@@ -942,13 +744,13 @@ void DebuggerWidget::removeBreakpoint(const break_id_t &id) {
         }
     }
     if (!Target.BreakpointDelete(id)) {
-        debug_output->appendPlainText("Breakpoint was not removed !");
+        Dock->debug_output->appendPlainText("Breakpoint was not removed !");
     }
     BreakPointList.erase(BreakPointList.begin() + pos);
     // clear whole list and insert remaining break points
-    BreakPoint_List->BpList->clear();
+    Dock->BreakPoint_List->BpList->clear();
     for (const auto &b_point : BreakPointList) {
-        BreakPoint_List->insertBreakPoint(b_point.break_id, b_point.filepath, b_point.line);
+        Dock->BreakPoint_List->insertBreakPoint(b_point.break_id, b_point.filepath, b_point.line);
     }
     /*
     if(DialogBreakPoint_List != nullptr){
@@ -960,7 +762,7 @@ void DebuggerWidget::removeBreakpoint(const break_id_t &id) {
     */
 }
 
-void DebuggerWidget::removeBreakpoint(const char *filepath, const int &line) {
+void lldbBridge::removeBreakpoint(const char *filepath, const int &line) {
     // deletion by ID --> find it out and then delete
     break_id_t ID;
     // after we find that exist and was removed
@@ -974,14 +776,14 @@ void DebuggerWidget::removeBreakpoint(const char *filepath, const int &line) {
         }
     }
     if (!Target.BreakpointDelete(ID)) {
-        debug_output->appendPlainText("Breakpoint was not removed !");
+        Dock->debug_output->appendPlainText("Breakpoint was not removed !");
         return;
     }
     BreakPointList.erase(BreakPointList.begin() + pos);
     // clear whole list and insert remaining break points
-    BreakPoint_List->BpList->clear();
+    Dock->BreakPoint_List->BpList->clear();
     for (const auto &b_point : BreakPointList) {
-        BreakPoint_List->insertBreakPoint(b_point.break_id, b_point.filepath, b_point.line);
+        Dock->BreakPoint_List->insertBreakPoint(b_point.break_id, b_point.filepath, b_point.line);
     }
     /*
     if(DialogBreakPoint_List != nullptr){
@@ -993,57 +795,48 @@ void DebuggerWidget::removeBreakpoint(const char *filepath, const int &line) {
     */
 }
 
-std::vector<DebuggerWidget::framedata> get_var_func_info() {
-    return std::vector<DebuggerWidget::framedata>();
-}
-
-DebuggerWidget::framedata get_var_func_info_update() {
-    return DebuggerWidget::framedata();
-}
-
-SBThread DebuggerWidget::getCurrentThread() {
+SBThread lldbBridge::getCurrentThread() {
     // no needed
 
-    if(!Process.IsValid()){
+    if (!Process.IsValid()) {
         std::cout << "process is not valid";
-        debug_output->appendPlainText("process is not valid");
+        Dock->debug_output->appendPlainText("process is not valid");
         exit(1);
     }
 
     return Process.GetSelectedThread();
 }
 
-SBFrame DebuggerWidget::getCurrentFrame() {
+SBFrame lldbBridge::getCurrentFrame() {
     return getCurrentThread().GetSelectedFrame();
 }
 
-SBValue DebuggerWidget::findSymbol(const char *name){
+SBValue lldbBridge::findSymbol(const char *name) {
     return Target.FindFirstGlobalVariable(name);
     // return Target.FindFunctions(name);  .....
 }
 
-void DebuggerWidget::pause() {
+void lldbBridge::pause() {
     if (Process.IsValid()) {
         auto err = Process.Stop();
         if (err.Fail()) {
-            debug_output->appendPlainText("Failed to pause process"); // {{"Error Code", err.GetError()}, {"Error String", err.GetCString()}};
+            Dock->debug_output->appendPlainText("Failed to pause process");// {{"Error Code", err.GetError()}, {"Error String", err.GetCString()}};
         }
     }
 }
 
-void DebuggerWidget::Continue() {
+void lldbBridge::Continue() {
     if (Process.IsValid()) {
         auto err = Process.Continue();
         if (err.Fail()) {
-            debug_output->appendPlainText("Process Ended");
+            Dock->debug_output->appendPlainText("Process Ended");
             //setProcessInterruptFeatures();
             disableDebuggerButtons();
-        }
-        else{
+        } else {
             SBStream str;
             err.GetDescription(str);
             std::cout << "Failed to continue process" + std::string(str.GetData());
-            debug_output->appendPlainText("Failed to continue process" + QString(str.GetData()));
+            Dock->debug_output->appendPlainText("Failed to continue process" + QString(str.GetData()));
             // {{"Error Code", err.GetError()}, {"Error String", err.GetCString()}};
             disableDebuggerButtons();
         }
@@ -1051,27 +844,27 @@ void DebuggerWidget::Continue() {
     //disableDebuggerButtons();
 }
 
-void DebuggerWidget::stepOver() {
+void lldbBridge::stepOver() {
     getCurrentThread().StepOver();
     setFilePosition(getCurrentFrame());
 }
 
-void DebuggerWidget::stepInto() {
+void lldbBridge::stepInto() {
     getCurrentThread().StepInto();
     setFilePosition(getCurrentFrame());
 }
 
-void DebuggerWidget::stepOut() {
+void lldbBridge::stepOut() {
     getCurrentThread().StepOut();
     setFilePosition(getCurrentFrame());
 }
 
-void DebuggerWidget::stepInstruction() {
-    getCurrentThread().StepInstruction(true); // step_over     ; false -> into call instr.
+void lldbBridge::stepInstruction() {
+    getCurrentThread().StepInstruction(true);// step_over     ; false -> into call instr.
     setFilePosition(getCurrentFrame());
 }
 
-std::string DebuggerWidget::executeDebuggerCommand(const std::string &args) {
+std::string lldbBridge::executeDebuggerCommand(const std::string &args) {
     // tutorial site:
     // https://lldb.llvm.org/use/tutorial.html
 
@@ -1079,9 +872,9 @@ std::string DebuggerWidget::executeDebuggerCommand(const std::string &args) {
     Debugger.GetCommandInterpreter().HandleCommand(args.c_str(), result);
 
     std::string output;
-    if(result.Succeeded()){
+    if (result.Succeeded()) {
         output = result.GetOutput();
-    }else{
+    } else {
         output += result.GetError() + std::string(" ");
     }
 
