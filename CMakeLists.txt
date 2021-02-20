@@ -250,7 +250,7 @@ set(SOURCE_FILES
         Widgets/PlainTextEdit/GoToLineColumn.h
         Widgets/ProgressBar/ProgressBar.cpp
         Widgets/ProgressBar/ProgressBar.h
-        Widgets/Education/Education.cpp Widgets/Education/Education.h Widgets/Education/CodeSamples.h Widgets/Settings/ClangFormat/ClangFormat.cpp Widgets/Settings/ClangFormat/ClangFormat.h Widgets/Education/NewSampleWindow.cpp Widgets/Education/NewSampleWindow.h Widgets/Settings/Installer/Installer.cpp Widgets/Settings/Installer/Installer.h)
+        Widgets/Education/Education.cpp Widgets/Education/Education.h Widgets/Education/CodeSamples.h Widgets/Settings/ClangFormat/ClangFormat.cpp Widgets/Settings/ClangFormat/ClangFormat.h Widgets/Education/NewSampleWindow.cpp Widgets/Education/NewSampleWindow.h Widgets/Settings/Installer/Installer.cpp Widgets/Settings/Installer/Installer.h Debugger/DebuggerDock.cpp Debugger/DebuggerDock.h)
 
 
 

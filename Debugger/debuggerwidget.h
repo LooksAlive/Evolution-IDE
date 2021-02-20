@@ -7,25 +7,23 @@
  *  2. lldb functions which are used in GUI
 */
 
+#include <QComboBox>
+#include <QCompleter>
 #include <QDockWidget>
-#include <QWidget>
-#include <QPushButton>
 #include <QLabel>
+#include <QLineEdit>
+#include <QListWidget>
+#include <QPalette>
+#include <QPlainTextEdit>
+#include <QPushButton>
+#include <QSplitter>
+#include <QString>
+#include <QTabWidget>
+#include <QThread>
 #include <QToolBar>
 #include <QToolButton>
-#include <QLineEdit>
-#include <QCompleter>
-#include <QPlainTextEdit>
-#include <QString>
-#include <QSplitter>
 #include <QTreeView>
-#include <QListWidget>
-#include <QComboBox>
-#include <QPalette>
-#include <QThread>
-#include <QListWidget>
-#include <QTreeView>
-#include <QTabWidget>
+#include <QWidget>
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -34,8 +32,10 @@
 
 #include <filesystem>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include "lldb/API/LLDB.h"
@@ -49,6 +49,8 @@ using namespace lldb;
 
 // sources:  https://stackoverflow.com/questions/8063434/qt-run-independent-thread-from-other-thread
 
+class DebuggerWidget;
+
 /*
  * blank QObject to move thread here and run asynchronously, independent on the main thread
  * this is done in start() function
@@ -59,8 +61,37 @@ using namespace lldb;
 class Runner : public QObject {
     Q_OBJECT
 public:
-    explicit Runner(QObject *parent = nullptr) : QObject(parent) {}
+    explicit Runner(std::shared_ptr<DebuggerWidget> Deb = nullptr, QObject *parent = nullptr);
     ~Runner() = default;
+
+    void runDebugSession();
+
+private:
+    std::shared_ptr<DebuggerWidget> debugger;
+};
+
+class BreakPointListWindow : public QWidget {
+    Q_OBJECT
+public:
+    explicit BreakPointListWindow(QWidget *parent = nullptr);
+    ~BreakPointListWindow() = default;
+
+    QHBoxLayout *MainLayout;
+    // consider view -> more breaks may be in the same file, but ....
+    QTreeWidget *BpList;
+    QToolBar *BpBar;
+
+    QToolButton *remove;
+    QToolButton *removeAll;
+    QToolButton *mute;
+    QToolButton *muteAll;
+
+    void insertBreakPoint(const break_id_t &ID, const char *filename, const int &line) const;
+    // remove not here, only clear whole list, bc. there can be situation:
+    // ID:  1,2,3,4 --> remove 3  --> 1,2,4  -> will require more stuffs to do
+
+private:
+    void createWindow();
 };
 
 class DebuggerWidget : public QWidget {
@@ -69,20 +100,20 @@ public:
     explicit DebuggerWidget(QWidget *parent = nullptr);
     ~DebuggerWidget();
 
-    // outside function only for duplicating current opened file
-    void setStartFilePosition(const QString &path, const int &line);
+    // all file associated stuffs
+    void setStartPosition(const char *filepath, const int &line);
+    void setFilePosition(const SBFrame &frame);
     void setExecutable(const std::string &exe_file_path);
 
-    // small list widget with information
-    void showBreakPointsList();
     // task view to attach running already process
     void showTaskManager();
     void showSetManualBreakPoint(const QString &filepath);
-    // TODO: inherit QWidget and new class ... + add remove button in vertical left toolBar + connect outside
-    // break points list
-    QWidget *BreakPointListWindow;
-    // consider view -> more breaks may be in the same file, but ....
-    QTreeWidget *BreakPoint_List;
+
+    // small list widget with information
+    void showBreakPointsList();
+    // dialog based break point list like in view
+    BreakPointListWindow *DialogBreakPoint_List = nullptr;
+
     QWidget *manual_window;
     QLineEdit *line_input;
     const char *file_path;
@@ -133,11 +164,11 @@ private:
     QListWidget *CallStack;
 
     // this will be called when process stopped, insert threads into box
-    void fillThreadBox();
+    void collectThreads();
 
+    void createBreakPointList();
+    BreakPointListWindow *BreakPoint_List;
 
-    // managed by breakpoints, position will be gathered from debug symbols
-    void setFilePosition();
 
     // while process pending, i should not touch for ex. step over or else
     void enableDebuggerButtons();
@@ -160,6 +191,10 @@ private slots:
     void slotSetBreakPointByManualLine();
 
     void slotOpenCallStackFile(QListWidgetItem *item);
+    void slotGoToBreakPointFile(QListWidgetItem *item);
+
+    void slotRemoveBreakPoint();
+    void slotRemoveAllBreakPoint();
     /*
     void onActionAddWatch();
     void onActionModifyWatch();
@@ -173,20 +208,20 @@ private slots:
     */
 
 
-// lldb:
+    // lldb:
 
 public:
-    void pause();    // when breakpoint is hit
+    void pause();// when breakpoint is hit
     void Continue();
 
-    void createBreakpoint(const char *file_name, const int &line);
-    void removeBreakpoint(const char *file_name, const int &line);
+    void createBreakpoint(const char *filepath, const int &line);
+    void removeBreakpoint(const char *filepath, const int &line);
     void removeBreakpoint(const break_id_t &id);
 
     void storeFrameData(SBFrame frame);
     SBThread getCurrentThread();
     SBFrame getCurrentFrame();
-    std::string frameGetLocation(const SBFrame& frame);
+    std::string frameGetLocation(const SBFrame &frame);
     SBValue findSymbol(const char *name);
 
     void stepOver();
@@ -210,7 +245,7 @@ public:
 
     struct BreakPointData{
         break_id_t break_id;
-        const char *filename;
+        const char *filepath;
         int line;
     };
     std::vector<BreakPointData> BreakPointList;
@@ -223,27 +258,27 @@ public:
 
 
     // The first argument is the file path we want to look something up in
-    const char *executable = "/home/adam/Desktop/sources/Evolution-IDE/cmake-build-debug/editor";   // "/home/adam/Desktop/SKK/cmake-build/executable"
+    const char *executable = "/home/adam/Desktop/sources/Evolution-IDE/cmake-build-debug/editor";// "/home/adam/Desktop/SKK/cmake-build/executable"
     const char *addr_cstr = "#address_to_lookup";
     const bool add_dependent_libs = false;
     const char *arch = nullptr;
     const char *platform = nullptr;
 
-    bool isRunning = false;
-
-private:
-    void init();
     // main function
     // is breakpoint hit, waiting for such events
     // called when debug process starts
+public slots:
     void setProcessInterruptFeatures();
+
+private:
+    void init();
     bool HandleProcessEvent(SBEvent &event);
     bool HandleProcessStateChangeEvent(SBEvent &event);
     void HandleProcessStopped(SBEvent &event, SBProcess &process);
 
     const char *getAssembly(SBThread thread);
 
-    QThread *worker;
+    QThread *worker = nullptr;
     Runner *runner;
 
     SBError error;

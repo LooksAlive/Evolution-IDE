@@ -363,7 +363,7 @@ void MainWindow::showDebuggerView() {
     // for now, starting with current file, later track    ;  not i only care for line
     // file_manager.current_full_filepath, 0
     //file_manager.executable_file_path = "/home/adam/Desktop/SKK/cmake-build/executable";
-    debuggerView->setStartFilePosition(path, currentWidget->getCursorPosition().x());
+    debuggerView->setStartPosition(path.toLatin1().data(), currentWidget->getCursorPosition().y());
     //debuggerView->setExecutable(file_manager.executable_file_path.toStdString());
 }
 
@@ -528,6 +528,7 @@ void MainWindow::SetupNodeView() {
 
 void MainWindow::SetupDebuggerView() {
     debuggerView = new DebuggerWidget(this);
+    //addDockWidget(Qt::BottomDockWidgetArea, debuggerView->DebuggerDock);
 }
 void MainWindow::SetupBinaryView() {
     binaryView = new BinaryView(this);
@@ -770,7 +771,12 @@ void MainWindow::CloseAllFiles() {
 
 /* close all files, prevent memory leak */
 void MainWindow::CloseWindow() {
-
+    QMessageBox::StandardButton reply = QMessageBox::question(
+            this, "Exit",
+            "Are you sure, you want to exit Evolution-IDE ?", QMessageBox::Yes | QMessageBox::No);
+    if (reply == QMessageBox::No) {
+        return;
+    }
     // reopen project not closed tabs later.
     QStringList opened_tabs;
     QList<int> tabs_cursor_positions;
@@ -799,13 +805,6 @@ void MainWindow::CloseWindow() {
 
 /* X --> close app - virtual func. */
 void MainWindow::closeEvent(QCloseEvent *) {
-    QMessageBox::StandardButton reply = QMessageBox::question(
-            this, "Exit",
-            "Are you sure, you want to exit Evolution-IDE ?", QMessageBox::Yes | QMessageBox::No);
-    if (reply == QMessageBox::No) {
-        return;
-    }
-
     CloseWindow();
 }
 

@@ -1,6 +1,74 @@
-#include <QSettings>
-#include "icons/IconFactory.h"
 #include "debuggerwidget.h"
+#include "icons/IconFactory.h"
+#include <QSettings>
+
+Runner::Runner(std::shared_ptr<DebuggerWidget> Deb, QObject *parent)
+    : QObject(parent), debugger(std::move(Deb)) {}
+
+void Runner::runDebugSession() {
+    debugger->setProcessInterruptFeatures();
+}
+
+
+BreakPointListWindow::BreakPointListWindow(QWidget *parent) : QWidget(parent) {
+    createWindow();
+}
+
+void BreakPointListWindow::createWindow() {
+    MainLayout = new QHBoxLayout();
+    BpList = new QTreeWidget(this);
+    BpBar = new QToolBar(this);
+
+    setMaximumWidth(700);
+    BpList->setMinimumWidth(300);
+    BpList->setColumnCount(3);
+    BpList->setHeaderLabels(QStringList() << "ID"
+                                          << "File"
+                                          << "Line");
+    BpList->setColumnWidth(0, 20); // ID
+    BpList->setColumnWidth(1, 250);// filename
+    BpList->setColumnWidth(0, 30); // line
+
+    BpBar->setOrientation(Qt::Vertical);
+    BpBar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
+    BpBar->setFixedWidth(30);
+    // connect outside, we have to join editor
+
+    remove = new QToolButton(this);
+    remove->setToolTip("Remove");
+    remove->setIcon(QIcon(IconFactory::Remove));
+    removeAll = new QToolButton(this);
+    removeAll->setToolTip("Remove All");
+    removeAll->setIcon(QIcon(IconFactory::Remove));
+    mute = new QToolButton(this);
+    mute->setToolTip("Mute");
+    mute->setIcon(QIcon(IconFactory::Remove));
+    muteAll = new QToolButton(this);
+    muteAll->setToolTip("Mute All");
+    muteAll->setIcon(QIcon(IconFactory::Remove));
+
+    BpBar->addWidget(remove);
+    BpBar->addWidget(removeAll);
+    BpBar->addWidget(mute);
+    BpBar->addWidget(muteAll);
+
+    MainLayout->addWidget(BpBar);
+    MainLayout->addWidget(BpList);
+
+    MainLayout->setContentsMargins(0, 0, 0, 0);
+    MainLayout->setSpacing(0);
+
+    setLayout(MainLayout);
+}
+void BreakPointListWindow::insertBreakPoint(const break_id_t &ID, const char *filename, const int &line) const {
+    auto *item = new QTreeWidgetItem(ID);            // any type
+    item->setIcon(0, QIcon(IconFactory::BreakPoint));// BP. icon
+    item->setText(0, QString::number(ID));
+    item->setText(1, filename);
+    item->setText(2, QString::number(line));
+    BpList->addTopLevelItem(item);
+}
+
 
 DebuggerWidget::DebuggerWidget(QWidget *parent) : QWidget(parent) {
     MainWindowLayout = new QVBoxLayout();
@@ -18,6 +86,7 @@ DebuggerWidget::DebuggerWidget(QWidget *parent) : QWidget(parent) {
 
     MainWindowLayout->addLayout(SourceWatchLayout);
     MainWindowLayout->addWidget(Console);
+
 
     /*
     splitter = new QSplitter(this);
@@ -62,16 +131,10 @@ void DebuggerWidget::createConsole(){
     console_out_in->addWidget(DebuggerPrompt);
     console_out_in->setContentsMargins(0, 0, 0, 0);
     Console->setFixedHeight(200);
-    /*
-    Console->setAutoFillBackground(true);
-    QPalette pal = palette();
-    pal.setColor(QPalette::Window, Qt::lightGray);
-    Console->setPalette(pal);
-    */
-    //Console->setStyleSheet("border: 1px solid rgb(0, 255, 0);");
 
     createControlPanel();
     createCallStackWindow();
+    createBreakPointList();
 
     DebuggerOutput->setLayout(console_out_in);
     DebuggerOutput->setContentsMargins(0, 0, 0, 0);
@@ -82,8 +145,8 @@ void DebuggerWidget::createConsole(){
 
     MainConsoleLayout->addLayout(CallStackLayout);
     MainConsoleLayout->addLayout(ControlPanel);
-    //MainConsoleLayout->addLayout(console_out_in);
     MainConsoleLayout->addWidget(ConsoleTab);
+    MainConsoleLayout->addWidget(BreakPoint_List);
 
     Console->setLayout(MainConsoleLayout);
 }
@@ -212,8 +275,8 @@ void DebuggerWidget::createCallStackWindow() {
 
     CallStackLayout->setContentsMargins(0, 0, 5, 0);
     CallStackLayout->setSpacing(0);
-    ThreadBox->setFixedWidth(300);
-    CallStack->setFixedWidth(300);
+    ThreadBox->setFixedWidth(200);
+    CallStack->setFixedWidth(200);
     connect(CallStack, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotOpenCallStackFile(QListWidgetItem *)));
 
     CallStackLayout->addWidget(ThreadBox);
@@ -228,6 +291,49 @@ void DebuggerWidget::fillCallStack() {
 
 void DebuggerWidget::slotOpenCallStackFile(QListWidgetItem *item) {
     //item->text();
+}
+
+void DebuggerWidget::createBreakPointList() {
+    BreakPoint_List = new BreakPointListWindow(this);
+    // connect tool buttons + some new slots
+    connect(BreakPoint_List->BpList, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotGoToBreakPointFile(QListWidgetItem *)));
+    connect(BreakPoint_List->remove, SIGNAL(clicked()), this, SLOT(slotRemoveBreakPoint()));
+    connect(BreakPoint_List->removeAll, SIGNAL(clicked()), this, SLOT(slotRemoveAllBreakPoint()));
+    //connect(BreakPoint_List->mute, SIGNAL(clicked()), this, SLOT(slotMuteBreakPoint()));
+    //connect(BreakPoint_List->muteAll, SIGNAL(clicked()), this, SLOT(slotMuteAllBreakPoint()));
+}
+
+void DebuggerWidget::slotGoToBreakPointFile(QListWidgetItem *item) {
+    const char *filepath = BreakPoint_List->BpList->currentItem()->text(1).toLatin1().data();
+    const int line = BreakPoint_List->BpList->currentItem()->text(2).toInt();
+    setStartPosition(filepath, line);
+}
+
+void DebuggerWidget::slotRemoveBreakPoint() {
+    if (!BreakPoint_List->BpList->selectedItems().isEmpty()) {
+        const int ID = BreakPoint_List->BpList->currentItem()->text(0).toInt();// ID
+        removeBreakpoint(ID);
+    }
+    // otherwise raises error, of course no selected item cannot be removed or ... selected at 0
+    else {
+        // no idea this will works :)
+        BreakPoint_List->BpList->setCurrentIndex(BreakPoint_List->BpList->rootIndex());
+    }
+}
+
+void DebuggerWidget::slotRemoveAllBreakPoint() {
+    for (int i = 0; i < BreakPointList.size(); i++) {
+        //const int ID = BreakPoint_List->BpList->currentItem()->text(0).toInt(); // ID
+        // assume that break IDs are increasing constantly
+        if (!Target.BreakpointDelete(i)) {
+            debug_output->appendPlainText("Breakpoint was not removed !");
+        }
+        //BreakPointList.erase(BreakPointList.begin() + i);
+    }
+    // TODO: figure out how to get specific item in list and remove them 1 by 1
+    // clear whole list and insert remaining break points
+    BreakPoint_List->BpList->clear();
+    BreakPointList.clear();
 }
 
 // -----------------------------------------------------------------------------------------
@@ -278,18 +384,6 @@ void DebuggerWidget::slotCmdlineExecute() {
 // -----------------------------------------------------------------------------------------
 
 
-
-void DebuggerWidget::setStartFilePosition(const QString &path, const int &line) {
-    FileDirManager fmanager;
-    QString content = fmanager.simple_read(path);  // wants a QString !!!
-    source_view->setPlainText(content);
-    source_view->setCursorAtLine(line);   // later maybe some effect
-}
-
-void DebuggerWidget::setFilePosition(){
-
-}
-
 void DebuggerWidget::setExecutable(const std::string &exe_file_path) {
     executable = exe_file_path.c_str();
     qDebug() << exe_file_path.c_str();
@@ -301,33 +395,17 @@ void DebuggerWidget::setExecutable(const std::string &exe_file_path) {
 }
 
 void DebuggerWidget::showBreakPointsList() {
-    BreakPointListWindow = new QWidget(this);
-    BreakPoint_List = new QTreeWidget(this);
-    //QListWidget *break_list = new QListWidget(this);
-    auto *layout = new QVBoxLayout();
-    BreakPointListWindow->setFixedWidth(500);
-    BreakPoint_List->setColumnCount(3);
-    BreakPoint_List->setHeaderLabels(QStringList() << "ID"
-                                                   << "File"
-                                                   << "Line");
-    //layout->addWidget(break_list);
-    layout->addWidget(BreakPoint_List);
-    BreakPointListWindow->setWindowFlags(Qt::Dialog);
-    for (int i = 0; i < BreakPointList.size(); i++) {
-        //QListWidgetItem *item = new QListWidgetItem(break_list, i);
-        auto *item = new QTreeWidgetItem(i);
-        item->setIcon(0, QIcon(IconFactory::BreakPoint));// icon to beginning
-        //QString info = QString("ID: ") + QString::number(debugger.BreakPointList[i].break_id) + ", line: " +
-        //        QString::number(debugger.BreakPointList[i].line) + " File: " + debugger.BreakPointList[i].filename;
-        item->setText(0, QString::number(BreakPointList[i].break_id));
-        item->setText(1, BreakPointList[i].filename);
-        item->setText(2, QString::number(BreakPointList[i].line));
-        //break_list->addItem(item);
-        BreakPoint_List->addTopLevelItem(item);
+    DialogBreakPoint_List = new BreakPointListWindow(this);
+    DialogBreakPoint_List->setWindowFlags(Qt::Dialog);
+    for (const auto &i : BreakPointList) {
+        DialogBreakPoint_List->insertBreakPoint(i.break_id, i.filepath, i.line);
     }
+    // connect tool buttons + some new slots
+    connect(DialogBreakPoint_List->BpList, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotGoToBreakPointFile(QListWidgetItem *)));
+    connect(DialogBreakPoint_List->remove, SIGNAL(clicked()), this, SLOT(slotRemoveBreakPoint()));
+    connect(DialogBreakPoint_List->removeAll, SIGNAL(clicked()), this, SLOT(slotRemoveAllBreakPoint()));
 
-    BreakPointListWindow->setLayout(layout);
-    BreakPointListWindow->show();
+    DialogBreakPoint_List->show();
 }
 
 void DebuggerWidget::showSetManualBreakPoint(const QString &filepath) {
@@ -348,10 +426,10 @@ void DebuggerWidget::showSetManualBreakPoint(const QString &filepath) {
 
 void DebuggerWidget::slotSetBreakPointByManualLine() {
     int line = line_input->text().toInt();
+    manual_window->close();
     if(line != 0){
         createBreakpoint(file_path, line);
     }
-    manual_window->close();
 }
 
 void DebuggerWidget::showTaskManager() {
@@ -361,7 +439,7 @@ void DebuggerWidget::showTaskManager() {
     // debugger.attachToRunningProcess(some id);    // add signal from task and slot from here
 }
 
-void DebuggerWidget::fillThreadBox() {
+void DebuggerWidget::collectThreads() {
     //int num = Process.GetNumThreads();
     //std::cout << num;
     for (int i = 0; i < Process.GetNumThreads(); i++) {
@@ -511,18 +589,17 @@ void DebuggerWidget::start() {
 
 
     worker = new QThread(this);
-    runner = new Runner();
+    auto ptr = std::make_shared<DebuggerWidget>(this);
+    runner = new Runner(ptr);// QObject::moveToThread: Cannot move objects with a parent
     //QThread::create(&DebuggerWidget::setProcessInterruptFeatures, this);
 
     connect(worker, &QThread::started, this, &DebuggerWidget::setProcessInterruptFeatures);
-    connect(worker, &QThread::finished, this, &QObject::deleteLater);// worker ---> this
+    connect(worker, &QThread::finished, worker, &QObject::deleteLater);// worker ---> this
     runner->moveToThread(worker);
+    worker->setObjectName("DebuggerThread");
     worker->start();
     // when process stopped, return true, pause process
     //setProcessInterruptFeatures();
-    //std::thread debug_thread(&DebuggerWidget::setProcessInterruptFeatures, this); // , "Debug_session"
-    //debug_thread.detach(); // join
-    // do not join, since i do not want to want for thread to end
 }
 
 void DebuggerWidget::stop() {
@@ -550,7 +627,7 @@ bool DebuggerWidget::HandleProcessEvent(SBEvent &event) {
     switch (event.GetType()) {
         case lldb::SBProcess::eBroadcastBitStateChanged:
             // add all threads into threads view
-            fillThreadBox();
+            collectThreads();
             storeFrameData(getCurrentFrame());
 
             return HandleProcessStateChangeEvent(event);
@@ -588,22 +665,19 @@ bool DebuggerWidget::HandleProcessStateChangeEvent(SBEvent &event) {
         case eStateStopped:   ///< Process is stopped and can be examined
             debug_output->appendPlainText("Process has stopped and can be examined");
             enableDebuggerButtons();
-            
+
             // retrieve data first
             //storeFrameData(getCurrentFrame());
             //setThreads();
 
             HandleProcessStopped(event, process);
             // since from this point the process will stop i can only stepping or continue
-            //Process.Stop();
             return true;
             //break;
         case eStateRunning:   ///< Process is now running and can't be examined
             // Update your UI maybe and disable the play and step buttons so the user
             // can't try to run the program while it is already running
-            isRunning = true;
             btn_StartDebug->setEnabled(false);
-            isRunning = true;
             std::cout << "running";
             debug_output->appendPlainText("Process is running");
             break;
@@ -620,7 +694,6 @@ bool DebuggerWidget::HandleProcessStateChangeEvent(SBEvent &event) {
         case eStateExited:    ///< Process has exited and can't be examined.
             // Update your GUI top indicate you are no longer debugging since your
             // process has run to completion and has exited
-            isRunning = false;
             std::cout << "Process exited normally";
             debug_output->appendPlainText("Process exited normally");
             disableDebuggerButtons();
@@ -645,17 +718,17 @@ void DebuggerWidget::HandleProcessStopped(SBEvent &event, SBProcess &process) {
         return;
     }
 
-    std::string position = frameGetLocation(getCurrentFrame());
+    //std::string position = frameGetLocation(getCurrentFrame());
     //std::cout << getAssembly(getCurrentThread());
 
     const uint32_t num_threads = process.GetNumThreads();
     for (uint32_t thread_idx=0; thread_idx<num_threads; ++thread_idx) {
         SBThread thread = process.GetThreadAtIndex(thread_idx);
         // Get the thread stop description by using a stream
-        SBStream description_stream;
-        thread.GetDescription(description_stream, true);
-        const char *description = description_stream.GetData();
-        debug_output->appendPlainText(description);
+        //SBStream description_stream;
+        //thread.GetDescription(description_stream, true);
+        //const char *description = description_stream.GetData();
+        //debug_output->appendPlainText(description);
         // You can look at description and use this string in your GUI if it has the contents you want.
         // This will be formatted using the "thread-format" which can be changed with "settings set":
         //   settings set thread-format ....
@@ -679,12 +752,13 @@ void DebuggerWidget::HandleProcessStopped(SBEvent &event, SBProcess &process) {
                 // hit by the same thread, so we will want to report all breakpoints that were hit
                 std::cout << "breakpoint was hit";
                 debug_output->appendPlainText("breakpoint was hit: ");
-                if(!position.empty()){
-                    debug_output->appendPlainText(QString::fromStdString(position));
-                }
-                for (size_t i=0; i<stop_reason_data_count; i+=2) {
+                setFilePosition(thread.GetSelectedFrame());
+                //if(!position.empty()){
+                //    debug_output->appendPlainText(QString::fromStdString(position));
+                //}
+                for (size_t i = 0; i < stop_reason_data_count; i += 2) {
                     break_id_t bp_id = thread.GetStopReasonDataAtIndex(i);
-                    break_id_t bp_loc_id = thread.GetStopReasonDataAtIndex(i+1);
+                    break_id_t bp_loc_id = thread.GetStopReasonDataAtIndex(i + 1);
                     SBBreakpoint bp = process.GetTarget().FindBreakpointByID(bp_id);
                     SBBreakpointLocation bp_loc = bp.FindLocationByID(bp_loc_id);
                     //bp_loc.GetAddress();
@@ -763,8 +837,8 @@ void DebuggerWidget::storeFrameData(SBFrame frame) {
         */
 
         //defining a couple of items
-        auto *var = new QStandardItem(QString(value.GetName()));
-        auto *val = new QStandardItem(QString(value.GetValue()));
+        auto *var = new QStandardItem(QString::fromLatin1(value.GetName()));
+        auto *val = new QStandardItem(QString::fromLatin1(value.GetValue()));
 
         //building up the hierarchy
         rootNode->appendRow(var);
@@ -797,41 +871,126 @@ std::string DebuggerWidget::frameGetLocation(const SBFrame& frame) {
     return description;
 }
 
-void DebuggerWidget::createBreakpoint(const char *file_name, const int &line) {
+void DebuggerWidget::setStartPosition(const char *filepath, const int &line) {
+    /*
+    const char *path = frame.GetLineEntry().GetFileSpec().GetFilename();
+    SBFunction function = frame.GetFunction();
+    uint32_t _line = frame.GetLineEntry().GetLine();
+    const char* func_name = function.GetDisplayName();
+    */
+    FileDirManager fmanager;
+    QString content = fmanager.simple_read(filepath);
+    source_view->setPlainText(content);
+    source_view->setCursorAtLine(line);// later maybe some effect
+    //source_view->setLineSelection(line, PlainTextEdit::Warning);
+}
 
-    SBBreakpoint breakpoint = Target.BreakpointCreateByLocation(file_name, line);
+void DebuggerWidget::setFilePosition(const SBFrame &frame) {
+
+    const char *path = frame.GetLineEntry().GetFileSpec().GetFilename();
+    SBFunction function = frame.GetFunction();
+    uint32_t line = frame.GetLineEntry().GetLine();
+    //const char* func_name = function.GetDisplayName();
+
+    std::cout << path;
+    std::cout << "\n";
+    std::cout << function.GetName();
+    std::cout << "\n";
+    std::cout << line;
+
+    // FIXME: this returns only file name "main.cpp" !!!!! NOT GOOD
+    // TODO: if file is not contained, get assembly code displayed, jump over read, but remain selection
+
+    FileDirManager fmanager;
+    QString content = fmanager.simple_read(path);
+    source_view->setPlainText(content);
+    source_view->setCursorAtLine(line);// later maybe some effect
+    //source_view->setLineSelection(line, PlainTextEdit::Warning);
+}
+
+void DebuggerWidget::createBreakpoint(const char *filepath, const int &line) {
+
+    SBBreakpoint breakpoint = Target.BreakpointCreateByLocation(filepath, line);
     // make sure that it's good
     if (!breakpoint.IsValid()) {
-        debug_output->appendPlainText("Breakpoint is not valid:  filename: ");
-        debug_output->appendPlainText(file_name);
+        debug_output->appendPlainText("Breakpoint is not valid:  file: ");
+        debug_output->appendPlainText(filepath);
         //debug_output->appendPlainText(line);
-        //return;
+        return;
     }
 
     breakpoint.SetEnabled(true);
 
-
-    BreakPointData data{breakpoint.GetID(), file_name, line};
+    BreakPointData data{breakpoint.GetID(), filepath, line};
     BreakPointList.push_back(data);
+
+    BreakPoint_List->insertBreakPoint(breakpoint.GetID(), filepath, line);
+    // also take case of this instance to ensure both of them gets created, removed
+    /*
+    if(DialogBreakPoint_List != nullptr){
+        DialogBreakPoint_List->insertBreakPoint(breakpoint.GetID(), file_name, line);
+    }
+    */
 }
 
 void DebuggerWidget::removeBreakpoint(const break_id_t &id) {
-    if(!Target.BreakpointDelete(id)){
-        debug_output->appendPlainText("Breakpoint was not deleted !");
-    }
-}
-
-void DebuggerWidget::removeBreakpoint(const char *file_name, const int &line) {
-
-    break_id_t ID;
-    for (const auto& b_point : BreakPointList) {
-        if(b_point.filename == file_name && b_point.line == line){
-            ID = b_point.break_id;
+    int pos;
+    for (int i = 0; i < BreakPointList.size(); i++) {
+        if (BreakPointList[i].break_id == id) {
+            // remove from help list
+            pos = i;
         }
     }
-    if(!Target.BreakpointDelete(ID)){
-        debug_output->appendPlainText("Breakpoint was not deleted !");
+    if (!Target.BreakpointDelete(id)) {
+        debug_output->appendPlainText("Breakpoint was not removed !");
     }
+    BreakPointList.erase(BreakPointList.begin() + pos);
+    // clear whole list and insert remaining break points
+    BreakPoint_List->BpList->clear();
+    for (const auto &b_point : BreakPointList) {
+        BreakPoint_List->insertBreakPoint(b_point.break_id, b_point.filepath, b_point.line);
+    }
+    /*
+    if(DialogBreakPoint_List != nullptr){
+        DialogBreakPoint_List->BpList->clear();
+        for (const auto& b_point : BreakPointList) {
+            DialogBreakPoint_List->insertBreakPoint(b_point.break_id, b_point.filename, b_point.line);
+        }
+    }
+    */
+}
+
+void DebuggerWidget::removeBreakpoint(const char *filepath, const int &line) {
+    // deletion by ID --> find it out and then delete
+    break_id_t ID;
+    // after we find that exist and was removed
+    int pos;
+    for (int i = 0; i < BreakPointList.size(); i++) {
+        if (BreakPointList[i].filepath == filepath && BreakPointList[i].line == line) {
+            // store ID for deletion
+            ID = BreakPointList[i].break_id;
+            // remove from help list
+            pos = i;
+        }
+    }
+    if (!Target.BreakpointDelete(ID)) {
+        debug_output->appendPlainText("Breakpoint was not removed !");
+        return;
+    }
+    BreakPointList.erase(BreakPointList.begin() + pos);
+    // clear whole list and insert remaining break points
+    BreakPoint_List->BpList->clear();
+    for (const auto &b_point : BreakPointList) {
+        BreakPoint_List->insertBreakPoint(b_point.break_id, b_point.filepath, b_point.line);
+    }
+    /*
+    if(DialogBreakPoint_List != nullptr){
+        DialogBreakPoint_List->BpList->clear();
+        for (const auto& b_point : BreakPointList) {
+            DialogBreakPoint_List->insertBreakPoint(b_point.break_id, b_point.filename, b_point.line);
+        }
+    }
+    */
 }
 
 std::vector<DebuggerWidget::framedata> get_var_func_info() {
@@ -894,27 +1053,22 @@ void DebuggerWidget::Continue() {
 
 void DebuggerWidget::stepOver() {
     getCurrentThread().StepOver();
-    //setProcessInterruptFeatures();
-    //std::cout << "after\n";
-    SBStream str;
-    getCurrentFrame().GetDescription(str);
-    std::cout << str.GetData();
-    //std::string pos = frameGetLocation(getCurrentFrame());
-    //debug_output->appendPlainText(QString::fromStdString(pos));
-    //std::cout << pos;
-    // plus later use other definition maybe, providing SBError
+    setFilePosition(getCurrentFrame());
 }
 
 void DebuggerWidget::stepInto() {
     getCurrentThread().StepInto();
+    setFilePosition(getCurrentFrame());
 }
 
 void DebuggerWidget::stepOut() {
     getCurrentThread().StepOut();
+    setFilePosition(getCurrentFrame());
 }
 
 void DebuggerWidget::stepInstruction() {
     getCurrentThread().StepInstruction(true); // step_over     ; false -> into call instr.
+    setFilePosition(getCurrentFrame());
 }
 
 std::string DebuggerWidget::executeDebuggerCommand(const std::string &args) {
