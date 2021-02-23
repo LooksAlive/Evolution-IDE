@@ -59,14 +59,14 @@ public:
     // insert spaces instead of tab or not
     static constexpr bool TABS_TO_SPACES = false;
 
-    QRectF blockBoundingGeometryProxy(const QTextBlock &block);
-    QRectF blockBoundingRectProxy(const QTextBlock &block);
-    QPointF contentOffsetProxy();
-    QTextBlock firstVisibleBlockProxy();
-    void moveCursor(const bool &end);
+    // !! protected !! stuffs, call them in side widgets (lines, Bp.)
+    QRectF blockBoundingGeometryProxy(const QTextBlock &block) const;
+    QRectF blockBoundingRectProxy(const QTextBlock &block) const;
+    QPointF contentOffsetProxy() const;
+    QTextBlock firstVisibleBlockProxy() const;
 
     // search
-    struct searchResult{
+    struct searchResult {
         QString fileName;
         int row;
         int col;
@@ -151,8 +151,8 @@ public:
     static constexpr unsigned int ActionsTimeOut = 5000;
 
 protected:
-    //void keyReleaseEvent(QKeyEvent *event) override;
-    void keyPressEvent(QKeyEvent *event) override;
+    void keyReleaseEvent(QKeyEvent *event) override;
+    //void keyPressEvent(QKeyEvent *event) override;
     void mousePressEvent(QMouseEvent *e) override;
     void focusInEvent(QFocusEvent *e) override;
     void focusOutEvent(QFocusEvent *e) override;
@@ -173,18 +173,28 @@ private:
     QCompleter *completer;
 
     void SetupCompleter();
+
     int indentSize(const QString &text);
-    bool indentText(const bool &forward);
     QString indentText(QString text, int count) const;
+    bool indentText(const bool &forward);
+    // if we are in scope and return/enter pressed --> insert line with indent(code dependent)
+    void autoEnterTextIndentation();
+    // when removing empty line(Backspace) with spaces, tabs in or not in scope
+    void autoBlankLineDeletion();
+    // move text around with ctrl+up/down
     void moveSelection(const bool &up);
+    // text to upper, lower
     void transformText(const bool &upper);
 
+    void moveCursor(const bool &end);
 
     QString file_extension;
 
-    QString file;
+    // file associated with editor
+    QString filepath;
 
 public slots:
+
     void completerInsertText(const QString &text);
     // search and select mouse touched word in this file, for now, do nothing
     void searchByMouseTouch();

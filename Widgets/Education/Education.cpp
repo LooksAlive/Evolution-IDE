@@ -12,8 +12,8 @@ Education::Education(QWidget *parent) : QDockWidget(parent) {
     //setWindowFlags(Qt::FramelessWindowHint);
 
     createWindow();
+    loadUsersSamples();
 
-    // loadOpenedSamples();
     setFeatures(AllDockWidgetFeatures);
     setVisible(false);
 }
@@ -23,7 +23,7 @@ void Education::createWindow() {
     CppCodeSamples = new QListWidget(this);
     CppUsersSamples = new QListWidget(this);
     preview = new QPlainTextEdit(this);
-    cpp_user_samples.reserve(5);
+    cpp_user_samples.reserve(2);
 
     CppCodeSamples->insertItem(0, "Introduction");
     CppCodeSamples->insertItem(1, "Main");
@@ -85,25 +85,42 @@ void Education::createWindow() {
     setWidget(stack);
 }
 
-void Education::loadOpenedSamples() {
+void Education::loadUsersSamples() {
     QSettings settings("Evolution-IDE");
-    auto _opened_samples = settings.value("Evolution-IDE/opened_samples").toList();
-    /*
-    for (int i = 0; i < CppCodeSamples->count(); i++) {
-        if(opened_samples.at(i) == CppCodeSamples->itemAt(0, i)){
-            CppCodeSamples->itemAt(0, i)->setIcon(IconFactory::Done);
+    opened_samples = settings.value("Evolution-IDE/users_samples").toStringList();
+
+    std::vector<QString> names;
+    std::vector<QString> contents;
+
+    for (int i = 0; i < opened_samples.size(); i++) {
+        if (i % 2 == 0) {
+            // sample content, each second
+            contents.push_back(opened_samples[i]);
+        } else {
+            // sample name
+            names.push_back(opened_samples[i]);
         }
     }
-    */
+    for (int i = 0; i < contents.size(); i++) {
+        addUserSample(contents[i], names[i]);
+    }
 }
 
-void Education::saveOpenedSamples() {
+void Education::saveUsersSamples() {
+    // user samples
+    for (int i = 0; i < CppUsersSamples->count(); i++) {
+        // sample name
+        opened_samples.append(CppUsersSamples->item(i)->text());
+        // sample content
+        opened_samples.append(cpp_user_samples[i]);
+    }
+
     QSettings settings("Evolution-IDE");
-    settings.setValue("Evolution-IDE/opened_samples", QVariant::fromValue(opened_samples));
+    settings.setValue("Evolution-IDE/users_samples", opened_samples);
 }
 
 void Education::closeEvent(QCloseEvent *event) {
-    //saveOpenedSamples();
+    saveUsersSamples();
     QDockWidget::closeEvent(event);
 }
 

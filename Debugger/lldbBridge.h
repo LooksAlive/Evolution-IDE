@@ -11,6 +11,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
+#include <QMutex>
 #include <QPalette>
 #include <QPlainTextEdit>
 #include <QPushButton>
@@ -53,6 +54,7 @@ using namespace lldb;
 // sources:  https://stackoverflow.com/questions/8063434/qt-run-independent-thread-from-other-thread
 
 class lldbBridge;
+class DebuggerSession;
 
 /*
  * blank QObject to move thread here and run asynchronously, independent on the main thread
@@ -64,13 +66,37 @@ class lldbBridge;
 class Runner : public QObject {
     Q_OBJECT
 public:
-    explicit Runner(std::shared_ptr<lldbBridge> Deb = nullptr, QObject *parent = nullptr);
+    explicit Runner(std::shared_ptr<DebuggerSession> dBsession = nullptr, QObject *parent = nullptr);
     ~Runner() = default;
 
+public slots:
     void runDebugSession();
 
 private:
-    std::shared_ptr<lldbBridge> debugger;
+    std::shared_ptr<DebuggerSession> debugger;
+
+    QMutex mutex;
+};
+
+/*
+ * log: tried to inherit std::enable_shared_from_this<lldbBridge> but it crashed in run
+ * did not initialized this pointer for some reason
+ * auto ptr = shared_from_this();
+ * --> new class with running running stage
+*/
+// TODO: create shared ptr from this class, insert process features functions and call from Runner
+class DebuggerSession {
+public:
+    DebuggerSession(lldbBridge *lldb_bridge);
+    ~DebuggerSession() = default;
+
+    void setProcessInterruptFeatures();
+
+private:
+    lldbBridge *DBridge;
+    bool HandleProcessEvent(SBEvent &event);
+    bool HandleProcessStateChangeEvent(SBEvent &event);
+    void HandleProcessStopped(SBEvent &event, SBProcess &process);
 };
 
 class lldbBridge : public QObject {
@@ -88,7 +114,7 @@ public:
     Tab *tab;
     PlainTextEdit *currentEdit;
     // all file associated stuffs
-    void setStartPosition(const char *filepath, const int &line);
+    void setStartPosition(const char *filepath, const int &line) const;
     void setFilePosition(const SBFrame &frame);
     void setExecutable(const std::string &exe_file_path);
 
@@ -100,26 +126,23 @@ public:
     // dialog based break point list like in view
     //BreakPointListWindow *DialogBreakPoint_List = nullptr;
 
-    QWidget *manual_window;
+    QWidget *manual_BpWindow;
     QLineEdit *line_input;
     const char *file_path;
 
-private:
     DebuggerDock *Dock;
-    DebugWatchDock *WatchDock;
-
-    void connectDockWidgets();
-
     // this will be called when process stopped, insert threads into box
     void collectThreads();
     void fillCallStack();
-
-    BreakPointListWindow *DialogBreakPoint_List;
-
-
     // while process pending, i should not touch for ex. step over or else
     void enableDebuggerButtons();
     void disableDebuggerButtons();
+
+private:
+    DebugWatchDock *WatchDock;
+    void connectDockWidgets();
+
+    BreakPointListWindow *DialogBreakPoint_List;
 
 public slots:
     void slotStepOver();
@@ -137,11 +160,13 @@ private slots:
     void slotCmdlineExecute();
     void slotSetBreakPointByManualLine();
 
-    void slotOpenCallStackFile(QListWidgetItem *item);
-    void slotGoToBreakPointFile(QListWidgetItem *item);
+    void slotOpenCallStackFile(QListWidgetItem *item) const;
+    void slotGoToBreakPointFile(QListWidgetItem *item) const;
 
     void slotRemoveBreakPoint();
     void slotRemoveAllBreakPoint();
+
+    void slotSetVariableDescription(const QModelIndex &index);
 
     void slotAddWatch();
     void slotRemoveWatch();
@@ -155,7 +180,9 @@ public:
     void removeBreakpoint(const char *filepath, const int &line);
     void removeBreakpoint(const break_id_t &id);
 
-    void storeFrameData(SBFrame frame);
+    void collectFrameData(SBFrame frame);
+    // has children value
+    void recursiveValueIterator(SBValue value, QStandardItem *parent_row);
     SBThread getCurrentThread();
     SBFrame getCurrentFrame();
     std::string frameGetLocation(const SBFrame &frame);
@@ -203,17 +230,20 @@ private:
 
     const char *getAssembly(SBThread thread);
 
-    QThread *worker = nullptr;
+    QThread *worker;
     Runner *runner;
 
     SBError error;
     SBStream strm;
     SBFileSpec filespec;
 
+    SBValueList FrameVariablesList;
 
     SBDebugger Debugger;
     SBTarget Target;
     SBProcess Process;
+
+public:
     SBListener listener;
 };
 

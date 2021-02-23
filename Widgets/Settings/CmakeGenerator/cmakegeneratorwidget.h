@@ -32,7 +32,7 @@ class CMakeGeneratorWidget : public QWidget
     Q_OBJECT
 public:
     explicit CMakeGeneratorWidget(QWidget *parent = nullptr);
-    ~CMakeGeneratorWidget();
+    ~CMakeGeneratorWidget() = default;
 
     void loadData();
     void saveData();
@@ -54,6 +54,8 @@ private:
 
     QCheckBox *generate_cmake;
     QLineEdit *cmakelists_path;
+    QLineEdit *cmake_build_dir;
+    //QLineEdit *cmake_build_temp_dir;    // when only 1 file not saved in editor -> compiling...
     QLineEdit *compiler;
     QLineEdit *compile_flags;
     QLineEdit *cpu_cores;

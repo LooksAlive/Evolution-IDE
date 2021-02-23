@@ -71,14 +71,18 @@ public:
 
     // DEBUGGER
     static constexpr auto StartDebug = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/StartDebug.png";
-    static constexpr auto StopDebug = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/StopDebug.png"; // square
+    static constexpr auto StopDebug = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/StopDebug.png";// square
     static constexpr auto Resume = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/Resume.png";
     static constexpr auto RunToCursor = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/RunToCursor.png";
     static constexpr auto NextLine = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/NextLine.png";
     static constexpr auto StepInto = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/GetIntoFunction.png";
-    static constexpr auto StepInstruction = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/NextInstruction.png";   // StepInstruction
+    static constexpr auto StepInstruction = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/NextInstruction.png";// StepInstruction
     static constexpr auto GetOutOfFunction = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/GetOutOfFunction.png";
-
+    static constexpr auto AddWatch = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/AddWatch.png";
+    static constexpr auto RemoveWatch = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/RemoveWatch.png";
+    static constexpr auto ModifyWatch = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/ModifyWatch.png";
+    static constexpr auto Mute = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/mute.svg";
+    static constexpr auto RemoveAll = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/removeAll.svg";
 };
 
 #endif // ICONFACTORY_H

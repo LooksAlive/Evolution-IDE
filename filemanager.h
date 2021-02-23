@@ -47,6 +47,7 @@ public:
     QString current_full_filepath;// /home/user/file.txt
     QString current_file_name;    // file.txt
     QString executable_file_path; // executable for debugger
+    QString executable_file_name;
     QString clang_format_path;
     QString clang_tidy_path;
     bool project_cmake_file_exists = false;

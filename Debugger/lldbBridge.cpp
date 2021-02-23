@@ -1,12 +1,15 @@
 #include "lldbBridge.h"
 #include "icons/IconFactory.h"
 #include <QSettings>
+#include <QSharedPointer>
 
-Runner::Runner(std::shared_ptr<lldbBridge> Deb, QObject *parent)
-    : QObject(parent), debugger(std::move(Deb)) {}
+Runner::Runner(std::shared_ptr<DebuggerSession> dBsession, QObject *parent)
+    : QObject(parent), debugger(std::move(dBsession)) {}
 
 void Runner::runDebugSession() {
+    mutex.lock();
     debugger->setProcessInterruptFeatures();
+    mutex.unlock();
 }
 
 
@@ -18,9 +21,11 @@ void lldbBridge::fillCallStack() {
     for (int i = 0; i <= 5; i++) {
         Dock->CallStack->insertItem(i, "some call");
     }
+    // is there another wyy to do that ... extract positions, contents and files ????
+    const std::string backTrace = executeDebuggerCommand("thread backtrace all");
 }
 
-void lldbBridge::slotGoToBreakPointFile(QListWidgetItem *item) {
+void lldbBridge::slotGoToBreakPointFile(QListWidgetItem *item) const {
     const char *filepath = Dock->BreakPoint_List->BpList->currentItem()->text(1).toLatin1().data();
     const int line = Dock->BreakPoint_List->BpList->currentItem()->text(2).toInt();
     setStartPosition(filepath, line);
@@ -94,7 +99,7 @@ void lldbBridge::slotContinue() {
 // -----------------------------------------------------------------------------------------
 
 void lldbBridge::slotCmdlineExecute() {
-    std::string res = executeDebuggerCommand(Dock->DebuggerPrompt->text().toStdString());
+    const std::string res = executeDebuggerCommand(Dock->DebuggerPrompt->text().toStdString());
     Dock->debug_output->appendPlainText(res.c_str());// hope QString takes a C string and no implicit conversion is needed
     Dock->DebuggerPrompt->clear();
 }
@@ -114,6 +119,7 @@ void lldbBridge::setExecutable(const std::string &exe_file_path) {
 void lldbBridge::showBreakPointsList() {
     DialogBreakPoint_List = new BreakPointListWindow();
     DialogBreakPoint_List->setWindowFlags(Qt::Dialog);
+    DialogBreakPoint_List->setMinimumWidth(400);
     for (const auto &i : BreakPointList) {
         DialogBreakPoint_List->insertBreakPoint(i.break_id, i.filepath, i.line);
     }
@@ -125,32 +131,36 @@ void lldbBridge::showBreakPointsList() {
     DialogBreakPoint_List->show();
 }
 
-void lldbBridge::slotOpenCallStackFile(QListWidgetItem *item) {
-    //item->text();
+void lldbBridge::slotOpenCallStackFile(QListWidgetItem *item) const {
+    QString filepath = item->text();
+    //item->listWidget()->currentItem()->text();
+    // TODO: get line associated with stack + might wanna get assembly in function
+    setStartPosition(filepath.toLatin1().data(), 0);
 }
 
 void lldbBridge::showSetManualBreakPoint(const QString &filepath) {
     file_path = filepath.toLatin1().data();
-    manual_window = new QWidget();
-    line_input = new QLineEdit();
+    manual_BpWindow = new QWidget(Dock);// cannot pass this, -> is only object inherited class
+    line_input = new QLineEdit(Dock);   // let ownership to dock
     auto *layout = new QVBoxLayout();
     auto *form = new QFormLayout();
-    manual_window->setWindowFlags(Qt::Dialog);
+    manual_BpWindow->setWindowFlags(Qt::Dialog);
     line_input->setPlaceholderText("Line");
     form->addRow(line_input);
     layout->addLayout(form);
     connect(line_input, SIGNAL(returnPressed()), this, SLOT(slotSetBreakPointByManualLine()));
 
-    manual_window->setLayout(layout);
-    manual_window->show();
+    manual_BpWindow->setLayout(layout);
+    manual_BpWindow->show();
 }
 
 void lldbBridge::slotSetBreakPointByManualLine() {
     int line = line_input->text().toInt();
-    manual_window->close();
+    manual_BpWindow->close();
     if (line != 0) {
         createBreakpoint(file_path, line);
     }
+    manual_BpWindow->deleteLater();
 }
 
 void lldbBridge::showTaskManager() {
@@ -204,6 +214,21 @@ void lldbBridge::slotRemoveWatch() {
 void lldbBridge::slotModifyWatch() {
 }
 
+void lldbBridge::slotSetVariableDescription(const QModelIndex &index) {
+    const int row = index.row();
+    QString description;
+    // row is also value in list in view
+    SBValue value = FrameVariablesList.GetValueAtIndex(row);
+    description += "thread: " + QString::fromLatin1(value.GetThread().GetName());
+    description += "   address: " + QString::number(value.GetAddress().GetOffset());
+    description += "   type: " + QString::fromLatin1(value.GetType().GetName());
+    //value.GetDescription(strm);
+    //qDebug() << strm.GetData();
+    //value.GetStaticValue().GetData();
+
+    //Dock->VariableDescription->setText(description);
+}
+
 void lldbBridge::connectDockWidgets() {
     // console;    enter
     connect(Dock->DebuggerPrompt, SIGNAL(returnPressed()), this, SLOT(slotCmdlineExecute()));
@@ -225,8 +250,11 @@ void lldbBridge::connectDockWidgets() {
     connect(Dock->btn_StepInstruction, SIGNAL(clicked()), this, SLOT(slotStepInstruction()));
     connect(Dock->btn_Continue, SIGNAL(clicked()), this, SLOT(slotContinue()));
 
-    // call stack
+    // call stack, backtrace
     connect(Dock->CallStack, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotOpenCallStackFile(QListWidgetItem *)));
+
+    // VariablesView
+    connect(Dock->VariablesView, SIGNAL(clicked(const QModelIndex &)), this, SLOT(slotSetVariableDescription(const QModelIndex &)));
 
     // WatchDock
     // slotAddWatch  -> in console, where are all of variables shown
@@ -243,6 +271,7 @@ lldbBridge::~lldbBridge() {
     //lldb::pid_t pid = Process.GetProcessID();
     Dock->debug_output->appendPlainText("Killing process ");
     Process.Kill();
+    SBDebugger::Destroy(Debugger);
     SBDebugger::Terminate();
 }
 
@@ -250,7 +279,7 @@ void lldbBridge::init() {
 
     error = SBDebugger::InitializeWithErrorHandling();
     Debugger = SBDebugger::Create();
-    // Create a debugger instance so we can create a target
+
     if (!Debugger.IsValid()) {
         Dock->debug_output->appendPlainText("Error: failed to create a debugger object\n");
         SBStream str;
@@ -259,7 +288,7 @@ void lldbBridge::init() {
         std::cout << str.GetData();
         //return;
     }
-    // this is called when executable is set from outside, for know, only testing functionality
+    // this is called when executable is set from outside, for now, only testing functionality
     Target = Debugger.CreateTarget(executable);
 
     listener = Debugger.GetListener();
@@ -308,6 +337,7 @@ void lldbBridge::start() {
     // clear all first
     Dock->debug_output->clear();
     Dock->ThreadBox->clear();
+    //Dock->BreakPoint_List->remove all ??
     //WatchListView->clear();
 
     init();
@@ -320,7 +350,7 @@ void lldbBridge::start() {
         //return;
     }
 
-    //setBreakpoint("/home/adam/Desktop/sources/Evolution-IDE/main.cpp", 23);
+    // createBreakpoint("/home/adam/Desktop/sources/Evolution-IDE/main.cpp", 23);
     createBreakpoint("/home/adam/Desktop/sources/Evolution-IDE/main.cpp", 27);
 
     //Process = Target.LaunchSimple(nullptr, nullptr, nullptr);
@@ -331,29 +361,28 @@ void lldbBridge::start() {
     if (!Process.IsValid()) {
         Dock->debug_output->appendPlainText("Process is invalid \n");
         std::cout << "Process is invalid \n";
-        SBStream str;
-        Process.GetDescription(str);
-        std::cout << str.GetData();
-        //return;
+        Process.GetDescription(strm);
+        std::cout << strm.GetData();
+        return;
     }
 
-
     worker = new QThread(this);
-    //auto ptr = std::make_shared<lldbBridge>(this);
-    runner = new Runner(/*ptr*/);// QObject::moveToThread: Cannot move objects with a parent
-    //QThread::create(&DebuggerWidget::setProcessInterruptFeatures, this);
-
-    connect(worker, &QThread::started, this, &lldbBridge::setProcessInterruptFeatures);
-    connect(worker, &QThread::finished, worker, &QObject::deleteLater);// worker ---> this
-    runner->moveToThread(worker);
+    auto ptr = std::make_shared<DebuggerSession>(this);
+    runner = new Runner(ptr);// QObject::moveToThread: Cannot move objects with a parent
+    //&lldbBridge::setProcessInterruptFeatures
+    connect(worker, &QThread::started, runner, &Runner::runDebugSession, Qt::AutoConnection);// Qt::QueuedConnection
+    connect(worker, &QThread::finished, worker, &QObject::deleteLater, Qt::AutoConnection);
     worker->setObjectName("DebuggerThread");
+    //runner->moveToThread(worker);
+    //qRegisterMetaType<QSharedPointer<lldbBridge>>();
     worker->start();
     // when process stopped, return true, pause process
     //setProcessInterruptFeatures();
 }
 
 void lldbBridge::stop() {
-    Process.Stop();
+    // Process.Stop();
+    Process.Kill();
 }
 
 void lldbBridge::setProcessInterruptFeatures() {
@@ -378,7 +407,7 @@ bool lldbBridge::HandleProcessEvent(SBEvent &event) {
         case lldb::SBProcess::eBroadcastBitStateChanged:
             // add all threads into threads view
             collectThreads();
-            storeFrameData(getCurrentFrame());
+            collectFrameData(getCurrentFrame());
 
             return HandleProcessStateChangeEvent(event);
         /*
@@ -467,9 +496,6 @@ void lldbBridge::HandleProcessStopped(SBEvent &event, SBProcess &process) {
         // Don't update the GUI because we will soon receive a eStateRunning state...
         return;
     }
-
-    //std::string position = frameGetLocation(getCurrentFrame());
-    //std::cout << getAssembly(getCurrentThread());
 
     const uint32_t num_threads = process.GetNumThreads();
     for (uint32_t thread_idx=0; thread_idx<num_threads; ++thread_idx) {
@@ -560,42 +586,78 @@ void lldbBridge::attachToRunningProcess(const int &proc_id) {
 }
 
 
-void lldbBridge::storeFrameData(SBFrame frame) {
+void lldbBridge::collectFrameData(SBFrame frame) {
     // clear
     Dock->VariablesView->reset();
     auto *model = new QStandardItemModel(this);
 
     QStandardItem *rootNode = model->invisibleRootItem();
 
-    auto FrameList = frame.GetVariables(true,// args
-                                        true,// locals
-                                        true,// statics
-                                        true // in scope only
+    FrameVariablesList = frame.GetVariables(true,// args
+                                            true,// locals
+                                            true,// statics
+                                            true // in scope only
     );
 
-    for (uint32_t idx = 0; idx <= FrameList.GetSize(); idx++) {
-        auto value = FrameList.GetValueAtIndex(idx);
+    for (uint32_t i = 0; i < FrameVariablesList.GetSize(); i++) {
+        auto value = FrameVariablesList.GetValueAtIndex(i);
+        // value.GetDeclaration()
+        auto *row = new QStandardItem();
+        // first iteration
+        QString desc;
+        //  myVal (type) value
+        if (!QString::fromLatin1(value.GetName()).isEmpty())
+            desc += QString::fromLatin1(value.GetName()) + " ";
+        if (!QString::fromLatin1(value.GetTypeName()).isEmpty())
+            desc += "(" + QString::fromLatin1(value.GetTypeName()) + ")  ";
+        if (QString::fromLatin1(value.GetValue()).isEmpty())
+            // TODO: how tot lookup here if NULL or nullptr or some hex values
+            // TODO: also how to view war characters, numbers, booleans instead of hex, ...
+            desc += "{}";
+        else
+            desc += QString::fromLatin1(value.GetValue());
+
+        row->setText(desc);
+
+        rootNode->appendRow(row);
         /*
-        framedata data;
-        data.name = value.GetDisplayTypeName();
-        data.type = value.GetType().GetName();
-        data.value = value.GetValue();
-        data.description = value.GetObjectDescription();
-        //value.GetSummary();
-        //value.GetThread();
+        if(value.MightHaveChildren()){
+            recursiveValueIterator(value, row);
+        }
         */
-
-        //defining a couple of items
-        auto *var = new QStandardItem(QString::fromLatin1(value.GetName()));
-        auto *val = new QStandardItem(QString::fromLatin1(value.GetValue()));
-
-        //building up the hierarchy
-        rootNode->appendRow(var);
-        var->appendRow(val);
     }
-
     Dock->VariablesView->setModel(model);
     Dock->VariablesView->collapseAll();
+}
+
+void lldbBridge::recursiveValueIterator(SBValue value, QStandardItem *parent_row) {
+    for (uint32_t i = 0; i < value.GetNumChildren(); i++) {
+        auto *child_row = new QStandardItem();
+
+        QString desc;
+        //  myVal (type) value
+        if (!QString::fromLatin1(value.GetChildAtIndex(i).GetName()).isEmpty()) {
+            desc += QString::fromLatin1(value.GetChildAtIndex(i).GetName()) + " ";
+        }
+        if (!QString::fromLatin1(value.GetChildAtIndex(i).GetTypeName()).isEmpty()) {
+            desc += "(" + QString::fromLatin1(value.GetChildAtIndex(i).GetTypeName()) + ")  ";
+        }
+        if (QString::fromLatin1(value.GetChildAtIndex(i).GetValue()).isEmpty()) {
+            desc += "{}";
+        } else {
+            desc += QString::fromLatin1(value.GetChildAtIndex(i).GetValue());
+        }
+
+        child_row->setText(desc);
+        parent_row->appendRow(child_row);
+        qDebug() << desc;
+        qDebug() << "\n";
+
+        if (value.MightHaveChildren()) {
+            // recursion proceed here
+            recursiveValueIterator(value.GetChildAtIndex(i), child_row);
+        }
+    }
 }
 
 std::string lldbBridge::frameGetLocation(const SBFrame &frame) {
@@ -620,7 +682,7 @@ std::string lldbBridge::frameGetLocation(const SBFrame &frame) {
     return description;
 }
 
-void lldbBridge::setStartPosition(const char *filepath, const int &line) {
+void lldbBridge::setStartPosition(const char *filepath, const int &line) const {
     for (int i = 0; i <= tab->count(); i++) {
         // already opened file, only set focus on it and line
         // currentEdit is set automatically when tab focus is changed
@@ -646,7 +708,6 @@ void lldbBridge::setStartPosition(const char *filepath, const int &line) {
 }
 
 void lldbBridge::setFilePosition(const SBFrame &frame) {
-
     const char *filename = frame.GetLineEntry().GetFileSpec().GetFilename();
     SBFunction function = frame.GetFunction();
     uint32_t line = frame.GetLineEntry().GetLine();
@@ -671,7 +732,7 @@ void lldbBridge::setFilePosition(const SBFrame &frame) {
         }
     }
 
-    // boring file management
+    // boring file management, but too important
     if (!filepath.isEmpty()) {
         for (int i = 0; i <= tab->count(); i++) {
             // already opened file, only set focus on it and line
@@ -797,13 +858,13 @@ void lldbBridge::removeBreakpoint(const char *filepath, const int &line) {
 
 SBThread lldbBridge::getCurrentThread() {
     // no needed
-
+    /*
     if (!Process.IsValid()) {
         std::cout << "process is not valid";
         Dock->debug_output->appendPlainText("process is not valid");
         exit(1);
     }
-
+    */
     return Process.GetSelectedThread();
 }
 
@@ -841,7 +902,6 @@ void lldbBridge::Continue() {
             disableDebuggerButtons();
         }
     }
-    //disableDebuggerButtons();
 }
 
 void lldbBridge::stepOver() {
@@ -870,13 +930,177 @@ std::string lldbBridge::executeDebuggerCommand(const std::string &args) {
 
     SBCommandReturnObject result;
     Debugger.GetCommandInterpreter().HandleCommand(args.c_str(), result);
-
     std::string output;
-    if (result.Succeeded()) {
-        output = result.GetOutput();
-    } else {
-        output += result.GetError() + std::string(" ");
+    const char *cstr;
+    cstr = result.GetOutput();
+    if (cstr && cstr[0])
+        output += cstr;
+    cstr = result.GetOutput();
+    if (cstr && cstr[0])
+        output += cstr;
+    return output;
+}
+
+
+DebuggerSession::DebuggerSession(lldbBridge *lldb_bridge) : DBridge(lldb_bridge) {
+}
+
+void DebuggerSession::setProcessInterruptFeatures() {
+    const uint32_t event_timeout_secs = 10;// Wait for 10 seconds for an event. You can set this to be longer if you want like UINT32_MAX to wait forever.
+    bool done = false;
+    while (!done) {
+        SBEvent event;// const
+        if (DBridge->listener.WaitForEvent(event_timeout_secs, event)) {
+            if (SBProcess::EventIsProcessEvent(event)) {
+                // Handle process event
+                done = HandleProcessEvent(event);
+            }
+        }
+    }
+    //uint32_t lldb::SBEvent::GetType() const;
+}
+
+bool DebuggerSession::HandleProcessEvent(SBEvent &event) {
+
+    // auto thread = getCurrentThread();
+    switch (event.GetType()) {
+        case lldb::SBProcess::eBroadcastBitStateChanged:
+            // add all threads into threads view
+            DBridge->collectThreads();
+            DBridge->collectFrameData(DBridge->getCurrentFrame());
+
+            return HandleProcessStateChangeEvent(event);
+            /*
+            case lldb::SBProcess::eBroadcastBitSTDOUT:
+                //return HandleProcessSTDOUTEvent(event);
+                break;
+
+            case lldb::SBProcess::eBroadcastBitSTDERR:
+                //return HandleProcessSTDERREvent(event);
+                break;
+            */
+        default:
+            break;
+    }
+    return false;// Not done, don't exit main loop
+}
+
+bool DebuggerSession::HandleProcessStateChangeEvent(SBEvent &event) {
+    SBProcess process = SBProcess::GetProcessFromEvent(event);
+    StateType state = SBProcess::GetStateFromEvent(event);
+
+
+    switch (state) {
+        case eStateAttaching:///< Process is currently trying to attach
+            // Maybe you put up a progress dialog in case attach takes a while?
+            std::cout << "attaching to process";
+            DBridge->Dock->debug_output->appendPlainText("attaching to process");
+            break;
+        case eStateLaunching:///< Process is in the process of launching
+            // Maybe you put up a progress dialog in case launch takes a while?
+            std::cout << "launching";
+            DBridge->Dock->debug_output->appendPlainText("Launching");
+            break;
+        case eStateStopped:///< Process is stopped and can be examined
+            DBridge->Dock->debug_output->appendPlainText("Process has stopped and can be examined");
+            DBridge->enableDebuggerButtons();
+            HandleProcessStopped(event, process);
+            // since from this point the process will stop i can only stepping or continue
+            return true;
+            //break;
+        case eStateRunning:///< Process is now running and can't be examined
+            // Update your UI maybe and disable the play and step buttons so the user
+            // can't try to run the program while it is already running
+            DBridge->Dock->btn_StartDebug->setEnabled(false);
+            std::cout << "running";
+            DBridge->Dock->debug_output->appendPlainText("Process is running");
+            break;
+        case eStateDetached:///< Process has been detached and can't be examined.
+            // Update your GUI top indicate you are no longer debugging since LLDB
+            // has detached from your process.
+            std::cout << "process has been detached";
+            DBridge->Dock->debug_output->appendPlainText("Process has been detached");
+
+            // If you return true, then this will cause the event loop the exit.
+            // This will work well if you only ever debug one process at a time.
+            // If you are debugging multiple, you can return false.
+            return true;
+        case eStateExited:///< Process has exited and can't be examined.
+            // Update your GUI top indicate you are no longer debugging since your
+            // process has run to completion and has exited
+            std::cout << "Process exited normally";
+            DBridge->Dock->debug_output->appendPlainText("Process exited normally");
+            DBridge->disableDebuggerButtons();
+
+            // library loaded into memory no needed anymore
+            //Process.Kill();
+            //SBDebugger::Terminate();
+            // If you return true, then this will cause the event loop the exit.
+            // This will work well if you only ever debug one process at a time.
+            // If you are debugging multiple, you can return false.
+            return true;
+        default:
+            break;
+    }
+    return false;// Not done, don't exit main loop
+}
+
+void DebuggerSession::HandleProcessStopped(SBEvent &event, SBProcess &process) {
+    if (SBProcess::GetRestartedFromEvent(event)) {
+        // Process is automatically restarted due to script or breakpoint action.
+        // Don't update the GUI because we will soon receive a eStateRunning state...
+        return;
     }
 
-    return output;
+    const uint32_t num_threads = process.GetNumThreads();
+    for (uint32_t thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
+        SBThread thread = process.GetThreadAtIndex(thread_idx);
+        // Get the thread stop description by using a stream
+        //SBStream description_stream;
+        //thread.GetDescription(description_stream, true);
+        //const char *description = description_stream.GetData();
+        //debug_output->appendPlainText(description);
+        // You can look at description and use this string in your GUI if it has the contents you want.
+        // This will be formatted using the "thread-format" which can be changed with "settings set":
+        //   settings set thread-format ....
+
+        // You can also get an enumeration for why the thread has stopped using:
+        const StopReason thread_stop_reason = thread.GetStopReason();
+        // Each stop reason might have additional data associated with it. See SBThread.h line 54 for details.
+        // You can use this following SBThread functions to extract the data:
+        //    size_t SBThread::GetStopReasonDataCount();
+        //    uint64_t SBThread::GetStopReasonDataAtIndex(uint32_t idx);
+
+        const size_t stop_reason_data_count = thread.GetStopReasonDataCount();
+        switch (thread_stop_reason) {
+            case eStopReasonInvalid:
+            case eStopReasonNone:
+            case eStopReasonTrace:
+                break;
+            case eStopReasonBreakpoint:
+                // The stop reason data contains the breakpoint and breakpoint location
+                // IDs that were hit. There might be more than one breakpoint that was
+                // hit by the same thread, so we will want to report all breakpoints that were hit
+                std::cout << "breakpoint was hit";
+                DBridge->Dock->debug_output->appendPlainText("breakpoint was hit: ");
+                DBridge->setFilePosition(thread.GetSelectedFrame());
+                for (size_t i = 0; i < stop_reason_data_count; i += 2) {
+                    break_id_t bp_id = thread.GetStopReasonDataAtIndex(i);
+                    break_id_t bp_loc_id = thread.GetStopReasonDataAtIndex(i + 1);
+                    SBBreakpoint bp = process.GetTarget().FindBreakpointByID(bp_id);
+                    SBBreakpointLocation bp_loc = bp.FindLocationByID(bp_loc_id);
+                    //bp_loc.GetAddress();
+                    //bp_loc.GetThreadID();
+                }
+                break;
+            case eStopReasonWatchpoint:
+            case eStopReasonSignal:
+            case eStopReasonException:
+            case eStopReasonExec:
+            case eStopReasonPlanComplete:
+            case eStopReasonThreadExiting:
+            case eStopReasonInstrumentation:
+                break;
+        }
+    }
 }

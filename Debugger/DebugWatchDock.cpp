@@ -26,14 +26,17 @@ void DebugWatchDock::createDock() {
     MainLayout->setSpacing(0);
 
     addWatch = new QToolButton(this);
-    //addWatch->setIcon(QPixmap(":/DebugToolBar/image/Debug Docks/AddWatch.png"));
+    addWatch->setIcon(QIcon(IconFactory::AddWatch));
+    addWatch->setToolTip("Add Watch");
     WatchToolBar->addWidget(addWatch);
-    modifyWatch = new QToolButton(this);
-    //modifyWatch->setIcon(QPixmap(":/DebugToolBar/image/Debug Docks/ModifyWatch.png"));
-    WatchToolBar->addWidget(modifyWatch);
     removeWatch = new QToolButton(this);
-    //removeWatch->setIcon(QPixmap(":/DebugToolBar/image/Debug Docks/RemoveWatch.png"));
+    removeWatch->setIcon(QIcon(IconFactory::RemoveWatch));
+    removeWatch->setToolTip("Remove Watch");
     WatchToolBar->addWidget(removeWatch);
+    modifyWatch = new QToolButton(this);
+    modifyWatch->setIcon(QIcon(IconFactory::ModifyWatch));
+    modifyWatch->setToolTip("Modify Watch");
+    WatchToolBar->addWidget(modifyWatch);
 
     addWatch->setEnabled(false);
     modifyWatch->setEnabled(false);

@@ -82,24 +82,20 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
     ensureCursorVisible();
 }
 
-QRectF PlainTextEdit::blockBoundingGeometryProxy(const QTextBlock &block)
-{
+QRectF PlainTextEdit::blockBoundingGeometryProxy(const QTextBlock &block) const {
     return blockBoundingGeometry(block);
 }
 
-QRectF PlainTextEdit::blockBoundingRectProxy(const QTextBlock &block)
-{
+QRectF PlainTextEdit::blockBoundingRectProxy(const QTextBlock &block) const {
     return blockBoundingRect(block);
 }
 
-QPointF PlainTextEdit::contentOffsetProxy()
-{
+QPointF PlainTextEdit::contentOffsetProxy() const {
     return contentOffset();
 }
 
 
-QTextBlock PlainTextEdit::firstVisibleBlockProxy()
-{
+QTextBlock PlainTextEdit::firstVisibleBlockProxy() const {
     return firstVisibleBlock();
 }
 
@@ -130,8 +126,8 @@ void PlainTextEdit::setCursorPosition(const int &row, const int &col)
 QPoint PlainTextEdit::getCursorPosition() {
     QTextCursor cursor = textCursor();
     // there is no 0 col or row in view but it is acts like it is
-    int row = cursor.blockNumber(); // + 1
-    int col = cursor.columnNumber();// + 1 , starting from 1
+    const int row = cursor.blockNumber(); // + 1
+    const int col = cursor.columnNumber();// + 1 , starting from 1
 
     return QPoint(row, col);
 }
@@ -413,12 +409,77 @@ QString PlainTextEdit::indentText(QString text, int count) const
     return text;
 }
 
-void PlainTextEdit::moveCursor(const bool &end)
-{
+void PlainTextEdit::autoEnterTextIndentation() {
+    // get line content
+    const QString lineContent = getLineUnderCursor();
+    // count spaces, tabs
+    int spaces = 0;
+    int tabs = 0;
+    for (const auto &i : lineContent) {
+        if (i == " ") {
+            spaces++;
+        }
+        if (i == "\t") {
+            tabs++;
+        } else {
+            // text appears
+            break;
+        }
+    }
+    // insert 1 line with spaces, tabs
+    if (spaces != 0) {
+        QTextCursor cursor = textCursor();
+        cursor.insertText("\n");
+        QString space;
+        for (int i = 0; i <= spaces; i++) {
+            space += " ";
+        }
+        cursor.insertText(space);
+        setTextCursor(cursor);
+        return;
+    }
+    if (tabs != 0) {
+        QTextCursor cursor = textCursor();
+        cursor.insertText("\n");
+        QString space;
+        for (int i = 0; i <= tabs; i++) {
+            space += "\t";
+        }
+        cursor.insertText(space);
+        setTextCursor(cursor);
+        return;
+    } else {
+        // no change, needed, we jumped line back, so return to real position
+        QTextCursor cursor = textCursor();
+        cursor.movePosition(QTextCursor::NextBlock, QTextCursor::MoveAnchor);
+    }
+}
+
+void PlainTextEdit::autoBlankLineDeletion() {
+    //const QPoint pos = getCursorPosition();
+    // get line content
+    const QString lineContent = getLineUnderCursor();
+    bool removeWholeLine = true;
+    for (const auto &i : lineContent) {
+        if (i != " " || i != "\t") {
+            //removeWholeLine = false;
+            return;
+        }
+    }
+    // remove whole line
+    if (removeWholeLine) {
+        QTextCursor cursor = textCursor();
+        selectLineUnderCursor();
+        cursor.removeSelectedText();
+        setTextCursor(cursor);
+    }
+}
+
+void PlainTextEdit::moveCursor(const bool &end) {
     QTextCursor cursor = textCursor();
     int length = cursor.block().text().length();
     if (length != 0) {
-        int original  = cursor.position();
+        int original = cursor.position();
         QTextCursor::MoveMode mode = QTextCursor::MoveAnchor;
         if (QApplication::keyboardModifiers().testFlag(Qt::ShiftModifier)) {
             mode = QTextCursor::KeepAnchor;
@@ -568,7 +629,7 @@ void PlainTextEdit::findStoreAndSelectAll(const QString &search, const QTextDocu
 
         // get data
         QPoint point = getCursorPosition();
-        search_result_data.fileName = file;
+        search_result_data.fileName = filepath;
         search_result_data.row = point.x();
         search_result_data.col = point.y();
         // later search_results for multiple file search
@@ -731,11 +792,11 @@ void PlainTextEdit::setFileExtension(const QString &extension){
 }
 
 void PlainTextEdit::setFilePath(const QString &file_path) {
-    file = file_path;
+    filepath = file_path;
 }
 
 QString PlainTextEdit::getFilePath(){
-    return file;
+    return filepath;
 }
 
 bool PlainTextEdit::toggleBreakPoint(const int& line) const {
@@ -1097,7 +1158,7 @@ void PlainTextEdit::resizeEvent(QResizeEvent *event)
     QPlainTextEdit::resizeEvent(event);
 }
 
-void PlainTextEdit::keyPressEvent(QKeyEvent *event) {
+void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
     QTextCursor cursor = textCursor();
 
     if (event->modifiers() == Qt::ControlModifier) {
@@ -1173,10 +1234,16 @@ void PlainTextEdit::keyPressEvent(QKeyEvent *event) {
         }
         case Qt::Key_Enter:
         case Qt::Key_Return:
+            // because, we jumped down line
+            cursor.movePosition(QTextCursor::PreviousBlock, QTextCursor::MoveAnchor);
+            autoEnterTextIndentation();
+            break;
+        case Qt::Key_Backspace:
+            autoBlankLineDeletion();
             break;
         case Qt::Key_Down:
         case Qt::Key_Up:
-            if (QApplication::keyboardModifiers().testFlag(Qt::ControlModifier))  {
+            if (QApplication::keyboardModifiers().testFlag(Qt::ControlModifier)) {
                 if (event->key() == Qt::Key_Down) {
                     verticalScrollBar()->triggerAction(QAbstractSlider::SliderSingleStepAdd);
                 } else {
@@ -1212,39 +1279,39 @@ void PlainTextEdit::keyPressEvent(QKeyEvent *event) {
             break;
             // automatic type braces
         case Qt::Key_BracketLeft:
-            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
             cursor.insertText("]");
+            cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
             break;
         case Qt::Key_BraceLeft:
-            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
             cursor.insertText("}");
+            cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
             break;
         case Qt::Key_ParenLeft:
-            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
             cursor.insertText(")");
+            cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
             break;
         case Qt::Key_Less:
-            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
             cursor.insertText("> ");
+            cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
             break;
         case Qt::Key_Slash:     // kind a stupid idea.
-            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
             cursor.insertText("/");
+            cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
             break;
         case Qt::Key_Backslash:     // kind a stupid idea.
-            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
             cursor.insertText("\\");
+            cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
             break;
         case Qt::Key_QuoteDbl:
         case Qt::Key_QuoteLeft:
-            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
             cursor.insertText("'");
+            cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
             break;
 
         default:
             break;
     }
-    QPlainTextEdit::keyPressEvent(event);
+    QPlainTextEdit::keyReleaseEvent(event);
 }
 /*
 void PlainTextEdit::keyPressEvent(QKeyEvent *event) {
@@ -1279,7 +1346,9 @@ void PlainTextEdit::focusOutEvent(QFocusEvent *e){
 /* LineNumberArea widget
 ------------------------------------------------------------------------- */
 
-LineNumberArea::LineNumberArea(PlainTextEdit *edit) : QWidget(edit), m_Edit(edit){}
+LineNumberArea::LineNumberArea(PlainTextEdit *edit) : QWidget(edit), m_Edit(edit) {
+    setStyleSheet("background-color: rgb(43, 41, 41);");
+}
 
 void LineNumberArea::leaveEvent(QEvent *e)
 {
@@ -1375,6 +1444,7 @@ void LineNumberArea::wheelEvent(QWheelEvent *e)
 ------------------------------------------------------------------------- */
 
 BreakPointArea::BreakPointArea(PlainTextEdit *edit) : QWidget(edit), m_Edit(edit){
+    setStyleSheet("background-color: rgb(43, 41, 41);");
     breakpoint.load(IconFactory::BreakPoint);
     setFixedWidth(breakpoint.width());
     B_blocks.reserve(5);
@@ -1401,17 +1471,11 @@ bool BreakPointArea::containBlock(const int& line) {
 
 bool BreakPointArea::canCreateBreakPoint(const QTextBlock &block) {
     for (const int B_block : B_blocks) {
-        // if already contain -> remove it, paint only background pixels, else create
         if(B_block == block.blockNumber()){
-            // remove it from list
-            //breakPointRemoved();
-            //qDebug() << blocks;
-            //count++;
             return true;
         }
     }
-
-    // can create
+    // cannot create
     return false;
 }
 
@@ -1461,6 +1525,6 @@ void BreakPointArea::paintEvent(QPaintEvent *event) {
         top = bottom;
         bottom = (top + static_cast<int>(m_Edit->blockBoundingRectProxy(block).height()));
     }
-    //QWidget::paintEvent(event);
+    QWidget::paintEvent(event);
 }
 

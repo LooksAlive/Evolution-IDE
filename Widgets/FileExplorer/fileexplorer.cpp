@@ -100,19 +100,11 @@ void FileExplorer::createSearchBox() {
     searchBox->setCompleter(completer);
 }
 
-void FileExplorer::setRootDirectory(const QString &path){
-    FileView->setRootIndex(FileModel->index(path));
+void FileExplorer::setRootDirectory(const QString &path) const {
+    FileView->setRootIndex(FileModel->setRootPath(path));
 
     QSettings settings("Evolution");
     settings.setValue("Evolution/Project_Root_Dir", path);
-    /*
-    bool def = settings.value("Evolution/SetDefaultSettings").toBool();
-    if(def){
-        // set to default path /root
-        FileView->setRootIndex(FileModel->index(QDir::homePath()));
-    }
-    */
-
 }
 
 
@@ -121,7 +113,6 @@ void FileExplorer::slotShowMenu(const QPoint &pos) {
     if (touched_index.isValid()/* && index.row() % 2 == 0 */) {
         //if(!FileModel->isDir(touched_index)){
         viewMenu->exec(FileView->viewport()->mapToGlobal(pos));
-
 
         // file touched, cannot create dir !!!!
         // else
@@ -132,11 +123,11 @@ void FileExplorer::slotShowMenu(const QPoint &pos) {
     }
 }
 
-void FileExplorer::slotExpand() {
+void FileExplorer::slotExpand() const {
     FileView->expandAll();
 }
 
-void FileExplorer::slotCollapse() {
+void FileExplorer::slotCollapse() const {
     FileView->collapseAll();
 }
 
@@ -243,20 +234,24 @@ void FileExplorer::slotCreate() {
 }
 
 
-
-void FileExplorer::slotBack() {
+void FileExplorer::slotBack() const {
     // FileView->setHeader(new QHeaderView());
-    QFileInfo info(FileModel->fileInfo(FileView->currentIndex()));
-    if(info.isDir()){
-        FileModel->rootDirectory().cdUp();
-        //FileView->setRootIndex(FileModel->index(info.dir().absolutePath()));
+    QFileInfo info(FileModel->fileInfo(touched_index));
+    if (info.isDir()) {
+        QString dirname = info.dir().dirName();
+        QString new_dir_path = info.dir().absolutePath();
+        // -1, +1  ->   / in path
+        new_dir_path.remove(info.dir().absolutePath().length() - dirname.length() - 1, dirname.length() + 1);
+        //FileModel->rootDirectory().cdUp();
+        setRootDirectory(new_dir_path);
     }
 }
 
-void FileExplorer::slotSetDefaultDir() {
-    QFileInfo info(FileModel->fileInfo(FileView->currentIndex()));
-    if(info.isDir()){
-        FileView->setRootIndex(FileModel->index(info.dir().absolutePath()));
+void FileExplorer::slotSetDefaultDir() const {
+    QFileInfo info(FileModel->fileInfo(touched_index));
+    if (info.isDir()) {
+        // FileModel->index(info.dir().absolutePath())
+        setRootDirectory(info.dir().absolutePath());
     }
 }
 
@@ -271,29 +266,27 @@ void FileExplorer::slotTreeSearch() {
     // FileView->findChild<QString>(searchBox->text());
 }
 
-void FileExplorer::slotCopyFileContent() {
+void FileExplorer::slotCopyFileContent() const {
     FileDirManager fmanager;
-    QFileInfo info(FileModel->filePath(FileView->currentIndex()));
-    if(!info.isDir()){
-        QString buffer = fmanager.read(FileModel->filePath(FileView->currentIndex()));
+    QFileInfo info(FileModel->filePath(touched_index));
+    if (!info.isDir()) {
+        QString buffer = fmanager.read(FileModel->filePath(touched_index));
         QClipboard *clip = QApplication::clipboard();
         clip->setText(buffer);
     }
     // else cannot copy dir content -> show by tooltip or simply messagebox
 }
 
-void FileExplorer::slotCopyFilePath() {
-    QString filepath = FileModel->filePath(FileView->currentIndex());
+void FileExplorer::slotCopyFilePath() const {
+    QString filepath = FileModel->filePath(touched_index);
 
     QClipboard *clip = QApplication::clipboard();
     clip->setText(filepath);
 }
 
-void FileExplorer::slotCopyFileName() {
-    QString filename = FileModel->fileName(FileView->currentIndex());
+void FileExplorer::slotCopyFileName() const {
+    QString filename = FileModel->fileName(touched_index);
 
     QClipboard *clip = QApplication::clipboard();
     clip->setText(filename);
 }
-
-

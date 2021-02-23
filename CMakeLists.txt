@@ -193,16 +193,16 @@ set(SOURCE_FILES
                 Widgets/FileDock/filedock.h
                 Widgets/Tab/tab.cpp
                 Widgets/Tab/tab.h
-                Widgets/Settings/settingswindow.cpp
-                Widgets/Settings/settingswindow.h
-                Widgets/ConsoleDock/consoledock.cpp
-                Widgets/ConsoleDock/consoledock.h
-                Widgets/FindReplace/findreplace.cpp
-                Widgets/FindReplace/findreplace.h
-                Widgets/BinaryInfo/binaryview.cpp
-                Widgets/BinaryInfo/binaryview.h
-                qconsole.cpp
-                qconsole.h
+        Widgets/Settings/settingswindow.cpp
+        Widgets/Settings/settingswindow.h
+        Widgets/ConsoleDock/consoledock.cpp
+        Widgets/ConsoleDock/consoledock.h
+        Widgets/FindReplace/findreplace.cpp
+        Widgets/FindReplace/findreplace.h
+        Widgets/BinaryInfo/binaryview.cpp
+        Widgets/BinaryInfo/binaryview.h
+        qconsole.cpp
+        qconsole.h
         ${HEX_VIEW}
         #${CLANGD_SOURCES} # in the future will be more accurate, now only takes much storage and time
         ${TASK_VIEW}
@@ -225,11 +225,11 @@ set(SOURCE_FILES
         commandlineexecutor.cpp
         commandlineexecutor.h
         filemanager.cpp
-                filemanager.h
-                Widgets/Settings/CmakeGenerator/cmakegenerator.cpp
-                Widgets/Settings/CmakeGenerator/cmakegenerator.h
-                Widgets/Settings/CmakeGenerator/cmakegeneratorwidget.cpp
-                Widgets/Settings/CmakeGenerator/cmakegeneratorwidget.h
+        filemanager.h
+        Widgets/Settings/CmakeGenerator/cmakegenerator.cpp
+        Widgets/Settings/CmakeGenerator/cmakegenerator.h
+        Widgets/Settings/CmakeGenerator/cmakegeneratorwidget.cpp
+        Widgets/Settings/CmakeGenerator/cmakegeneratorwidget.h
         Widgets/Settings/git/gitbridge.cpp
         Widgets/Settings/git/gitbridge.h
         Widgets/Settings/git/gitwidget.cpp
@@ -250,7 +250,19 @@ set(SOURCE_FILES
         Widgets/PlainTextEdit/GoToLineColumn.h
         Widgets/ProgressBar/ProgressBar.cpp
         Widgets/ProgressBar/ProgressBar.h
-        Widgets/Education/Education.cpp Widgets/Education/Education.h Widgets/Education/CodeSamples.h Widgets/Settings/ClangFormat/ClangFormat.cpp Widgets/Settings/ClangFormat/ClangFormat.h Widgets/Education/NewSampleWindow.cpp Widgets/Education/NewSampleWindow.h Widgets/Settings/Installer/Installer.cpp Widgets/Settings/Installer/Installer.h Debugger/DebuggerDock.cpp Debugger/DebuggerDock.h Debugger/DebugWatchDock.cpp Debugger/DebugWatchDock.h)
+        Widgets/Education/Education.cpp
+        Widgets/Education/Education.h
+        Widgets/Education/CodeSamples.h
+        Widgets/Settings/ClangFormat/ClangFormat.cpp
+        Widgets/Settings/ClangFormat/ClangFormat.h
+        Widgets/Education/NewSampleWindow.cpp
+        Widgets/Education/NewSampleWindow.h
+        Widgets/Settings/Installer/Installer.cpp
+        Widgets/Settings/Installer/Installer.h
+        Debugger/DebuggerDock.cpp
+        Debugger/DebuggerDock.h
+        Debugger/DebugWatchDock.cpp
+        Debugger/DebugWatchDock.h Widgets/SearchBox/SearchBox.cpp Widgets/SearchBox/SearchBox.h)
 
 
 

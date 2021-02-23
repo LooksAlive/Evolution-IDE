@@ -26,14 +26,14 @@ int main(int argc, char *argv[]) {
         QSettings settings("Evolution");
         theme = settings.value("Evolution/theme").toString();
     }
-    /*
+
     theme = "Dark";
-    if(theme == "Dark"){
-        //app.setStyleSheet(darktheme);
-        DarkStyle *style = new DarkStyle();
-        app.setStyle(style);
+    if(theme == "Dark") {
+        app.setStyleSheet(darktheme);
+        //DarkStyle *style = new DarkStyle();
+        //app.setStyle(style);
     }
-    */
+
 
     window.show();
     return app.exec();

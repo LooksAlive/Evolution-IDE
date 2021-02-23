@@ -14,6 +14,7 @@ FileDirManager::FileDirManager() {
     source_files = settings.value("Evolution/sources").toStringList();
     source_files_names = settings.value("Evolution/sources_names").toStringList();
     executable_file_path = settings.value("Evolution/executable_path").toString();
+    executable_file_name = settings.value("Evolution/executable_name").toString();
     clang_format_path = settings.value("Evolution/clang-format_path").toString();
     clang_tidy_path = settings.value("Evolution/clang-tidy_path").toString();
 }
@@ -41,7 +42,9 @@ void FileDirManager::getFilesRecursively(const QString &Project_RootDir) {
         if (directories.fileInfo().dir().dirName() == "cmake-build") {
             if (directories.fileInfo().isExecutable() && directories.fileInfo().fileName() == "executable") {// binary file
                 executable_file_path = directories.filePath().remove(0, 2);                                  // here it takes all executables in cmake dir
+                executable_file_name = directories.fileName();
                 settings.setValue("Evolution/executable_path", executable_file_path);
+                settings.setValue("Evolution/executable_name", executable_file_name);
             } else {
                 break;
             }
@@ -61,7 +64,9 @@ void FileDirManager::getFilesRecursively(const QString &Project_RootDir) {
         if (directories.fileInfo().isExecutable() && directories.fileInfo().fileName() == "executable") {// binary file
             qDebug() << directories.filePath();
             executable_file_path = directories.filePath().remove(0, 2);// here it takes all executables in cmake dir
+            executable_file_name = directories.fileName();
             settings.setValue("Evolution/executable_path", executable_file_path);
+            settings.setValue("Evolution/executable_name", executable_file_name);
         }
         if (directories.fileInfo().isDir() && directories.fileInfo().dir().dirName() == ".git") {
             settings.setValue("Evolution/git_dir", directories.filePath().remove(0, 2));

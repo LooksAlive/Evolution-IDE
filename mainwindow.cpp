@@ -189,10 +189,10 @@ void MainWindow::SetupStatusBar() {
 }
 
 // after line is set , field is empty
-void MainWindow::slotTextPositionChanged() {
+void MainWindow::slotCursorPositionChanged() {
     // later consider creating new button here
     // What if on the changed tab is no cursor set -> remain last cursor position
-    if (Tabs->isActiveWindow()) {
+    if (Tabs->isVisible()) {
         QPoint point = currentWidget->getCursorPosition();
         QString pos = QString::number(point.x()) + ":" + QString::number(point.y());// row:col
 
@@ -205,7 +205,7 @@ void MainWindow::slotTextPositionChanged() {
 void MainWindow::slotGoToLine() {
     auto *goTo = new GoToLineColumn(currentWidget, this);
     goTo->show();
-    slotTextPositionChanged();// update  position
+    slotCursorPositionChanged();// update  position
 }
 
 void MainWindow::SetupMenuBar() {
@@ -320,6 +320,11 @@ void MainWindow::SetupToolBar() {
     topToolBar->addAction(QIcon(IconFactory::SaveAllFiles), "Save All Files", this, SLOT(SaveAllFiles()));
     topToolBar->addAction(QIcon(IconFactory::Undo), "undo", this, SLOT(slotUndo()));
     topToolBar->addAction(QIcon(IconFactory::Redo), "redo", this, SLOT(slotRedo()));
+    topToolBar->addSeparator();
+
+    searchBox = new SearchBox(Tabs, this);
+    connect(searchBox->more, SIGNAL(clicked()), this, SLOT(slotShowFindReplaceDock()));
+    topToolBar->addWidget(searchBox);
 
     auto *spacer = new QWidget(this);// blank Widget to align other action to right
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -328,6 +333,14 @@ void MainWindow::SetupToolBar() {
     topToolBar->addAction(QIcon(IconFactory::Build), "Build", this, SLOT(slotBuild()));
     topToolBar->addAction(QIcon(IconFactory::Run), "Run", this, SLOT(slotRun()));
     topToolBar->addAction(QIcon(IconFactory::Stop), "Stop Process", this, SLOT(slotStopProcess()));
+}
+
+void MainWindow::slotShowFindReplaceDock() {
+    find_replace->setVisible(true);
+    find_replace->LineEditFind->setText(searchBox->lineEdit->text());
+    // should also look up -> to fill list of results, bc. they are already selected or not (if user pressed find next)
+    // let it be like this,, but at least lets set focus
+    find_replace->LineEditFind->setFocus();
 }
 
 
@@ -484,20 +497,18 @@ void MainWindow::SetupCompileDock() {
 }
 
 void MainWindow::slotFind() {
-    find_replace->setVisible(true);// insted of toggleViewAction()
-    find_replace->LineEditFind->setFocus();
+    searchBox->lineEdit->setFocus();
     QString text = currentWidget->textCursor().selectedText();
     // find selected text
     if (!text.isEmpty()) {
-        find_replace->LineEditFind->setText(text);
+        searchBox->lineEdit->setText(text);
+        searchBox->slotNext();
     }
     // find word under cursor, if no text is selected
     else {
         text = currentWidget->getWordUnderCursor();
-        find_replace->LineEditFind->setText(text);
-        find_replace->slotNext();
-        // also selections, slotNext wont do that, bc. yet no temp string is set
-        currentWidget->findStoreAndSelectAll(text);
+        searchBox->lineEdit->setText(text);
+        searchBox->slotNext();
     }
 }
 
@@ -579,7 +590,7 @@ void MainWindow::CreateFile() {
     currentWidget->setEducation(education);
     //currentWidget->setClang(clangBridge);
     // go to line/column
-    connect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotTextPositionChanged()));
+    connect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotCursorPositionChanged()));
     connect(currentWidget, SIGNAL(textChanged()), this, SLOT(UpdateParameter()));
     // breakpoints
     // TODO: if i pass debugger widget by instance pointer, will it be faster ??
@@ -752,7 +763,7 @@ void MainWindow::CloseFile(int index_) {
     disconnect(currentWidget->BreakpointArea, SIGNAL(breakPointCreated(const int &)), this, SLOT(slotCreateBreakPoint(const int &)));
     disconnect(currentWidget->BreakpointArea, SIGNAL(breakPointRemoved(const int &)), this, SLOT(slotDeleteBreakPoint(const int &)));
     // go to line/column
-    disconnect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotTextPositionChanged()));
+    disconnect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotCursorPositionChanged()));
     delete Tabs->widget(index_);
     DeleteTabFromList(index_);
 
@@ -853,7 +864,7 @@ void MainWindow::OpenFile(QModelIndex file_index) {
         currentWidget->setCodeInfo(codeInfoDock);
         currentWidget->setEducation(education);
         //currentWidget->setClang(clangBridge);
-        connect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotTextPositionChanged()));
+        connect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotCursorPositionChanged()));
         // breakpoints
         connect(currentWidget->BreakpointArea, SIGNAL(breakPointCreated(const int &)), this, SLOT(slotCreateBreakPoint(const int &)));
         connect(currentWidget->BreakpointArea, SIGNAL(breakPointRemoved(const int &)), this, SLOT(slotDeleteBreakPoint(const int &)));
@@ -913,27 +924,42 @@ void MainWindow::slotBuild() {
 
     if (cmake) {// set option flags to some default
         CmakeGenerator generator;
-        generator.setProjectName("executable");
+        if (file_manager.executable_file_name.isEmpty()) {
+            file_manager.executable_file_name = "a.out";
+        } else {
+            generator.setProjectName(file_manager.executable_file_name.toStdString());//"executable"
+        }
         generator.setCompiler("clang++");
         generator.setCompileFlags("-O0 -g ");
         for (int i = 0; i < file_manager.source_files.size(); i++) {
             generator.addSourceFile((file_manager.source_files[i].toStdString()));
         }
         generator.createCmakeLists(file_manager.Project_Dir.toStdString());
+
         CommandLineExecutor::Build(cmake, file_manager.Project_Dir.toStdString(), console_dock->ConsoleOutput);
 
         // non static function need also an object to call it
 
     } else {
-        std::vector<std::string> sources;
-        sources.reserve(10);
-        for (int i = 0; i < file_manager.source_files.size(); i++) {
-            sources.push_back(file_manager.source_files[i].toStdString());
+        // only 1 file no name
+        if (file_manager.source_files.size() == 1 || currentWidget->getFilePath().isEmpty()) {
+            // create temp dir
+            QDir dir(file_manager.Project_Dir);
+            if (!dir.exists()) {
+                dir.mkdir("Evolution.temp");
+            }
+
+            std::vector<std::string> sources;
+            sources.reserve(10);
+            for (int i = 0; i < file_manager.source_files.size(); i++) {
+                sources.push_back(file_manager.source_files[i].toStdString());
+            }
+            CommandLineExecutor::Build(cmake, file_manager.Project_Dir.toStdString(), console_dock->ConsoleOutput);
         }
     }
 
-    QSettings settings("Evolution");
-    settings.setValue("Evolution/executable_path/", file_manager.Project_Dir + "/executable");
+    //QSettings settings("Evolution");
+    //settings.setValue("Evolution/executable_path/", file_manager.Project_Dir + "/executable");
 
     console_dock->ConsoleOutput->appendPlainText("Build done");
     qDebug() << "build done";
@@ -952,9 +978,24 @@ void MainWindow::slotRun() {
     // TODO: if currentWidget has "" filepath -> dry run, set up temp dir for only 1 file
 
     if (cmake) {
-        // file_manager.executable_file_path;
-        CommandLineExecutor::Execute(cmake, file_manager.Project_Dir.toStdString() + "/cmake-build/" + "executable", console_dock->ConsoleOutput);
+        // file_manager.executable_file_path;  file_manager.executable_file_name;  (if not defined, first build  --> define a.out)
+        // !!!!!!!!!! not reachable condition TODO: return to build stage or just assume it is correct :(
+        if (file_manager.executable_file_name.isEmpty()) {
+            file_manager.executable_file_name = "a.out";
+        }
+        if (file_manager.executable_file_path.isEmpty()) {
+            file_manager.executable_file_path = file_manager.Project_Dir + "/cmake-build/" + file_manager.executable_file_name;
+            CommandLineExecutor::Execute(cmake, file_manager.executable_file_path.toStdString(), console_dock->ConsoleOutput);
+        }
+        //CommandLineExecutor::Execute(cmake, file_manager.Project_Dir.toStdString() + "/cmake-build/" + "executable", console_dock->ConsoleOutput);
+        else {
+            CommandLineExecutor::Execute(cmake, file_manager.executable_file_path.toStdString(), console_dock->ConsoleOutput);
+        }
     } else {
+        // only 1 file, dir should exist already
+        if (file_manager.source_files.size() == 1 || currentWidget->getFilePath().isEmpty()) {
+            CommandLineExecutor::Execute(cmake, file_manager.Project_Dir.toStdString() + "/Evolution.temp/" + "executable", console_dock->ConsoleOutput);
+        }
         //executor.setExecutableName("executable", file_manager.Project_Dir.toStdString());
         //int pid = executor.getPid();
         //QString process = QString("launched ") + QString("executable,  PID:") + QString::number(pid);
@@ -1188,7 +1229,7 @@ void MainWindow::slotOpenCppSample(QListWidgetItem *item) {
     }
     // 2 and more files
     if (num_files > 1) {
-        for (int i = 0; i <= num_files; i++) {
+        for (int i = 0; i < num_files; i++) {
             auto *edit = new PlainTextEdit;
             edit->setPlainText(education->cpp_code_samples[index].content[i]);
             Tabs->addTab(edit, education->cpp_code_samples[index].fileNames[i]);

@@ -64,7 +64,7 @@ void FindReplaceWidget::createWindow() {
     RegularExpression = new QCheckBox("Use Regexp", this);
     LineEditFind = new QLineEdit(this);
     LineEditReplacement = new QLineEdit(this);
-    LabelText = new QLabel("0/0", this); // 0/0 -> x/z results
+    LabelText = new QLabel("0/0", this);// 0/0 -> x/z results
     LineEditFind->setFocus();
     LineEditFind->setMaximumWidth(400);
     LineEditReplacement->setMaximumWidth(400);
@@ -74,6 +74,10 @@ void FindReplaceWidget::createWindow() {
     results->setHeaderHidden(true);
     // not editable, later possible updates and auto refactoring edited item; by item function or like this
     results->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    QFont font;
+    font.setPixelSize(17);
+    //results->setStyleSheet("border: 5px solid;");
+    results->setFont(font);
     connect(results, SIGNAL(doubleClicked(const QModelIndex &)), this, SLOT(slotForwardToResult(const QModelIndex &)));
 
     next = new QPushButton("Next", this);
@@ -138,6 +142,7 @@ void FindReplaceWidget::getOptionsAndTexts()
     if (WholeWords->isChecked()) {
         find_options |= QTextDocument::FindWholeWords;
     }
+    // regex removed ...
 
     /* same_file == ""  --> means that file has no filepath yet (blank) */
     if(same_file != m_Tab->tabToolTip(m_Tab->currentIndex()) || same_file == ""){
@@ -166,12 +171,13 @@ void FindReplaceWidget::slotNext(){
         // maybe consider (no idea) ...
         auto *file = new QStandardItem(m_Edit->search_results[0].fileName);
         rootNode->appendRow(file);
-        for (auto & elem : m_Edit->search_results) {
+        for (const auto &elem : m_Edit->search_results) {
             QString row_col = QString::number(elem.row) + ":" + QString::number(elem.col);
             QString line_content = m_Edit->getLineContent(elem.row);
             QString all = line_content + "   " + row_col;
             // QString line; // later append line content and beginning + row_col follows getLineUnderCursor();
             auto *pos = new QStandardItem(all);
+            // pos->setBackground(QColor(Qt::red));
             file->appendRow(pos);
         }
 

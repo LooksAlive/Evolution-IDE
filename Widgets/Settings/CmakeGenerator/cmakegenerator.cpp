@@ -35,10 +35,10 @@ void CmakeGenerator::setCompileFlags(const std::string &flags){
 
 
 
-void CmakeGenerator::generateSources(){
+void CmakeGenerator::generateSources() {
 
-    for (unsigned int i = 0; i < m_sources.size(); i++) {
-        g_sources += m_sources[i] + "\n";
+    for (auto &m_source : m_sources) {
+        g_sources += m_source + "\n";
     }
     g_sources += ")";
 }
@@ -48,10 +48,10 @@ void CmakeGenerator::generateExecutable(){
     g_executable = "add_executable(" +  m_name + " ${SOURCE_FILES}" + ")";
 }
 
-void CmakeGenerator::generateLibraryPathsList(){
+void CmakeGenerator::generateLibraryPathsList() {
 
-    for (unsigned int i = 0; i < m_lpaths.size(); i++) {
-        g_lpaths += m_lpaths[i] + "\n";
+    for (auto &m_lpath : m_lpaths) {
+        g_lpaths += m_lpath + "\n";
     }
     g_lpaths += ")";
 }

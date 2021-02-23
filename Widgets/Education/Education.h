@@ -94,15 +94,15 @@ private:
 
     QToolButton *usersSamples;
 
-    // TODO: remove sample button
-    QList<int> opened_samples;
+    // 1. sample name, 2. content  ---> at least 2 elements
+    QStringList opened_samples;
 
     void createWindow();
 
     Highlighter *previewHighlighter;
 
-    void loadOpenedSamples();
-    void saveOpenedSamples();
+    void loadUsersSamples();
+    void saveUsersSamples();
 
 protected:
     void closeEvent(QCloseEvent *event) override;

@@ -35,7 +35,7 @@ public:
     QFileSystemModel *FileModel;
     QTreeView *FileView;
 
-    void setRootDirectory(const QString &path);
+    void setRootDirectory(const QString &path) const;
 
 private:
     QMenu *viewMenu;
@@ -58,25 +58,24 @@ private slots:
     // right click menu slots
     void slotShowMenu(const QPoint &pos);
 
-    void slotExpand();
-    void slotCollapse();
+    void slotExpand() const;
+    void slotCollapse() const;
     void slotRemove();
     void slotRename();
     void slotDuplicate();
     void slotNewDir();
-    void slotNewFile(); // ordinary file ( .txt, ... )
+    void slotNewFile();// ordinary file ( .txt, ... )
     void slotNewC_CPP_CLASS();
 
-    void slotCopyFileContent();
-    void slotCopyFilePath();
-    void slotCopyFileName();
+    void slotCopyFileContent() const;
+    void slotCopyFilePath() const;
+    void slotCopyFileName() const;
 
-    void slotCreate();  // private variables, used for all operations
+    void slotCreate();// private variables, used for all operations
 
-    void slotBack();
-    void slotSetDefaultDir();
+    void slotBack() const;
+    void slotSetDefaultDir() const;
     void slotTreeSearch();
-
 };
 
 #endif // FILEEXPLORER_H

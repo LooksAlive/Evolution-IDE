@@ -54,9 +54,10 @@
 #include "Widgets/Tab/tab.h"
 #include "Widgets/Settings/settingswindow.h"
 
-#include "Widgets/FindReplace/findreplace.h"
-#include "Widgets/ConsoleDock/consoledock.h"
 #include "Widgets/CodeInfoDock/CodeInfoDock.h"
+#include "Widgets/ConsoleDock/consoledock.h"
+#include "Widgets/FindReplace/findreplace.h"
+#include "Widgets/SearchBox/SearchBox.h"
 
 #include "EnvironmentSettings.h"
 #include "Widgets/Converter/converter.h"
@@ -131,6 +132,7 @@ private:
 
     // top tool bar
     QToolBar *topToolBar;
+    SearchBox *searchBox;
 
     /* toolbar -> views */
     QToolBar *vertical_bar;     // all kind of views: hex, binary, debugger, decompiler ---> widgets
@@ -272,9 +274,10 @@ private slots:
 
     void slotGoToLine();
     void slotFind();
+    void slotShowFindReplaceDock();
 
     void slotStopProcess();
-    void slotTextPositionChanged();
+    void slotCursorPositionChanged();
 
     // debugger
     void slotStartDebug();

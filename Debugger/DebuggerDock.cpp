@@ -11,14 +11,14 @@ void BreakPointListWindow::createWindow() {
     BpBar = new QToolBar(this);
 
     setMaximumWidth(700);
-    BpList->setMinimumWidth(300);
+    BpList->setMinimumWidth(350);
     BpList->setColumnCount(3);
     BpList->setHeaderLabels(QStringList() << "ID"
                                           << "File"
                                           << "Line");
-    BpList->setColumnWidth(0, 20); // ID
+    BpList->setColumnWidth(0, 50); // ID
     BpList->setColumnWidth(1, 250);// filename
-    BpList->setColumnWidth(0, 30); // line
+    BpList->setColumnWidth(2, 50); // line
 
     BpBar->setOrientation(Qt::Vertical);
     BpBar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
@@ -30,13 +30,13 @@ void BreakPointListWindow::createWindow() {
     remove->setIcon(QIcon(IconFactory::Remove));
     removeAll = new QToolButton(this);
     removeAll->setToolTip("Remove All");
-    removeAll->setIcon(QIcon(IconFactory::Remove));
+    removeAll->setIcon(QIcon(IconFactory::RemoveAll));
     mute = new QToolButton(this);
     mute->setToolTip("Mute");
-    mute->setIcon(QIcon(IconFactory::Remove));
+    mute->setIcon(QIcon(IconFactory::Mute));
     muteAll = new QToolButton(this);
     muteAll->setToolTip("Mute All");
-    muteAll->setIcon(QIcon(IconFactory::Remove));
+    muteAll->setIcon(QIcon(IconFactory::Mute));
 
     BpBar->addWidget(remove);
     BpBar->addWidget(removeAll);
@@ -93,6 +93,9 @@ void DebuggerDock::createConsole() {
     VariablesView->setHeaderHidden(true);
     // not editable yet, later possible to change values
     VariablesView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    QFont font;
+    font.setPixelSize(17);
+    VariablesView->setFont(font);
 
     debug_output->setReadOnly(true);
     completer->setCaseSensitivity(Qt::CaseInsensitive);
