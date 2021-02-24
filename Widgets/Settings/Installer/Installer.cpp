@@ -10,7 +10,6 @@ void Installer::createWindow() {
     MainLayout = new QFormLayout();
 
     // fill them with which commands
-    CommandLineExecutor executor;
     QString path;
     path = QString::fromStdString(CommandLineExecutor::ExecuteSimpleCommand("which clang"));
     clang = new QLineEdit(path, this);

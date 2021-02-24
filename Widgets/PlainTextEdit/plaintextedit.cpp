@@ -126,8 +126,8 @@ void PlainTextEdit::setCursorPosition(const int &row, const int &col)
 QPoint PlainTextEdit::getCursorPosition() {
     QTextCursor cursor = textCursor();
     // there is no 0 col or row in view but it is acts like it is
-    const int row = cursor.blockNumber(); // + 1
-    const int col = cursor.columnNumber();// + 1 , starting from 1
+    const int row = cursor.blockNumber() + 1;
+    const int col = cursor.columnNumber() + 1;
 
     return QPoint(row, col);
 }
@@ -426,9 +426,9 @@ void PlainTextEdit::autoEnterTextIndentation() {
             break;
         }
     }
+    QTextCursor cursor = textCursor();
     // insert 1 line with spaces, tabs
     if (spaces != 0) {
-        QTextCursor cursor = textCursor();
         cursor.insertText("\n");
         QString space;
         for (int i = 0; i <= spaces; i++) {
@@ -439,7 +439,6 @@ void PlainTextEdit::autoEnterTextIndentation() {
         return;
     }
     if (tabs != 0) {
-        QTextCursor cursor = textCursor();
         cursor.insertText("\n");
         QString space;
         for (int i = 0; i <= tabs; i++) {
@@ -449,9 +448,9 @@ void PlainTextEdit::autoEnterTextIndentation() {
         setTextCursor(cursor);
         return;
     } else {
-        // no change, needed, we jumped line back, so return to real position
-        QTextCursor cursor = textCursor();
+        // no change, needed, we jumped line back when key pressed, so return to position we came from
         cursor.movePosition(QTextCursor::NextBlock, QTextCursor::MoveAnchor);
+        setTextCursor(cursor);
     }
 }
 
@@ -1236,6 +1235,7 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
         case Qt::Key_Return:
             // because, we jumped down line
             cursor.movePosition(QTextCursor::PreviousBlock, QTextCursor::MoveAnchor);
+            setTextCursor(cursor);
             autoEnterTextIndentation();
             break;
         case Qt::Key_Backspace:
@@ -1281,31 +1281,38 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
         case Qt::Key_BracketLeft:
             cursor.insertText("]");
             cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
+            setTextCursor(cursor);
             break;
         case Qt::Key_BraceLeft:
             cursor.insertText("}");
             cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
+            setTextCursor(cursor);
             break;
         case Qt::Key_ParenLeft:
             cursor.insertText(")");
             cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
+            setTextCursor(cursor);
             break;
         case Qt::Key_Less:
             cursor.insertText("> ");
             cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
+            setTextCursor(cursor);
             break;
         case Qt::Key_Slash:     // kind a stupid idea.
             cursor.insertText("/");
             cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
+            setTextCursor(cursor);
             break;
         case Qt::Key_Backslash:     // kind a stupid idea.
             cursor.insertText("\\");
             cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
+            setTextCursor(cursor);
             break;
         case Qt::Key_QuoteDbl:
         case Qt::Key_QuoteLeft:
             cursor.insertText("'");
             cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
+            setTextCursor(cursor);
             break;
 
         default:
@@ -1347,7 +1354,7 @@ void PlainTextEdit::focusOutEvent(QFocusEvent *e){
 ------------------------------------------------------------------------- */
 
 LineNumberArea::LineNumberArea(PlainTextEdit *edit) : QWidget(edit), m_Edit(edit) {
-    setStyleSheet("background-color: rgb(43, 41, 41);");
+    setStyleSheet("background-color: rgb(47, 47, 47)");
 }
 
 void LineNumberArea::leaveEvent(QEvent *e)

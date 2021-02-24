@@ -54,42 +54,19 @@ using namespace lldb;
 // sources:  https://stackoverflow.com/questions/8063434/qt-run-independent-thread-from-other-thread
 
 class lldbBridge;
-class DebuggerSession;
 
 /*
  * blank QObject to move thread here and run asynchronously, independent on the main thread
- * this is done in start() function
- * NOTE! i tried to create c++ standard thread but it is not possible... Qt raises many errors within
- * different widgets thread is pointing to
- * It should share memory, since all main objects are accessible and deleted with app itself
+ * NOTE! based on experience: <<<<< in Qt we only main thread can modify Gui(widgets) >>>>>
 */
-class Runner : public QObject {
+
+class ProcessHandler : public QObject {
     Q_OBJECT
 public:
-    explicit Runner(std::shared_ptr<DebuggerSession> dBsession = nullptr, QObject *parent = nullptr);
-    ~Runner() = default;
+    explicit ProcessHandler(lldbBridge *lldb_bridge = nullptr, QObject *parent = nullptr);
+    ~ProcessHandler() = default;
 
 public slots:
-    void runDebugSession();
-
-private:
-    std::shared_ptr<DebuggerSession> debugger;
-
-    QMutex mutex;
-};
-
-/*
- * log: tried to inherit std::enable_shared_from_this<lldbBridge> but it crashed in run
- * did not initialized this pointer for some reason
- * auto ptr = shared_from_this();
- * --> new class with running running stage
-*/
-// TODO: create shared ptr from this class, insert process features functions and call from Runner
-class DebuggerSession {
-public:
-    DebuggerSession(lldbBridge *lldb_bridge);
-    ~DebuggerSession() = default;
-
     void setProcessInterruptFeatures();
 
 private:
@@ -97,6 +74,14 @@ private:
     bool HandleProcessEvent(SBEvent &event);
     bool HandleProcessStateChangeEvent(SBEvent &event);
     void HandleProcessStopped(SBEvent &event, SBProcess &process);
+
+signals:
+    void addMessage(const QString &msg) const;
+    void enableButtons() const;
+    void disableButtons() const;
+
+    void watchPointHit() const;
+    void breakPointHit() const;
 };
 
 class lldbBridge : public QObject {
@@ -134,9 +119,6 @@ public:
     // this will be called when process stopped, insert threads into box
     void collectThreads();
     void fillCallStack();
-    // while process pending, i should not touch for ex. step over or else
-    void enableDebuggerButtons();
-    void disableDebuggerButtons();
 
 private:
     DebugWatchDock *WatchDock;
@@ -216,22 +198,23 @@ public:
     const char *arch = nullptr;
     const char *platform = nullptr;
 
-    // main function
-    // is breakpoint hit, waiting for such events
-    // called when debug process starts
-public slots:
-    void setProcessInterruptFeatures();
+    // handle events that happens on worker thread
+private slots:
+    // append message to window
+    void setMessage(const QString &msg) const;
+    // while process pending, i should not touch for ex. step over or else
+    void enableDebuggerButtons() const;
+    void disableDebuggerButtons() const;
+    void handleBreakPointHit();
+    void handleWatchPointHit();
 
 private:
     void init();
-    bool HandleProcessEvent(SBEvent &event);
-    bool HandleProcessStateChangeEvent(SBEvent &event);
-    void HandleProcessStopped(SBEvent &event, SBProcess &process);
 
     const char *getAssembly(SBThread thread);
 
-    QThread *worker;
-    Runner *runner;
+    QThread *ProcessingThread;
+    ProcessHandler *processHandler;
 
     SBError error;
     SBStream strm;

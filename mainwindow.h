@@ -130,12 +130,14 @@ private:
     /* base tab widget for plaintext */
     Highlighter *highlighter;
 
+    CommandLineExecutor *executor;
+
     // top tool bar
     QToolBar *topToolBar;
     SearchBox *searchBox;
 
     /* toolbar -> views */
-    QToolBar *vertical_bar;     // all kind of views: hex, binary, debugger, decompiler ---> widgets
+    QToolBar *vertical_bar;// all kind of views: hex, binary, debugger, decompiler ---> widgets
     // editorView are Tabs
     HexView *hexview;
     NodeView *nodeview;

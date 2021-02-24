@@ -213,6 +213,7 @@ void DebuggerDock::createCallStackWindow() {
     CallStackLayout->setContentsMargins(0, 0, 5, 0);
     CallStackLayout->setSpacing(0);
     ThreadBox->setFixedWidth(200);
+    ThreadBox->addItem("Thread");// this will be removed when filling
     CallStack->setFixedWidth(200);
 
     CallStackLayout->addWidget(ThreadBox);

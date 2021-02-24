@@ -12,6 +12,20 @@ int main(int argc, char *argv[]) {
 
     QApplication app(argc, argv);
     MainWindow window;
+
+    // set application details.
+    QApplication::setApplicationName(QString("Evolution-IDE"));
+    QApplication::setApplicationVersion(QString("1.0.0"));
+    //QApplication::setOrganizationName("");
+    //QApplication::setOrganizationDomain("");
+
+    // set application effects
+    QApplication::setEffectEnabled(Qt::UI_AnimateCombo, true);
+    QApplication::setEffectEnabled(Qt::UI_FadeMenu, true);
+    QApplication::setEffectEnabled(Qt::UI_AnimateToolBox, true);
+    QApplication::setEffectEnabled(Qt::UI_AnimateTooltip, true);
+    QApplication::setEffectEnabled(Qt::UI_FadeTooltip, true);
+
     // /home/adam/Desktop/sources/Evolution-IDE/stylesheets/Combinear.qss
     QFile file("/home/adam/Desktop/sources/Evolution-IDE/stylesheet.qss");
     QString darktheme;// Adaptic.qss, SyNet.qss

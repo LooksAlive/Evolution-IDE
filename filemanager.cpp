@@ -46,7 +46,7 @@ void FileDirManager::getFilesRecursively(const QString &Project_RootDir) {
                 settings.setValue("Evolution/executable_path", executable_file_path);
                 settings.setValue("Evolution/executable_name", executable_file_name);
             } else {
-                break;
+                continue;
             }
         }
 

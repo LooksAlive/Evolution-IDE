@@ -3,30 +3,26 @@
 #include <QString>
 #include <csignal>
 
-CommandLineExecutor::CommandLineExecutor(QObject *parent) : QObject(parent) {}
+ExecutionHandler::ExecutionHandler(QObject *parent) : QObject(parent) {}
 
-
-void CommandLineExecutor::ExecuteCommand(const std::string &cmd, QPlainTextEdit *edit) {
+void ExecutionHandler::ExecuteCommand() {
     FILE *stream;
     const int max_buffer = 256;
     char buffer[max_buffer];
-    // ????
-    //cmd.append(" 2>&1");
 
-    stream = popen(cmd.c_str(), "r");
+    stream = popen(args.c_str(), "r");
     if (stream) {
         while (!feof(stream)) {
             if (fgets(buffer, max_buffer, stream) != NULL) {
-                if (edit) {
-                    // constantly update cmd output
-                    edit->appendPlainText(buffer);// const_cast<char *>(buffer)
-                    // buffer = "";
-                }
+                emit addMessage(buffer);
             }
         }
         pclose(stream);
     }
 }
+
+
+CommandLineExecutor::CommandLineExecutor(QObject *parent) : QObject(parent) {}
 
 std::string CommandLineExecutor::ExecuteSimpleCommand(const std::string &cmd) {
     std::string data;
@@ -72,8 +68,16 @@ void CommandLineExecutor::DetermineCompilerVersion(const std::string &tool){
     // version = temp[end???];
 }
 
-void CommandLineExecutor::Build(const bool &cmake, const std::string &ProjectRootDir, QPlainTextEdit *edit) {
+void CommandLineExecutor::Build(const bool &cmake, const std::string &ProjectRootDir, QPlainTextEdit *editor) {
+    edit = editor;
+    ExecutionThread = new QThread(this);
+    executionHandler = new ExecutionHandler();
 
+    connect(ExecutionThread, &QThread::started, executionHandler, &ExecutionHandler::ExecuteCommand);
+    connect(ExecutionThread, &QThread::finished, this, &QObject::deleteLater);
+
+    connect(executionHandler, SIGNAL(ExecutionHandler::addMessage(const QString &)), this, SLOT(setMessage(const QString &)));
+    executionHandler->moveToThread(ExecutionThread);
     if (cmake) {// later -> cmake only generates file(cmake ..), so real build (make -j2) separate later,
         // also num of cpu cores as argument to build + add them to non cmake build
         std::string cmake_build;
@@ -90,52 +94,43 @@ void CommandLineExecutor::Build(const bool &cmake, const std::string &ProjectRoo
                 edit->appendPlainText(cmake_build.c_str());
             }
         }
+        executionHandler->args = cmake_build;
+        ExecutionThread->start();
 
-        // QObject::connect: Cannot queue arguments of type 'QTextCursor'
-        // (Make sure 'QTextCursor' is registered using qRegisterMetaType().)
-        //qRegisterMetaType<QTextCursor>("QTextCursor");
-        /*
-        worker = new QThread();
-        runner = new ExecutionRunner();
-
-        connect(worker, &QThread::started, this, &CommandLineExecutor::ExecuteCommand(cmake_build, edit));
-        connect(worker, &QThread::finished, this, &QObject::deleteLater);
-        ExecutionRunner->moveToThread(worker);
-        worker->start();
-        */
-        //QThread *thread = QThread::create(&CommandLineExecutor::ExecuteCommand, cmake_build, edit);
-        //thread->start();
-
-        ExecuteCommand(cmake_build, edit);
+        //ExecuteCommand(cmake_build, edit);
     } else {
         std::string compile_args;
-        if (edit) {
-            edit->appendPlainText(compile_args.c_str());
-        }
+        executionHandler->args = compile_args;
+        ExecutionThread->start();
         // string will be returned into console
-        ExecuteCommand(compile_args, edit);
+        //ExecuteCommand(compile_args, edit);
     }
 }
-void CommandLineExecutor::Execute(const bool &cmake, const std::string &executable_path, QPlainTextEdit *edit) {
-
+void CommandLineExecutor::Execute(const bool &cmake, const std::string &executable_path, QPlainTextEdit *editor) {
+    edit = editor;
     std::string cmake_exec;
+    ExecutionThread = new QThread(this);
+    executionHandler = new ExecutionHandler();
+
+    connect(ExecutionThread, &QThread::started, executionHandler, &ExecutionHandler::ExecuteCommand);
+    connect(ExecutionThread, &QThread::finished, this, &QObject::deleteLater);
+
+    connect(executionHandler, SIGNAL(ExecutionHandler::addMessage(const QString &)), this, SLOT(setMessage(const QString &)));
+    executionHandler->moveToThread(ExecutionThread);
+
     if (cmake) {
         cmake_exec += executable_path;// ProjectRootDir;   Project_Dir + "/cmake-build/" + executable_name
         if (edit) {
             edit->appendPlainText(cmake_exec.c_str());
         }
-        /*
-        std::thread th(&CommandLineExecutor::ExecuteCommand, cmake_exec, edit);
-        if(th.joinable()){
-            th.join();
-        }
-        */
-        ExecuteCommand(cmake_exec, edit);
+
+        executionHandler->args = cmake_exec;
+        ExecutionThread->start();
+
     } else {
-        if (edit) {
-            edit->appendPlainText(executable_path.c_str());
-        }
-        ExecuteCommand(executable_path, edit);
+        executionHandler->args = cmake_exec;
+        ExecutionThread->start();
+        //ExecuteCommand(executable_path, edit);
     }
 }
 
@@ -199,4 +194,9 @@ int CommandLineExecutor::getPid(const std::string &executable_path) {
 
 void CommandLineExecutor::killProcess(const int &proc_id) {
     kill(proc_id, SIGKILL);
+}
+
+
+void CommandLineExecutor::setMessage(const QString &msg) const {
+    edit->appendPlainText(msg);
 }

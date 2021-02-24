@@ -44,6 +44,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     vertical_stack->setCurrentWidget(Tabs);
     Tabs->currentWidget()->setFocus();
     highlighter = new Highlighter(":/highlights/languages.xml", this);
+    executor = new CommandLineExecutor(this);
 
     LoadRegisters();
 }
@@ -52,7 +53,7 @@ MainWindow::~MainWindow() {
     delete ui;
 }
 
-/* drag and drop functions for file into window as it would be openned */
+/* drag and drop functions for file into window as it would be opened */
 void MainWindow::dragEnterEvent(QDragEnterEvent *drag_event) {
     if (drag_event->mimeData()->hasUrls())
         drag_event->acceptProposedAction();
@@ -323,6 +324,7 @@ void MainWindow::SetupToolBar() {
     topToolBar->addSeparator();
 
     searchBox = new SearchBox(Tabs, this);
+    searchBox->setFixedHeight(topToolBar->height());
     connect(searchBox->more, SIGNAL(clicked()), this, SLOT(slotShowFindReplaceDock()));
     topToolBar->addWidget(searchBox);
 
@@ -935,8 +937,7 @@ void MainWindow::slotBuild() {
             generator.addSourceFile((file_manager.source_files[i].toStdString()));
         }
         generator.createCmakeLists(file_manager.Project_Dir.toStdString());
-
-        CommandLineExecutor::Build(cmake, file_manager.Project_Dir.toStdString(), console_dock->ConsoleOutput);
+        executor->Build(cmake, file_manager.Project_Dir.toStdString(), console_dock->ConsoleOutput);
 
         // non static function need also an object to call it
 
@@ -954,7 +955,7 @@ void MainWindow::slotBuild() {
             for (int i = 0; i < file_manager.source_files.size(); i++) {
                 sources.push_back(file_manager.source_files[i].toStdString());
             }
-            CommandLineExecutor::Build(cmake, file_manager.Project_Dir.toStdString(), console_dock->ConsoleOutput);
+            executor->Build(cmake, file_manager.Project_Dir.toStdString(), console_dock->ConsoleOutput);
         }
     }
 
@@ -985,16 +986,16 @@ void MainWindow::slotRun() {
         }
         if (file_manager.executable_file_path.isEmpty()) {
             file_manager.executable_file_path = file_manager.Project_Dir + "/cmake-build/" + file_manager.executable_file_name;
-            CommandLineExecutor::Execute(cmake, file_manager.executable_file_path.toStdString(), console_dock->ConsoleOutput);
+            executor->Execute(cmake, file_manager.executable_file_path.toStdString(), console_dock->ConsoleOutput);
         }
         //CommandLineExecutor::Execute(cmake, file_manager.Project_Dir.toStdString() + "/cmake-build/" + "executable", console_dock->ConsoleOutput);
         else {
-            CommandLineExecutor::Execute(cmake, file_manager.executable_file_path.toStdString(), console_dock->ConsoleOutput);
+            executor->Execute(cmake, file_manager.executable_file_path.toStdString(), console_dock->ConsoleOutput);
         }
     } else {
         // only 1 file, dir should exist already
         if (file_manager.source_files.size() == 1 || currentWidget->getFilePath().isEmpty()) {
-            CommandLineExecutor::Execute(cmake, file_manager.Project_Dir.toStdString() + "/Evolution.temp/" + "executable", console_dock->ConsoleOutput);
+            executor->Execute(cmake, file_manager.Project_Dir.toStdString() + "/Evolution.temp/" + "executable", console_dock->ConsoleOutput);
         }
         //executor.setExecutableName("executable", file_manager.Project_Dir.toStdString());
         //int pid = executor.getPid();
@@ -1003,22 +1004,18 @@ void MainWindow::slotRun() {
     }
 }
 void MainWindow::slotClangFormat() {
-    CommandLineExecutor executor;
     std::vector<std::string> sources;
     console_dock->ConsoleOutput->appendPlainText(QString::fromStdString(CommandLineExecutor::ClangFormat(sources, file_manager.clang_format_path.toStdString())));
 }
 void MainWindow::slotClangTidy() {
-    CommandLineExecutor executor;
     std::vector<std::string> sources;
     console_dock->ConsoleOutput->appendPlainText(QString::fromStdString(CommandLineExecutor::ClangTidy(sources)));
 }
 void MainWindow::slotClangCheck() {
-    CommandLineExecutor executor;
     std::vector<std::string> sources;
     console_dock->ConsoleOutput->appendPlainText(QString::fromStdString(CommandLineExecutor::ClangCheck(sources)));
 }
 void MainWindow::slotValgrind() {
-    CommandLineExecutor executor;
     console_dock->ConsoleOutput->appendPlainText(QString::fromStdString(CommandLineExecutor::Valgrind(std::string())));
 }
 void MainWindow::slotClangDocGenerate() {

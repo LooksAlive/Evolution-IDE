@@ -3,13 +3,155 @@
 #include <QSettings>
 #include <QSharedPointer>
 
-Runner::Runner(std::shared_ptr<DebuggerSession> dBsession, QObject *parent)
-    : QObject(parent), debugger(std::move(dBsession)) {}
+ProcessHandler::ProcessHandler(lldbBridge *lldb_bridge, QObject *parent) : QObject(parent), DBridge(lldb_bridge) {}
 
-void Runner::runDebugSession() {
-    mutex.lock();
-    debugger->setProcessInterruptFeatures();
-    mutex.unlock();
+
+void ProcessHandler::setProcessInterruptFeatures() {
+    const uint32_t event_timeout_secs = 10;// Wait for 10 seconds for an event. You can set this to be longer if you want like UINT32_MAX to wait forever.
+    bool done = false;
+    while (!done) {
+        SBEvent event;// const
+        if (DBridge->listener.WaitForEvent(event_timeout_secs, event)) {
+            if (SBProcess::EventIsProcessEvent(event)) {
+                // Handle process event
+                done = HandleProcessEvent(event);
+            }
+        }
+    }
+    //uint32_t lldb::SBEvent::GetType() const;
+}
+
+bool ProcessHandler::HandleProcessEvent(SBEvent &event) {
+    switch (event.GetType()) {
+        case lldb::SBProcess::eBroadcastBitStateChanged:
+            return HandleProcessStateChangeEvent(event);
+            /*
+            case lldb::SBProcess::eBroadcastBitSTDOUT:
+                //return HandleProcessSTDOUTEvent(event);
+                break;
+            case lldb::SBProcess::eBroadcastBitSTDERR:
+                //return HandleProcessSTDERREvent(event);
+                break;
+            */
+        default:
+            break;
+    }
+    return false;// Not done, don't exit main loop
+}
+
+bool ProcessHandler::HandleProcessStateChangeEvent(SBEvent &event) {
+    SBProcess process = SBProcess::GetProcessFromEvent(event);
+    StateType state = SBProcess::GetStateFromEvent(event);
+
+
+    switch (state) {
+        case eStateAttaching:///< Process is currently trying to attach
+            // Maybe you put up a progress dialog in case attach takes a while?
+            //DBridge->Dock->debug_output->appendPlainText("attaching to process");
+            break;
+        case eStateLaunching:///< Process is in the process of launching
+            // Maybe you put up a progress dialog in case launch takes a while?
+            //DBridge->Dock->debug_output->appendPlainText("Launching");
+            break;
+        case eStateStopped:///< Process is stopped and can be examined
+            //DBridge->Dock->debug_output->appendPlainText("Process has stopped and can be examined");
+            emit enableButtons();
+            HandleProcessStopped(event, process);
+            // since from this point the process will stop i can only stepping or continue
+            return true;
+            //break;
+        case eStateRunning:///< Process is now running and can't be examined
+            // Update your UI maybe and disable the play and step buttons so the user
+            // can't try to run the program while it is already running
+            //DBridge->Dock->btn_StartDebug->setEnabled(false);
+            //DBridge->Dock->debug_output->appendPlainText("Process is running");
+            break;
+        case eStateDetached:///< Process has been detached and can't be examined.
+            // Update your GUI top indicate you are no longer debugging since LLDB
+            // has detached from your process.
+            //DBridge->Dock->debug_output->appendPlainText("Process has been detached");
+
+            // If you return true, then this will cause the event loop the exit.
+            // This will work well if you only ever debug one process at a time.
+            // If you are debugging multiple, you can return false.
+            return true;
+        case eStateExited:///< Process has exited and can't be examined.
+            // Update your GUI top indicate you are no longer debugging since your
+            // process has run to completion and has exited
+            //DBridge->Dock->debug_output->appendPlainText("Process exited normally");
+            emit disableButtons();
+
+            // library loaded into memory no needed anymore
+            //Process.Kill();
+            //SBDebugger::Terminate();
+            // If you return true, then this will cause the event loop the exit.
+            // This will work well if you only ever debug one process at a time.
+            // If you are debugging multiple, you can return false.
+            return true;
+        default:
+            break;
+    }
+    return false;// Not done, don't exit main loop
+}
+
+void ProcessHandler::HandleProcessStopped(SBEvent &event, SBProcess &process) {
+    if (SBProcess::GetRestartedFromEvent(event)) {
+        // Process is automatically restarted due to script or breakpoint action.
+        // Don't update the GUI because we will soon receive a eStateRunning state...
+        return;
+    }
+
+    const uint32_t num_threads = process.GetNumThreads();
+    for (uint32_t thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
+        SBThread thread = process.GetThreadAtIndex(thread_idx);
+        // Get the thread stop description by using a stream
+        //SBStream description_stream;
+        //thread.GetDescription(description_stream, true);
+        //const char *description = description_stream.GetData();
+        //debug_output->appendPlainText(description);
+        // You can look at description and use this string in your GUI if it has the contents you want.
+        // This will be formatted using the "thread-format" which can be changed with "settings set":
+        //   settings set thread-format ....
+
+        // You can also get an enumeration for why the thread has stopped using:
+        const StopReason thread_stop_reason = thread.GetStopReason();
+        // Each stop reason might have additional data associated with it. See SBThread.h line 54 for details.
+        // You can use this following SBThread functions to extract the data:
+        //    size_t SBThread::GetStopReasonDataCount();
+        //    uint64_t SBThread::GetStopReasonDataAtIndex(uint32_t idx);
+
+        const size_t stop_reason_data_count = thread.GetStopReasonDataCount();
+        switch (thread_stop_reason) {
+            case eStopReasonInvalid:
+            case eStopReasonNone:
+            case eStopReasonTrace:
+                break;
+            case eStopReasonBreakpoint:
+                // The stop reason data contains the breakpoint and breakpoint location
+                // IDs that were hit. There might be more than one breakpoint that was
+                // hit by the same thread, so we will want to report all breakpoints that were hit
+                //DBridge->Dock->debug_output->appendPlainText("breakpoint was hit: ");
+                // DBridge->setFilePosition(thread.GetSelectedFrame());
+                emit breakPointHit();
+                for (size_t i = 0; i < stop_reason_data_count; i += 2) {
+                    break_id_t bp_id = thread.GetStopReasonDataAtIndex(i);
+                    break_id_t bp_loc_id = thread.GetStopReasonDataAtIndex(i + 1);
+                    SBBreakpoint bp = process.GetTarget().FindBreakpointByID(bp_id);
+                    SBBreakpointLocation bp_loc = bp.FindLocationByID(bp_loc_id);
+                    //bp_loc.GetAddress();
+                    //bp_loc.GetThreadID();
+                }
+                break;
+            case eStopReasonWatchpoint:
+            case eStopReasonSignal:
+            case eStopReasonException:
+            case eStopReasonExec:
+            case eStopReasonPlanComplete:
+            case eStopReasonThreadExiting:
+            case eStopReasonInstrumentation:
+                break;
+        }
+    }
 }
 
 
@@ -22,7 +164,7 @@ void lldbBridge::fillCallStack() {
         Dock->CallStack->insertItem(i, "some call");
     }
     // is there another wyy to do that ... extract positions, contents and files ????
-    const std::string backTrace = executeDebuggerCommand("thread backtrace all");
+    // const std::string backTrace = executeDebuggerCommand("thread backtrace all");
 }
 
 void lldbBridge::slotGoToBreakPointFile(QListWidgetItem *item) const {
@@ -181,30 +323,6 @@ void lldbBridge::collectThreads() {
     //thread_box->insertItem(t.GetThreadID(), QString::fromStdString(t.GetName()));
 }
 
-void lldbBridge::enableDebuggerButtons() {
-    Dock->btn_StartDebug->setEnabled(false);
-    Dock->btn_StopDebug->setEnabled(true);
-    Dock->btn_RunToCursor->setEnabled(true);
-
-    Dock->btn_StepOver->setEnabled(true);
-    Dock->btn_StepInto->setEnabled(true);
-    Dock->btn_StepInstruction->setEnabled(true);
-    Dock->btn_Continue->setEnabled(true);
-    Dock->btn_StepOut->setEnabled(true);
-}
-
-void lldbBridge::disableDebuggerButtons() {
-    Dock->btn_StartDebug->setEnabled(true);
-    Dock->btn_StopDebug->setEnabled(false);
-    Dock->btn_RunToCursor->setEnabled(false);
-
-    Dock->btn_StepOver->setEnabled(false);
-    Dock->btn_StepInto->setEnabled(false);
-    Dock->btn_StepInstruction->setEnabled(false);
-    Dock->btn_Continue->setEnabled(false);
-    Dock->btn_StepOut->setEnabled(false);
-}
-
 void lldbBridge::slotAddWatch() {
 }
 
@@ -262,6 +380,47 @@ void lldbBridge::connectDockWidgets() {
     connect(WatchDock->modifyWatch, SIGNAL(clicked()), this, SLOT(slotModifyWatch()));
 }
 
+void lldbBridge::setMessage(const QString &msg) const {
+    Dock->debug_output->appendPlainText(msg);
+}
+
+void lldbBridge::enableDebuggerButtons() const {
+    Dock->btn_StartDebug->setEnabled(false);
+    Dock->btn_StopDebug->setEnabled(true);
+    Dock->btn_RunToCursor->setEnabled(true);
+
+    Dock->btn_StepOver->setEnabled(true);
+    Dock->btn_StepInto->setEnabled(true);
+    Dock->btn_StepInstruction->setEnabled(true);
+    Dock->btn_Continue->setEnabled(true);
+    Dock->btn_StepOut->setEnabled(true);
+}
+
+void lldbBridge::disableDebuggerButtons() const {
+    Dock->btn_StartDebug->setEnabled(true);
+    Dock->btn_StopDebug->setEnabled(false);
+    Dock->btn_RunToCursor->setEnabled(false);
+
+    Dock->btn_StepOver->setEnabled(false);
+    Dock->btn_StepInto->setEnabled(false);
+    Dock->btn_StepInstruction->setEnabled(false);
+    Dock->btn_Continue->setEnabled(false);
+    Dock->btn_StepOut->setEnabled(false);
+}
+
+void lldbBridge::handleBreakPointHit() {
+    setFilePosition(getCurrentFrame());
+    collectThreads();
+    collectFrameData(getCurrentFrame());
+    fillCallStack();
+}
+
+void lldbBridge::handleWatchPointHit() {
+    setFilePosition(getCurrentThread().GetSelectedFrame());
+    collectThreads();
+    collectFrameData(getCurrentFrame());
+    fillCallStack();
+}
 
 // lldb
 // ****************************************************************************************
@@ -366,16 +525,22 @@ void lldbBridge::start() {
         return;
     }
 
-    worker = new QThread(this);
-    auto ptr = std::make_shared<DebuggerSession>(this);
-    runner = new Runner(ptr);// QObject::moveToThread: Cannot move objects with a parent
+    ProcessingThread = new QThread(this);
+    //auto ptr = std::make_shared<DebuggerSession>(this);
+    processHandler = new ProcessHandler(/*ptr*/ this);// QObject::moveToThread: Cannot move objects with a parent
     //&lldbBridge::setProcessInterruptFeatures
-    connect(worker, &QThread::started, runner, &Runner::runDebugSession, Qt::AutoConnection);// Qt::QueuedConnection
-    connect(worker, &QThread::finished, worker, &QObject::deleteLater, Qt::AutoConnection);
-    worker->setObjectName("DebuggerThread");
-    //runner->moveToThread(worker);
+    connect(ProcessingThread, &QThread::started, processHandler, &ProcessHandler::setProcessInterruptFeatures);
+    connect(ProcessingThread, &QThread::finished, ProcessingThread, &QObject::deleteLater);
+
+    connect(processHandler, SIGNAL(addMessage(const QString &)), this, SLOT(setMessage(const QString &)));
+    connect(processHandler, SIGNAL(enableButtons()), this, SLOT(enableDebuggerButtons()));
+    connect(processHandler, SIGNAL(disableButtons()), this, SLOT(disableDebuggerButtons()));
+    connect(processHandler, SIGNAL(breakPointHit()), this, SLOT(handleBreakPointHit()));
+    connect(processHandler, SIGNAL(watchPointHit()), this, SLOT(handleWatchPointHit()));
+    ProcessingThread->setObjectName("DebuggerThread");
+    processHandler->moveToThread(ProcessingThread);
     //qRegisterMetaType<QSharedPointer<lldbBridge>>();
-    worker->start();
+    ProcessingThread->start();
     // when process stopped, return true, pause process
     //setProcessInterruptFeatures();
 }
@@ -383,174 +548,6 @@ void lldbBridge::start() {
 void lldbBridge::stop() {
     // Process.Stop();
     Process.Kill();
-}
-
-void lldbBridge::setProcessInterruptFeatures() {
-    const uint32_t event_timeout_secs = 10;// Wait for 10 seconds for an event. You can set this to be longer if you want like UINT32_MAX to wait forever.
-    bool done = false;
-    while (!done) {
-        SBEvent event;
-        if (listener.WaitForEvent(event_timeout_secs, event)) {
-            if (SBProcess::EventIsProcessEvent(event)) {
-                // Handle process event
-                done = HandleProcessEvent(event);
-            }
-        }
-    }
-    //uint32_t lldb::SBEvent::GetType() const;
-}
-
-bool lldbBridge::HandleProcessEvent(SBEvent &event) {
-
-    // auto thread = getCurrentThread();
-    switch (event.GetType()) {
-        case lldb::SBProcess::eBroadcastBitStateChanged:
-            // add all threads into threads view
-            collectThreads();
-            collectFrameData(getCurrentFrame());
-
-            return HandleProcessStateChangeEvent(event);
-        /*
-        case lldb::SBProcess::eBroadcastBitSTDOUT:
-            //return HandleProcessSTDOUTEvent(event);
-            break;
-
-        case lldb::SBProcess::eBroadcastBitSTDERR:
-            //return HandleProcessSTDERREvent(event);
-            break;
-        */
-        default:
-            break;
-    }
-    return false; // Not done, don't exit main loop
-}
-
-bool lldbBridge::HandleProcessStateChangeEvent(SBEvent &event) {
-    SBProcess process = SBProcess::GetProcessFromEvent(event);
-    StateType state = SBProcess::GetStateFromEvent(event);
-
-
-    switch (state) {
-        case eStateAttaching:///< Process is currently trying to attach
-            // Maybe you put up a progress dialog in case attach takes a while?
-            std::cout << "attaching to process";
-            Dock->debug_output->appendPlainText("attaching to process");
-            break;
-        case eStateLaunching: ///< Process is in the process of launching
-            // Maybe you put up a progress dialog in case launch takes a while?
-            std::cout << "launching";
-            Dock->debug_output->appendPlainText("Launching");
-            break;
-        case eStateStopped:   ///< Process is stopped and can be examined
-            Dock->debug_output->appendPlainText("Process has stopped and can be examined");
-            enableDebuggerButtons();
-
-            // retrieve data first
-            //storeFrameData(getCurrentFrame());
-            //setThreads();
-
-            HandleProcessStopped(event, process);
-            // since from this point the process will stop i can only stepping or continue
-            return true;
-            //break;
-        case eStateRunning:   ///< Process is now running and can't be examined
-            // Update your UI maybe and disable the play and step buttons so the user
-            // can't try to run the program while it is already running
-            Dock->btn_StartDebug->setEnabled(false);
-            std::cout << "running";
-            Dock->debug_output->appendPlainText("Process is running");
-            break;
-        case eStateDetached:  ///< Process has been detached and can't be examined.
-            // Update your GUI top indicate you are no longer debugging since LLDB
-            // has detached from your process.
-            std::cout << "process has been detached";
-            Dock->debug_output->appendPlainText("Process has been detached");
-
-            // If you return true, then this will cause the event loop the exit.
-            // This will work well if you only ever debug one process at a time.
-            // If you are debugging multiple, you can return false.
-            return true;
-        case eStateExited:    ///< Process has exited and can't be examined.
-            // Update your GUI top indicate you are no longer debugging since your
-            // process has run to completion and has exited
-            std::cout << "Process exited normally";
-            Dock->debug_output->appendPlainText("Process exited normally");
-            disableDebuggerButtons();
-
-            // library loaded into memory no needed anymore
-            //Process.Kill();
-            //SBDebugger::Terminate();
-            // If you return true, then this will cause the event loop the exit.
-            // This will work well if you only ever debug one process at a time.
-            // If you are debugging multiple, you can return false.
-            return true;
-        default:
-            break;
-    }
-    return false; // Not done, don't exit main loop
-}
-
-void lldbBridge::HandleProcessStopped(SBEvent &event, SBProcess &process) {
-    if (SBProcess::GetRestartedFromEvent(event)) {
-        // Process is automatically restarted due to script or breakpoint action.
-        // Don't update the GUI because we will soon receive a eStateRunning state...
-        return;
-    }
-
-    const uint32_t num_threads = process.GetNumThreads();
-    for (uint32_t thread_idx=0; thread_idx<num_threads; ++thread_idx) {
-        SBThread thread = process.GetThreadAtIndex(thread_idx);
-        // Get the thread stop description by using a stream
-        //SBStream description_stream;
-        //thread.GetDescription(description_stream, true);
-        //const char *description = description_stream.GetData();
-        //debug_output->appendPlainText(description);
-        // You can look at description and use this string in your GUI if it has the contents you want.
-        // This will be formatted using the "thread-format" which can be changed with "settings set":
-        //   settings set thread-format ....
-
-        // You can also get an enumeration for why the thread has stopped using:
-        const StopReason thread_stop_reason = thread.GetStopReason();
-        // Each stop reason might have additional data associated with it. See SBThread.h line 54 for details.
-        // You can use this following SBThread functions to extract the data:
-        //    size_t SBThread::GetStopReasonDataCount();
-        //    uint64_t SBThread::GetStopReasonDataAtIndex(uint32_t idx);
-
-        const size_t stop_reason_data_count = thread.GetStopReasonDataCount();
-        switch (thread_stop_reason) {
-            case eStopReasonInvalid:
-            case eStopReasonNone:
-            case eStopReasonTrace:
-                break;
-            case eStopReasonBreakpoint:
-                // The stop reason data contains the breakpoint and breakpoint location
-                // IDs that were hit. There might be more than one breakpoint that was
-                // hit by the same thread, so we will want to report all breakpoints that were hit
-                std::cout << "breakpoint was hit";
-                Dock->debug_output->appendPlainText("breakpoint was hit: ");
-                setFilePosition(thread.GetSelectedFrame());
-                //if(!position.empty()){
-                //    debug_output->appendPlainText(QString::fromStdString(position));
-                //}
-                for (size_t i = 0; i < stop_reason_data_count; i += 2) {
-                    break_id_t bp_id = thread.GetStopReasonDataAtIndex(i);
-                    break_id_t bp_loc_id = thread.GetStopReasonDataAtIndex(i + 1);
-                    SBBreakpoint bp = process.GetTarget().FindBreakpointByID(bp_id);
-                    SBBreakpointLocation bp_loc = bp.FindLocationByID(bp_loc_id);
-                    //bp_loc.GetAddress();
-                    //bp_loc.GetThreadID();
-                }
-                break;
-            case eStopReasonWatchpoint:
-            case eStopReasonSignal:
-            case eStopReasonException:
-            case eStopReasonExec:
-            case eStopReasonPlanComplete:
-            case eStopReasonThreadExiting:
-            case eStopReasonInstrumentation:
-                break;
-        }
-    }
 }
 
 const char *lldbBridge::getAssembly(SBThread thread) {
@@ -941,166 +938,3 @@ std::string lldbBridge::executeDebuggerCommand(const std::string &args) {
     return output;
 }
 
-
-DebuggerSession::DebuggerSession(lldbBridge *lldb_bridge) : DBridge(lldb_bridge) {
-}
-
-void DebuggerSession::setProcessInterruptFeatures() {
-    const uint32_t event_timeout_secs = 10;// Wait for 10 seconds for an event. You can set this to be longer if you want like UINT32_MAX to wait forever.
-    bool done = false;
-    while (!done) {
-        SBEvent event;// const
-        if (DBridge->listener.WaitForEvent(event_timeout_secs, event)) {
-            if (SBProcess::EventIsProcessEvent(event)) {
-                // Handle process event
-                done = HandleProcessEvent(event);
-            }
-        }
-    }
-    //uint32_t lldb::SBEvent::GetType() const;
-}
-
-bool DebuggerSession::HandleProcessEvent(SBEvent &event) {
-
-    // auto thread = getCurrentThread();
-    switch (event.GetType()) {
-        case lldb::SBProcess::eBroadcastBitStateChanged:
-            // add all threads into threads view
-            DBridge->collectThreads();
-            DBridge->collectFrameData(DBridge->getCurrentFrame());
-
-            return HandleProcessStateChangeEvent(event);
-            /*
-            case lldb::SBProcess::eBroadcastBitSTDOUT:
-                //return HandleProcessSTDOUTEvent(event);
-                break;
-
-            case lldb::SBProcess::eBroadcastBitSTDERR:
-                //return HandleProcessSTDERREvent(event);
-                break;
-            */
-        default:
-            break;
-    }
-    return false;// Not done, don't exit main loop
-}
-
-bool DebuggerSession::HandleProcessStateChangeEvent(SBEvent &event) {
-    SBProcess process = SBProcess::GetProcessFromEvent(event);
-    StateType state = SBProcess::GetStateFromEvent(event);
-
-
-    switch (state) {
-        case eStateAttaching:///< Process is currently trying to attach
-            // Maybe you put up a progress dialog in case attach takes a while?
-            std::cout << "attaching to process";
-            DBridge->Dock->debug_output->appendPlainText("attaching to process");
-            break;
-        case eStateLaunching:///< Process is in the process of launching
-            // Maybe you put up a progress dialog in case launch takes a while?
-            std::cout << "launching";
-            DBridge->Dock->debug_output->appendPlainText("Launching");
-            break;
-        case eStateStopped:///< Process is stopped and can be examined
-            DBridge->Dock->debug_output->appendPlainText("Process has stopped and can be examined");
-            DBridge->enableDebuggerButtons();
-            HandleProcessStopped(event, process);
-            // since from this point the process will stop i can only stepping or continue
-            return true;
-            //break;
-        case eStateRunning:///< Process is now running and can't be examined
-            // Update your UI maybe and disable the play and step buttons so the user
-            // can't try to run the program while it is already running
-            DBridge->Dock->btn_StartDebug->setEnabled(false);
-            std::cout << "running";
-            DBridge->Dock->debug_output->appendPlainText("Process is running");
-            break;
-        case eStateDetached:///< Process has been detached and can't be examined.
-            // Update your GUI top indicate you are no longer debugging since LLDB
-            // has detached from your process.
-            std::cout << "process has been detached";
-            DBridge->Dock->debug_output->appendPlainText("Process has been detached");
-
-            // If you return true, then this will cause the event loop the exit.
-            // This will work well if you only ever debug one process at a time.
-            // If you are debugging multiple, you can return false.
-            return true;
-        case eStateExited:///< Process has exited and can't be examined.
-            // Update your GUI top indicate you are no longer debugging since your
-            // process has run to completion and has exited
-            std::cout << "Process exited normally";
-            DBridge->Dock->debug_output->appendPlainText("Process exited normally");
-            DBridge->disableDebuggerButtons();
-
-            // library loaded into memory no needed anymore
-            //Process.Kill();
-            //SBDebugger::Terminate();
-            // If you return true, then this will cause the event loop the exit.
-            // This will work well if you only ever debug one process at a time.
-            // If you are debugging multiple, you can return false.
-            return true;
-        default:
-            break;
-    }
-    return false;// Not done, don't exit main loop
-}
-
-void DebuggerSession::HandleProcessStopped(SBEvent &event, SBProcess &process) {
-    if (SBProcess::GetRestartedFromEvent(event)) {
-        // Process is automatically restarted due to script or breakpoint action.
-        // Don't update the GUI because we will soon receive a eStateRunning state...
-        return;
-    }
-
-    const uint32_t num_threads = process.GetNumThreads();
-    for (uint32_t thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
-        SBThread thread = process.GetThreadAtIndex(thread_idx);
-        // Get the thread stop description by using a stream
-        //SBStream description_stream;
-        //thread.GetDescription(description_stream, true);
-        //const char *description = description_stream.GetData();
-        //debug_output->appendPlainText(description);
-        // You can look at description and use this string in your GUI if it has the contents you want.
-        // This will be formatted using the "thread-format" which can be changed with "settings set":
-        //   settings set thread-format ....
-
-        // You can also get an enumeration for why the thread has stopped using:
-        const StopReason thread_stop_reason = thread.GetStopReason();
-        // Each stop reason might have additional data associated with it. See SBThread.h line 54 for details.
-        // You can use this following SBThread functions to extract the data:
-        //    size_t SBThread::GetStopReasonDataCount();
-        //    uint64_t SBThread::GetStopReasonDataAtIndex(uint32_t idx);
-
-        const size_t stop_reason_data_count = thread.GetStopReasonDataCount();
-        switch (thread_stop_reason) {
-            case eStopReasonInvalid:
-            case eStopReasonNone:
-            case eStopReasonTrace:
-                break;
-            case eStopReasonBreakpoint:
-                // The stop reason data contains the breakpoint and breakpoint location
-                // IDs that were hit. There might be more than one breakpoint that was
-                // hit by the same thread, so we will want to report all breakpoints that were hit
-                std::cout << "breakpoint was hit";
-                DBridge->Dock->debug_output->appendPlainText("breakpoint was hit: ");
-                DBridge->setFilePosition(thread.GetSelectedFrame());
-                for (size_t i = 0; i < stop_reason_data_count; i += 2) {
-                    break_id_t bp_id = thread.GetStopReasonDataAtIndex(i);
-                    break_id_t bp_loc_id = thread.GetStopReasonDataAtIndex(i + 1);
-                    SBBreakpoint bp = process.GetTarget().FindBreakpointByID(bp_id);
-                    SBBreakpointLocation bp_loc = bp.FindLocationByID(bp_loc_id);
-                    //bp_loc.GetAddress();
-                    //bp_loc.GetThreadID();
-                }
-                break;
-            case eStopReasonWatchpoint:
-            case eStopReasonSignal:
-            case eStopReasonException:
-            case eStopReasonExec:
-            case eStopReasonPlanComplete:
-            case eStopReasonThreadExiting:
-            case eStopReasonInstrumentation:
-                break;
-        }
-    }
-}

@@ -11,11 +11,22 @@
 #include <QString>
 #include <QThread>
 
-class ExecutionRunner : public QObject {
+class ExecutionHandler : public QObject {
     Q_OBJECT
 public:
-    explicit ExecutionRunner(QObject *parent = nullptr) : QObject(parent) {}
-    ~ExecutionRunner() = default;
+    explicit ExecutionHandler(QObject *parent = nullptr);
+    ~ExecutionHandler() = default;
+
+    // actual command to run
+    std::string args;
+
+public slots:
+    // second argument represents output widget to append data constantly
+    // ????????? will there be any conflict with edit class ?? since it is Qt
+    void ExecuteCommand();
+
+signals:
+    void addMessage(const QString &msg);
 };
 
 
@@ -23,25 +34,20 @@ class CommandLineExecutor : public QObject {
     Q_OBJECT
 public:
     explicit CommandLineExecutor(QObject *parent = nullptr);
+
     ~CommandLineExecutor() = default;
 
     enum BuildMode {
         Debug = 1,
         Release = 2,
     };
-
-    // TODO: multithreading example which works is only through connections in debugger...
-    // TODO: it requires inherit QObject, make non-static, store edit object etc., no other way yet
-    // second argument represents output widget to append data constantly
-    // ????????? will there be any conflict with edit class ?? since it is Qt
-    static void ExecuteCommand(const std::string &cmd, QPlainTextEdit *edit = nullptr);
     // basic command on the main thread to take no longer than second
     static std::string ExecuteSimpleCommand(const std::string &cmd);
 
     void setSourceFiles(const std::vector<std::string> &sources);
     void setLibraryPaths(const std::vector<std::string> &library_paths);
-    static void Build(const bool &cmake, const std::string &ProjectRootDir, QPlainTextEdit *edit = nullptr);
-    static void Execute(const bool &cmake, const std::string &executable_path, QPlainTextEdit *edit = nullptr);
+    void Build(const bool &cmake, const std::string &ProjectRootDir, QPlainTextEdit *editor = nullptr);
+    void Execute(const bool &cmake, const std::string &executable_path, QPlainTextEdit *editor = nullptr);
     // kill running process with pid
     // TODO: set argument executable name to avoid QSettings usage here
     static int getPid(const std::string &executable_path);
@@ -62,11 +68,13 @@ private:
     static void DetermineCompilerVersion(const std::string &tool);
 
     // consider only stack allocation
-    QThread *QThread;
-    ExecutionRunner *runner;
+    QThread *ExecutionThread;
+    ExecutionHandler *executionHandler;
+
+    QPlainTextEdit *edit;
 
 private slots:
-    //void slotRunExecution();
+    void setMessage(const QString &msg) const;
 };
 
 
