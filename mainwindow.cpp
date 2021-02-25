@@ -1151,7 +1151,7 @@ void MainWindow::slotStepOut() {
 // this might go only through containBlock and decide to create or remove
 void MainWindow::slotToggleBreakPoint() {
     QString filename = currentWidget->getFilePath();
-    int line = currentWidget->getCursorPosition().x();
+    int line = currentWidget->getCursorPosition().y();
     // in edit
     bool created = currentWidget->toggleBreakPoint(line);
 
@@ -1185,7 +1185,7 @@ void MainWindow::slotDeleteBreakPoint(const int &line) {
 
 void MainWindow::slotSetBreakpointAtLine() {
     QString filename = currentWidget->getFilePath();
-    int line = currentWidget->getCursorPosition().x();
+    int line = currentWidget->getCursorPosition().y();
 
     // in debugger
     if (!filename.isEmpty()) {

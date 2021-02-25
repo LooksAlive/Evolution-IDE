@@ -79,6 +79,7 @@ bool ProcessHandler::HandleProcessStateChangeEvent(SBEvent &event) {
             // Update your GUI top indicate you are no longer debugging since your
             // process has run to completion and has exited
             //DBridge->Dock->debug_output->appendPlainText("Process exited normally");
+            emit addMessage("exited normally");
             emit disableButtons();
 
             // library loaded into memory no needed anymore
@@ -185,7 +186,7 @@ void lldbBridge::slotRemoveBreakPoint() {
     }
 }
 
-void lldbBridge::slotRemoveAllBreakPoint() {
+void lldbBridge::slotRemoveAllBreakPoints() {
     for (int i = 0; i < BreakPointList.size(); i++) {
         //const int ID = BreakPoint_List->BpList->currentItem()->text(0).toInt(); // ID
         // assume that break IDs are increasing constantly
@@ -268,7 +269,7 @@ void lldbBridge::showBreakPointsList() {
     // connect tool buttons + some new slots
     connect(DialogBreakPoint_List->BpList, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotGoToBreakPointFile(QListWidgetItem *)));
     connect(DialogBreakPoint_List->remove, SIGNAL(clicked()), this, SLOT(slotRemoveBreakPoint()));
-    connect(DialogBreakPoint_List->removeAll, SIGNAL(clicked()), this, SLOT(slotRemoveAllBreakPoint()));
+    connect(DialogBreakPoint_List->removeAll, SIGNAL(clicked()), this, SLOT(slotRemoveAllBreakPoints()));
 
     DialogBreakPoint_List->show();
 }
@@ -354,7 +355,7 @@ void lldbBridge::connectDockWidgets() {
     // BP List view
     connect(Dock->BreakPoint_List->BpList, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotGoToBreakPointFile(QListWidgetItem *)));
     connect(Dock->BreakPoint_List->remove, SIGNAL(clicked()), this, SLOT(slotRemoveBreakPoint()));
-    connect(Dock->BreakPoint_List->removeAll, SIGNAL(clicked()), this, SLOT(slotRemoveAllBreakPoint()));
+    connect(Dock->BreakPoint_List->removeAll, SIGNAL(clicked()), this, SLOT(slotRemoveAllBreakPoints()));
     //connect(BreakPoint_List->mute, SIGNAL(clicked()), this, SLOT(slotMuteBreakPoint()));
     //connect(BreakPoint_List->muteAll, SIGNAL(clicked()), this, SLOT(slotMuteAllBreakPoint()));
 
@@ -409,6 +410,7 @@ void lldbBridge::disableDebuggerButtons() const {
 }
 
 void lldbBridge::handleBreakPointHit() {
+    Dock->debug_output->appendPlainText("BreakPoint was hit");
     setFilePosition(getCurrentFrame());
     collectThreads();
     collectFrameData(getCurrentFrame());
@@ -416,6 +418,7 @@ void lldbBridge::handleBreakPointHit() {
 }
 
 void lldbBridge::handleWatchPointHit() {
+    Dock->debug_output->appendPlainText("WatchPoint was hit");
     setFilePosition(getCurrentThread().GetSelectedFrame());
     collectThreads();
     collectFrameData(getCurrentFrame());
@@ -496,6 +499,7 @@ void lldbBridge::start() {
     // clear all first
     Dock->debug_output->clear();
     Dock->ThreadBox->clear();
+    slotRemoveAllBreakPoints();
     //Dock->BreakPoint_List->remove all ??
     //WatchListView->clear();
 
@@ -617,12 +621,13 @@ void lldbBridge::collectFrameData(SBFrame frame) {
         row->setText(desc);
 
         rootNode->appendRow(row);
-        /*
-        if(value.MightHaveChildren()){
+
+        if (value.MightHaveChildren()) {
             recursiveValueIterator(value, row);
         }
-        */
     }
+    //auto *delegate = new Delegate();
+    //Dock->VariablesView->setItemDelegate(delegate);
     Dock->VariablesView->setModel(model);
     Dock->VariablesView->collapseAll();
 }
@@ -649,11 +654,12 @@ void lldbBridge::recursiveValueIterator(SBValue value, QStandardItem *parent_row
         parent_row->appendRow(child_row);
         qDebug() << desc;
         qDebug() << "\n";
-
+        /*
         if (value.MightHaveChildren()) {
             // recursion proceed here
             recursiveValueIterator(value.GetChildAtIndex(i), child_row);
         }
+        */
     }
 }
 
@@ -680,7 +686,7 @@ std::string lldbBridge::frameGetLocation(const SBFrame &frame) {
 }
 
 void lldbBridge::setStartPosition(const char *filepath, const int &line) const {
-    for (int i = 0; i <= tab->count(); i++) {
+    for (int i = 0; i < tab->count(); i++) {
         // already opened file, only set focus on it and line
         // currentEdit is set automatically when tab focus is changed
         if (tab->tabToolTip(i) == filepath) {

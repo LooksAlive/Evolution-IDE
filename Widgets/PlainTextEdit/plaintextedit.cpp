@@ -1477,8 +1477,8 @@ bool BreakPointArea::containBlock(const int& line) {
 }
 
 bool BreakPointArea::canCreateBreakPoint(const QTextBlock &block) {
-    for (const int B_block : B_blocks) {
-        if(B_block == block.blockNumber()){
+    for (const int &B_block : B_blocks) {
+        if (B_block == block.blockNumber()) {
             return true;
         }
     }

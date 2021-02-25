@@ -43,6 +43,7 @@
 
 #include "DebugWatchDock.h"
 #include "DebuggerDock.h"
+#include "Delegate.h"
 #include "TaskWidget/taskwidget.h"
 #include "Widgets/PlainTextEdit/plaintextedit.h"
 #include "Widgets/Tab/tab.h"
@@ -146,7 +147,7 @@ private slots:
     void slotGoToBreakPointFile(QListWidgetItem *item) const;
 
     void slotRemoveBreakPoint();
-    void slotRemoveAllBreakPoint();
+    void slotRemoveAllBreakPoints();
 
     void slotSetVariableDescription(const QModelIndex &index);
 

@@ -262,7 +262,7 @@ set(SOURCE_FILES
         Debugger/DebuggerDock.cpp
         Debugger/DebuggerDock.h
         Debugger/DebugWatchDock.cpp
-        Debugger/DebugWatchDock.h Widgets/SearchBox/SearchBox.cpp Widgets/SearchBox/SearchBox.h)
+        Debugger/DebugWatchDock.h Widgets/SearchBox/SearchBox.cpp Widgets/SearchBox/SearchBox.h Delegate.cpp Delegate.h)
 
 
 
