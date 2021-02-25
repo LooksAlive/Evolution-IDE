@@ -325,6 +325,7 @@ void MainWindow::SetupToolBar() {
 
     searchBox = new SearchBox(Tabs, this);
     searchBox->setFixedHeight(topToolBar->height());
+    searchBox->setContentsMargins(0, 0, 0, 0);
     connect(searchBox->more, SIGNAL(clicked()), this, SLOT(slotShowFindReplaceDock()));
     topToolBar->addWidget(searchBox);
 
@@ -488,6 +489,10 @@ void MainWindow::SetupFileDocker() {
 void MainWindow::SetupCompileDock() {
     console_dock = new ConsoleDock(this);
     find_replace = new FindReplaceWidget(Tabs, this);
+
+    connect(console_dock->run, SIGNAL(clicked()), this, SLOT(slotRun()));
+    connect(console_dock->rerun, SIGNAL(clicked()), this, SLOT(slotRun()));
+    connect(console_dock->stop, SIGNAL(clicked()), this, SLOT(slotStopProcess()));
 
     connect(new QShortcut(Qt::CTRL + Qt::Key_F, this), &QShortcut::activated, [=] { slotFind(); });
 

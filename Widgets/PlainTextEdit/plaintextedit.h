@@ -42,7 +42,7 @@ public:
     ~PlainTextEdit() = default;
 
     BreakPointArea *BreakpointArea;
-    // data insertions
+    // only triggers actions to do with its Handler ...
     CodeInfoDock *code_info;
     // parsing
     ClangBridge *clang;
@@ -202,10 +202,10 @@ public slots:
     void actions();
 
     void toggleComment();
-    void formatFile();
-    void slotGoToDefinition();
-    void slotFindReferences();
-    void slotGenerate();
+    void formatFile() const;
+    void slotGoToDefinition() const;
+    void slotFindReferences() const;
+    void slotGenerate() const;
 
     void slotExpand();
     void slotCollapse();

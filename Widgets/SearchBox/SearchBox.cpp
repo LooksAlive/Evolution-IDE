@@ -26,9 +26,6 @@ void SearchBox::createWindow() {
     wholeWords->setCheckable(true);
     wholeWords->setChecked(false);
 
-    connect(caseSensitive, SIGNAL(toggled(bool)), this, SLOT(slotFindCaseSensitively(bool)));
-    connect(wholeWords, SIGNAL(toggled(bool)), this, SLOT(slotFindWholeWords(bool)));
-
     menu->addAction(caseSensitive);
     menu->addAction(wholeWords);
 
@@ -68,6 +65,14 @@ void SearchBox::createWindow() {
 void SearchBox::getOptionsAndTexts() {
     //LabelOccurrences->setText(QString());
     search_text = lineEdit->text();
+    find_options = NULL;
+
+    if (caseSensitive->isChecked()) {
+        find_options |= QTextDocument::FindCaseSensitively;
+    }
+    if (wholeWords->isChecked()) {
+        find_options |= QTextDocument::FindWholeWords;
+    }
 
     /* same_file == ""  --> means that file has no filepath yet (blank) */
     if (same_file != m_Tab->tabToolTip(m_Tab->currentIndex()) || same_file == "") {
@@ -90,18 +95,7 @@ void SearchBox::slotNext() {
     }
     m_Edit->findNext(search_text, find_options);
 }
-void SearchBox::slotFindCaseSensitively(bool toggled) {
-    if (toggled) {
-        find_options |= QTextDocument::FindCaseSensitively;
-    } else {
-    }
-}
-void SearchBox::slotFindWholeWords(bool toggled) {
-    if (toggled) {
-        find_options |= QTextDocument::FindWholeWords;
-    } else {
-    }
-}
+
 void SearchBox::slotShowMenu(const QPoint &pos) {
     menu->exec(mapToGlobal(pos));
 }

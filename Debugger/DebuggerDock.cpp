@@ -192,6 +192,12 @@ void DebuggerDock::createControlTitleBar() {
     btn_Continue->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     TitleControlBar->addWidget(btn_Continue);
 
+    TitleControlBar->addSeparator();
+    btn_addWatch = new QToolButton(this);
+    btn_addWatch->setIcon(QIcon(IconFactory::AddWatch));
+    btn_addWatch->setToolTip("Add Watch");
+    TitleControlBar->addWidget(btn_addWatch);
+
     auto *spacer2 = new QWidget(this);// align to right with blank widget
     spacer2->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     TitleControlBar->addWidget(spacer2);

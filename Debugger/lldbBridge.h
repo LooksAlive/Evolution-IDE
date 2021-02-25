@@ -149,9 +149,7 @@ private slots:
     void slotRemoveBreakPoint();
     void slotRemoveAllBreakPoints();
 
-    void slotSetVariableDescription(const QModelIndex &index);
-
-    void slotAddWatch();
+    void slotAddWatch() const;
     void slotRemoveWatch();
     void slotModifyWatch();
 

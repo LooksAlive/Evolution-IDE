@@ -2,9 +2,10 @@
 #define COMPILEDOCK_H
 
 #include <QDockWidget>
-#include <QTabWidget>
 #include <QPlainTextEdit>
+#include <QTabWidget>
 #include <QToolBar>
+#include <QToolButton>
 #include <QWidget>
 
 #include <QHBoxLayout>
@@ -18,14 +19,17 @@
 
 */
 
-class  ConsoleDock : public QDockWidget
-{
+class ConsoleDock : public QDockWidget {
     Q_OBJECT
 public:
     explicit ConsoleDock(QWidget *parent = nullptr);
     ~ConsoleDock() = default;
 
     QPlainTextEdit *ConsoleOutput;
+
+    QToolButton *run;
+    QToolButton *rerun;// stop and run again
+    QToolButton *stop;
 
 private:
     QHBoxLayout *MainLayout;

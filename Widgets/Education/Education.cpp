@@ -89,6 +89,10 @@ void Education::loadUsersSamples() {
     QSettings settings("Evolution-IDE");
     opened_samples = settings.value("Evolution-IDE/users_samples").toStringList();
 
+    if (opened_samples.empty()) {
+        return;
+    }
+
     std::vector<QString> names;
     std::vector<QString> contents;
 
@@ -107,6 +111,10 @@ void Education::loadUsersSamples() {
 }
 
 void Education::saveUsersSamples() {
+    if (CppUsersSamples->count() == 0) {
+        return;
+    }
+
     // user samples
     for (int i = 0; i < CppUsersSamples->count(); i++) {
         // sample name
@@ -114,7 +122,6 @@ void Education::saveUsersSamples() {
         // sample content
         opened_samples.append(cpp_user_samples[i]);
     }
-
     QSettings settings("Evolution-IDE");
     settings.setValue("Evolution-IDE/users_samples", opened_samples);
 }

@@ -249,17 +249,18 @@ private slots:
     void UpdateCurrentIndexOnDelete(int);
 
 
-    // commandline executor , for now ... later programatically
+    // commandline executor , for now ... later programmatically
     void slotBuild();
     void slotRun();
+    void slotStopProcess();
     void slotClangFormat();
     void slotClangTidy();
     void slotClangCheck();
     void slotClangDocGenerate();
     void slotValgrind();
+
+
     void slotGdbGui();
-
-
     void slotCut();
     void slotCopy();
     void slotUndo();
@@ -269,16 +270,15 @@ private slots:
     void slotExpand();
     void slotCollapse();
     void slotRemoveAll();
+
     void slotFormat();
-
     void slotAbout();
-    void slotFullScreen();
 
+    void slotFullScreen();
     void slotGoToLine();
     void slotFind();
-    void slotShowFindReplaceDock();
 
-    void slotStopProcess();
+    void slotShowFindReplaceDock();
     void slotCursorPositionChanged();
 
     // debugger

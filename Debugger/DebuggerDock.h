@@ -67,6 +67,7 @@ public:
 
     QToolButton *btn_StartDebug, *btn_StopDebug, *btn_RunToCursor, *btn_StepOver,
             *btn_StepInto, *btn_StepInstruction, *btn_Continue, *btn_StepOut;
+    QToolButton *btn_addWatch;
 
     QToolBar *DebugToolBar;
     QToolBar *TitleControlBar;

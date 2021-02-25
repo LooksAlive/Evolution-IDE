@@ -958,18 +958,20 @@ void PlainTextEdit::slotToggleBreakPoint() {
     BreakpointArea->containBlock(getCursorPosition().x());
 }
 
-void PlainTextEdit::formatFile() {
+void PlainTextEdit::formatFile() const {
+    code_info->RunAction(CodeInfoDock::FormatFile);
 }
 
-void PlainTextEdit::slotGenerate() {
+void PlainTextEdit::slotGenerate() const {
+    code_info->RunAction(CodeInfoDock::Generate);
 }
 
-void PlainTextEdit::slotGoToDefinition() {
-
+void PlainTextEdit::slotGoToDefinition() const {
+    code_info->RunAction(CodeInfoDock::GoToDefinition);
 }
 
-void PlainTextEdit::slotFindReferences() {
-
+void PlainTextEdit::slotFindReferences() const {
+    code_info->RunAction(CodeInfoDock::FindReferences);
 }
 
 void PlainTextEdit::slotExpand(){

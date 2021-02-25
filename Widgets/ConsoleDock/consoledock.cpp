@@ -32,18 +32,27 @@ ConsoleDock::ConsoleDock(QWidget *parent) : QDockWidget(parent)
 
 // change to QListWidget most probably, bc. of specific widget shows its own data and do not know
 // how to do that with tabs, at least yet
-void ConsoleDock::BuildConsole()
-{
+void ConsoleDock::BuildConsole() {
     MainLayout = new QHBoxLayout();
     tool_bar = new QToolBar(this);
     title_bar = new QToolBar(this);
-    auto *spacer = new QWidget(this);   // align title_bar to right with blank widget
-    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     ConsoleOutput = new QPlainTextEdit(this);
-    ConsoleOutput->setReadOnly(true);   // for now
+    ConsoleOutput->setReadOnly(true);// for now
     ConsoleOutput->appendPlainText("This is Evolution-IDE");
     ConsoleOutput->setUpdatesEnabled(true);
 
+    run = new QToolButton(this);
+    run->setToolTip("Run");
+    run->setIcon(QIcon(IconFactory::Run));
+    rerun = new QToolButton(this);
+    rerun->setToolTip("Rerun");
+    rerun->setIcon(QIcon(IconFactory::Run));
+    stop = new QToolButton(this);
+    stop->setToolTip("Stop");
+    stop->setIcon(QIcon(IconFactory::Stop));
+    tool_bar->addWidget(run);
+    tool_bar->addWidget(rerun);
+    tool_bar->addWidget(stop);
     tool_bar->addAction(QIcon(IconFactory::ScrollUp), "Scroll Up", this, SLOT(slotScrollUp()));
     tool_bar->addAction(QIcon(IconFactory::ScrollDown), "Scroll Down", this, SLOT(slotScrollDown()));
     tool_bar->addAction(QIcon(IconFactory::TrashBin), "Clear", this, SLOT(slotClearConsole()));
@@ -58,11 +67,13 @@ void ConsoleDock::BuildConsole()
     tool_bar->setContentsMargins(0, 0, 0, 0);
 
     title_bar->setMovable(false);
-    title_bar->setFixedHeight(35);
+    title_bar->setFixedHeight(30);
     title_bar->setFloatable(false);
     title_bar->setAcceptDrops(false);
     //title_bar->setIconSize(QSize(25, 35));
     title_bar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
+    auto *spacer = new QWidget(this);// align title_bar to right with blank widget
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     title_bar->addWidget(spacer);
     title_bar->addAction(QIcon(IconFactory::Remove), "Close", this, SLOT(close()));
 

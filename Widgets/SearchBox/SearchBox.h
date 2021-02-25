@@ -49,8 +49,6 @@ public slots:
     void slotPrevious();
 
     void slotShowMenu(const QPoint &);
-    void slotFindCaseSensitively(bool toggled);
-    void slotFindWholeWords(bool toggled);
 };
 
 

@@ -6,8 +6,9 @@
 #ifndef ICONFACTORY_H
 #define ICONFACTORY_H
 
-#include <QString>
+#include <QApplication>
 #include <QIcon>
+#include <QString>
 #include <iostream>
 #include <string>
 
@@ -37,6 +38,7 @@ public:
 
     static constexpr auto Build = "/home/adam/Desktop/sources/Evolution-IDE/icons/Build.png";
     static constexpr auto Run = "/home/adam/Desktop/sources/Evolution-IDE/icons/run.svg";
+    static constexpr auto Rerun = "/home/adam/Desktop/sources/Evolution-IDE/icons/rerun.svg";
     static constexpr auto Stop = "/home/adam/Desktop/sources/Evolution-IDE/icons/stop.svg";
     static constexpr auto ShutDown = "/home/adam/Desktop/sources/Evolution-IDE/icons/shutdown.svg";
     static constexpr auto FullScreen = "/home/adam/Desktop/sources/Evolution-IDE/icons/fullscreen.svg";
@@ -58,10 +60,11 @@ public:
 
     // EXPLORERS
     static constexpr auto Plus = "/home/adam/Desktop/sources/Evolution-IDE/icons/plus.svg";
-    static constexpr auto Minus = "";     // TODO: find some
+    static constexpr auto Minus = "/home/adam/Desktop/sources/Evolution-IDE/icons/minus.svg";
     static constexpr auto DefaultDir = "/home/adam/Desktop/sources/Evolution-IDE/icons/default_dir.svg";
     static constexpr auto Back = "/home/adam/Desktop/sources/Evolution-IDE/icons/back.svg";
     static constexpr auto Search = "/home/adam/Desktop/sources/Evolution-IDE/icons/search.svg";
+    static constexpr auto Replace = "/home/adam/Desktop/sources/Evolution-IDE/icons/replace.svg";
     static constexpr auto NewDirectory = "/home/adam/Desktop/sources/Evolution-IDE/icons/new_directory.svg";
     static constexpr auto Remove = "/home/adam/Desktop/sources/Evolution-IDE/icons/remove2.svg";
     static constexpr auto Done = "/home/adam/Desktop/sources/Evolution-IDE/icons/done.svg";

@@ -320,32 +320,33 @@ void lldbBridge::collectThreads() {
         auto thread = Process.GetThreadAtIndex(i);
         Dock->ThreadBox->insertItem(thread.GetThreadID(), QString::fromStdString(thread.GetName()));
     }
-    //auto t = Process.GetSelectedThread();
-    //thread_box->insertItem(t.GetThreadID(), QString::fromStdString(t.GetName()));
 }
 
-void lldbBridge::slotAddWatch() {
+void lldbBridge::slotAddWatch() const {
+    QModelIndex index = Dock->VariablesView->currentIndex();
+    if (!index.isValid()) {
+        return;
+        // Dock->VariablesView->setCurrentIndex();
+    }
+    int row = index.row();
+    const char *var = FrameVariablesList.GetValueAtIndex(row).GetName();
+
+    WatchDock->WatchedVariables->addItem(var);
+    WatchDock->setVisible(true);
 }
 
 void lldbBridge::slotRemoveWatch() {
+    QModelIndex index = WatchDock->WatchedVariables->currentIndex();
+    if (!index.isValid()) {
+        return;
+    }
 }
 
 void lldbBridge::slotModifyWatch() {
-}
-
-void lldbBridge::slotSetVariableDescription(const QModelIndex &index) {
-    const int row = index.row();
-    QString description;
-    // row is also value in list in view
-    SBValue value = FrameVariablesList.GetValueAtIndex(row);
-    description += "thread: " + QString::fromLatin1(value.GetThread().GetName());
-    description += "   address: " + QString::number(value.GetAddress().GetOffset());
-    description += "   type: " + QString::fromLatin1(value.GetType().GetName());
-    //value.GetDescription(strm);
-    //qDebug() << strm.GetData();
-    //value.GetStaticValue().GetData();
-
-    //Dock->VariableDescription->setText(description);
+    QModelIndex index = WatchDock->WatchedVariables->currentIndex();
+    if (!index.isValid()) {
+        return;
+    }
 }
 
 void lldbBridge::connectDockWidgets() {
@@ -369,14 +370,15 @@ void lldbBridge::connectDockWidgets() {
     connect(Dock->btn_StepInstruction, SIGNAL(clicked()), this, SLOT(slotStepInstruction()));
     connect(Dock->btn_Continue, SIGNAL(clicked()), this, SLOT(slotContinue()));
 
+
     // call stack, backtrace
     connect(Dock->CallStack, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotOpenCallStackFile(QListWidgetItem *)));
 
     // VariablesView
-    connect(Dock->VariablesView, SIGNAL(clicked(const QModelIndex &)), this, SLOT(slotSetVariableDescription(const QModelIndex &)));
+    connect(Dock->btn_addWatch, SIGNAL(clicked()), this, SLOT(slotAddWatch()));
 
     // WatchDock
-    // slotAddWatch  -> in console, where are all of variables shown
+    // addWatch is in dock title bar
     connect(WatchDock->removeWatch, SIGNAL(clicked()), this, SLOT(slotRemoveWatch()));
     connect(WatchDock->modifyWatch, SIGNAL(clicked()), this, SLOT(slotModifyWatch()));
 }

@@ -19,29 +19,114 @@
 */
 
 #include <QDockWidget>
-#include <QWidget>
 #include <QLabel>
 #include <QListWidget>
+#include <QWidget>
 
 
-#include <QFormLayout>
 #include <QFormLayout>
 #include <QHBoxLayout>
+#include <QObject>
+#include <QThread>
+#include <QToolBar>
 #include <QVBoxLayout>
 
+#include <iostream>
+#include <string>
 
 class ClangBridge;
 class PlainTextEdit;
 
-class CodeInfoDock : public QDockWidget{
+
+// FIXME: will this event work ? do i have to create separate objects for every thread ???
+
+class ClangHandler : public QObject {
     Q_OBJECT
 
 public:
+    explicit ClangHandler(ClangBridge *bridge, QObject *parent = nullptr);
+    ~ClangHandler() = default;
+
+    // nothing is required to be constantly updated, when the result appears, take them by signals, no hurry :)
+
+    // what symbol should we try to find signature for
+    std::string RequestedSymbol;
+
+    std::string Signature;
+    std::string Documentation;
+
+    // refactoring / renaming
+    std::string OldSymbol;
+    std::string NewSymbol;
+
+    // file format -> pointer to QTextDocument
+    QTextDocument *document;
+
+    // checks and tidy + fix it;  they would need to have connection here, since we operate with clang
+    // and its related tools
+
+    // definition request data
+    struct DefinitionLoc {
+        std::string filepath;
+        int row;
+        int col;
+    };
+    DefinitionLoc definition;
+
+    // what can ge generate
+
+
+private:
+    ClangBridge *clangBridge;
+
+public slots:
+    void slotGetSignature();
+    void slotCodeComplete();
+    void slotRename();
+    void slotCodeCheck();
+    void slotClangTidyCheck();
+    void slotFindReferences();
+    void slotFormatFile();
+    void slotGoToDefinition();
+    void slotGenerate();
+
+signals:
+    void addSignature();
+    void addCodeComplete();
+    void renameFinished();
+    void codeCheckFinished();
+    void clangTidyFinished();
+    void addReferences();
+    void formatFileFinished();
+    void goToDefinitionFinished();
+    void generateFinished();
+};
+
+
+class CodeInfoDock : public QDockWidget {
+    Q_OBJECT
+public:
     explicit CodeInfoDock(QWidget *parent = nullptr);
     ~CodeInfoDock() = default;
-    
-    void setEditor(PlainTextEdit *editor){edit = editor;}
-    void setClang(ClangBridge *clang_bridge){clang = clang_bridge;}
+
+    void setEditor(PlainTextEdit *editor) { edit = editor; }
+    void setClang(ClangBridge *clang_bridge) { clang = clang_bridge; }
+
+    ClangHandler *Handler;
+
+    enum Action {
+        GetSignature = 0,
+        CodeComplete,
+        Rename,
+        CodeCheck,
+        ClangTidyCheck,
+        FindReferences,
+        FormatFile,
+        GoToDefinition,
+        Generate// what could be generated will appear in widget list
+    };
+
+    void RunAction(const Action &action);
 
 
 private:
@@ -52,6 +137,9 @@ private:
     ClangBridge *clang;
 
     QWidget *MainWidget;
+    QToolBar *TitleBar;
+    QLabel *classSignature;
+    QLabel *functionSignature;
 
     QHBoxLayout *MainLayout;
     QVBoxLayout *SignatureActionLayout;
@@ -69,9 +157,33 @@ private:
 
     void createWindow();
 
+    QThread *signatureThread;
+    QThread *codeCompleteThread;
+    QThread *renameThread;
+    QThread *codeCheckThread;
+    QThread *clangTidyCheckThread;
+    QThread *findReferencesThread;
+    QThread *formatFileThread;
+    QThread *goToDefinitionThread;
+    QThread *generateThread;
 
+
+    void connectThreads();
+
+    // these will update widgets
 private slots:
-
+    void slotGetSignature();
+    void slotCodeComplete();// in editor completer + kinda ours
+    // necessary data would be grabbed from dock widgets or set directly into Handler
+    void slotRename();
+    // TODO: this two might directly set selection(warnings, errors)
+    void slotCodeCheck();
+    void slotClangTidyCheck();
+    // this shall fill only dock
+    void slotFindReferences();
+    void slotFormatFile();
+    void slotGoToDefinition();
+    void slotGenerate();
 };
 
 
