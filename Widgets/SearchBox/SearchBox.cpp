@@ -13,7 +13,10 @@ void SearchBox::createWindow() {
     lineEdit = new QLineEdit(this);
     next = new QToolButton(this);
     previous = new QToolButton(this);
+    labelOccurences = new QLabel(this);
     more = new QToolButton(this);
+
+    labelOccurences->setText("0/0");
 
     menu = new QMenu(this);
     caseSensitive = new QAction(this);
@@ -51,6 +54,8 @@ void SearchBox::createWindow() {
 
     MainLayout->addWidget(find_options_menu_button);
     MainLayout->addWidget(lineEdit);
+    MainLayout->addSpacing(5);
+    MainLayout->addWidget(labelOccurences);
     MainLayout->addWidget(next);
     MainLayout->addWidget(previous);
     MainLayout->addWidget(more);
@@ -94,6 +99,15 @@ void SearchBox::slotNext() {
         temp_search_text = search_text;
     }
     m_Edit->findNext(search_text, find_options);
+
+    // increase labelOccurences
+    const QString label = labelOccurences->text();
+    const int c = label.indexOf("/");
+    int num = label.mid(0, c).toInt();
+    if (num > m_Edit->extra_selections_search_results.count()) {
+        num = 0;
+    }
+    labelOccurences->setText(QString::number(num + 1) + "/" + QString::number(m_Edit->extra_selections_search_results.count()));
 }
 
 void SearchBox::slotShowMenu(const QPoint &pos) {

@@ -44,15 +44,17 @@
 #include <QSettings>
 #include <QShortcut>
 
-#include <QToolButton>
 #include <QPlainTextEdit>
+#include <QToolButton>
+#include <QUrl>
 
-#include "Widgets/PlainTextEdit/plaintextedit.h"
-#include "Widgets/PlainTextEdit/GoToLineColumn.h"     // will be used in main window
-#include "Widgets/FileExplorer/fileexplorer.h"
 #include "Widgets/FileDock/filedock.h"
-#include "Widgets/Tab/tab.h"
+#include "Widgets/FileExplorer/fileexplorer.h"
+#include "Widgets/PlainTextEdit/GoToLineColumn.h"// will be used in main window
+#include "Widgets/PlainTextEdit/InvitationScreen.h"
+#include "Widgets/PlainTextEdit/plaintextedit.h"
 #include "Widgets/Settings/settingswindow.h"
+#include "Widgets/Tab/tab.h"
 
 #include "Widgets/CodeInfoDock/CodeInfoDock.h"
 #include "Widgets/ConsoleDock/consoledock.h"
@@ -159,6 +161,7 @@ private:
     // tracking current Tab widget for many other actions on it
     // connected when new file is created and tab changed, disconnected when deleted
     PlainTextEdit *currentWidget;
+    InvitationScreen *invitation_screen;
     // file manager, get recursive files from dir only if dir is opened, provided
     FileDirManager file_manager;
 
@@ -173,15 +176,17 @@ private:
 
     /* code info related stuffs dock */
     CodeInfoDock *codeInfoDock;
-    ClangBridge *clangBridge;     // initialized in SetupCodeInfoDock;   has to be pointer, on heap
+    ClangBridge *clangBridge;// initialized in SetupCodeInfoDock;   has to be pointer, on heap
+    LinterDock *Linter;
+    RefactoringDock *Refactor;
 
     /* Converter - small widget */
     Converter *converter;
 
     Education *education;
 
-    void dragEnterEvent(QDragEnterEvent* drag_event) override;
-    void dropEvent(QDropEvent* drop_event) override;
+    void dragEnterEvent(QDragEnterEvent *drag_event) override;
+    void dropEvent(QDropEvent *drop_event) override;
 
 
     void SetupTabWidget();
@@ -205,12 +210,17 @@ private:
 
     // when switching views, make sure not necessary widget are hidden and if returned -> again shown
     void SetupDockWidgetsLayering();
+
     void HideAllDockWidgets();
     bool explorer_visible = false, docker_visible = false, console_dock_visible = false,
-            find_replace_visible = false, code_info_dock_visible = false;
+         find_replace_visible = false, code_info_dock_visible = false;
     void ShowHiddenDockWidgets();
 
     void LoadRegisters();
+
+    // indicates wheather in file open actions ignore filepath ad insert own content, TODO: make not save able, editable
+    bool SampleLoading = false;
+    bool AssemblyLoading = false;
 
 private slots:
 
@@ -221,8 +231,8 @@ private slots:
 
     void CreateFile();
     void OpenFile();
-    void OpenFile(const QString&);
-    void OpenFile(QModelIndex);
+    void OpenFile(const QString &);
+    void OpenFile(const QModelIndex &);
     void SaveFile();
     void SaveFileAs();
     void SaveAllFiles();
@@ -306,6 +316,11 @@ private slots:
     void slotOpenCppSample(QListWidgetItem *item);
     void slotOpenCppUserSample(QListWidgetItem *item);
 
+    void slotOpenLinterFile(QListWidgetItem *item);
+    void slotOpenReferenceFile(QTreeWidgetItem *item, int column);
+
+    void slotUpdateDebuggerFilePath(const QString &, const int &, const int &);
+    void slotOpenUrl(const QUrl &);
 
 private:
     // files operation variables

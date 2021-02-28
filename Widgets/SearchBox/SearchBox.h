@@ -4,6 +4,7 @@
 #include <QCheckBox>
 #include <QFormLayout>
 #include <QHBoxLayout>
+#include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
 #include <QToolButton>
@@ -30,8 +31,7 @@ private:
     QMenu *menu;
     QAction *caseSensitive;
     QAction *wholeWords;
-
-    //QLabel *LabelOccurrences;
+    QLabel *labelOccurences;
 
     Tab *m_Tab = nullptr;
     PlainTextEdit *m_Edit = nullptr;
@@ -39,7 +39,7 @@ private:
 
     QTextDocument::FindFlags find_options;
     QString search_text;
-    QString temp_search_text = "";// for whole file parsing, to not repeat with that same text
+    QString temp_search_text;// for whole file parsing, to not repeat with that same text
 
     void createWindow();
     void getOptionsAndTexts();

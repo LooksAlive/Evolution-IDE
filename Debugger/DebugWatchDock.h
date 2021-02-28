@@ -5,7 +5,7 @@
 #include <QListWidget>
 #include <QToolBar>
 #include <QToolButton>
-#include <QTreeView>
+#include <QTreeWidget>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -19,10 +19,9 @@ public:
 public:
     void createDock();
 
-    QToolButton *addWatch, *removeWatch, *modifyWatch;
-    QListWidget *WatchedVariables;
+    QToolButton *addWatch, *removeWatch, *removeAll, *modifyWatch, *disableAll, *enableAll;
     // tree, top item name is variable and its tree all its values
-    QTreeView *VariableTreeValues;
+    QTreeWidget *VariableTreeValues;
 
 private:
     QVBoxLayout *MainLayout;

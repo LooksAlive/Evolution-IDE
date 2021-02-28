@@ -34,13 +34,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     SetupMenuBar();
     SetupToolBar();
 
+    //invitation_screen = new InvitationScreen(this);
+    //setCentralWidget(invitation_screen);
     CreateFile();
     SetupStatusBar();
 
     SetupDockWidgetsLayering();
 
     setCentralWidget(vertical_stack);
-    //Tabs->setFocus();
+    Tabs->setFocus();
     vertical_stack->setCurrentWidget(Tabs);
     Tabs->currentWidget()->setFocus();
     highlighter = new Highlighter(":/highlights/languages.xml", this);
@@ -50,7 +52,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 }
 
 MainWindow::~MainWindow() {
-    delete ui;
+    //delete ui;
 }
 
 /* drag and drop functions for file into window as it would be opened */
@@ -263,6 +265,8 @@ void MainWindow::SetupMenuBar() {
     viewMenu->addAction(console_dock->toggleViewAction());
     viewMenu->addAction(find_replace->toggleViewAction());
     viewMenu->addAction(codeInfoDock->toggleViewAction());
+    viewMenu->addAction(Linter->toggleViewAction());
+    viewMenu->addAction(Refactor->toggleViewAction());
     viewMenu->addAction(debuggerDock->toggleViewAction());
     viewMenu->addAction(debuggerWatchDock->toggleViewAction());
     viewMenu->addSeparator();
@@ -466,7 +470,7 @@ void MainWindow::SetupFileExplorer() {
     Explorer = new FileExplorer(this);
     // Explorer->setRootDirectory(QDir::homePath());
 
-    connect(Explorer->FileView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(OpenFile(QModelIndex)));
+    connect(Explorer->FileView, SIGNAL(doubleClicked(const QModelIndex &)), this, SLOT(OpenFile(const QModelIndex &)));
     addDockWidget(Qt::LeftDockWidgetArea, Explorer); /* show at left side; function for MainWindow */
     /*
     auto *dock = new QDockWidget(this);
@@ -488,19 +492,23 @@ void MainWindow::SetupFileDocker() {
 
 void MainWindow::SetupCompileDock() {
     console_dock = new ConsoleDock(this);
-    find_replace = new FindReplaceWidget(Tabs, this);
 
     connect(console_dock->run, SIGNAL(clicked()), this, SLOT(slotRun()));
     connect(console_dock->rerun, SIGNAL(clicked()), this, SLOT(slotRun()));
     connect(console_dock->stop, SIGNAL(clicked()), this, SLOT(slotStopProcess()));
 
+    // exteranals links
+    connect(console_dock->ConsoleOutput, SIGNAL(anchorClicked(const QUrl &)), this, SLOT(slotOpenUrl(const QUrl &)));
+
     connect(new QShortcut(Qt::CTRL + Qt::Key_F, this), &QShortcut::activated, [=] { slotFind(); });
 
     addDockWidget(Qt::BottomDockWidgetArea, console_dock);
-    addDockWidget(Qt::BottomDockWidgetArea, find_replace);
+}
 
-    tabifyDockWidget(console_dock, find_replace);
-    tabifyDockWidget(codeInfoDock, find_replace);
+void MainWindow::slotOpenUrl(const QUrl &url) {
+    const QString filepath = url.url(QUrl::RemoveScheme);
+    OpenFile(filepath);
+    // How to get position  ???
 }
 
 void MainWindow::slotFind() {
@@ -521,12 +529,82 @@ void MainWindow::slotFind() {
 
 void MainWindow::SetupCodeInfoDock() {
     clangBridge = new ClangBridge();
-
+    find_replace = new FindReplaceWidget(Tabs, this);
+    Linter = new LinterDock(this);
+    Refactor = new RefactoringDock(this);
     codeInfoDock = new CodeInfoDock(this);
+
+    find_replace->setFiles(file_manager.source_files);
+    addDockWidget(Qt::BottomDockWidgetArea, find_replace);
+    tabifyDockWidget(console_dock, find_replace);
+    tabifyDockWidget(codeInfoDock, find_replace);
+
+    addDockWidget(Qt::BottomDockWidgetArea, Linter);
+    tabifyDockWidget(Linter, codeInfoDock);
+    tabifyDockWidget(Linter, find_replace);
+
+    addDockWidget(Qt::BottomDockWidgetArea, Refactor);
+    tabifyDockWidget(Refactor, codeInfoDock);
+    tabifyDockWidget(Refactor, find_replace);
+    tabifyDockWidget(Linter, Refactor);
+
     addDockWidget(Qt::BottomDockWidgetArea, codeInfoDock);
     tabifyDockWidget(console_dock, codeInfoDock);
     codeInfoDock->setEditor(currentWidget);
     codeInfoDock->setClang(clangBridge);
+    codeInfoDock->setSearch(find_replace);
+    codeInfoDock->setLinter(Linter);
+    codeInfoDock->setRefactor(Refactor);
+
+    // connect externals windows requests
+    connect(codeInfoDock->Linter->Items, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotOpenLinterFile(QListWidgetItem *)));
+    // file opening
+    connect(find_replace->results, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)), this, SLOT(slotOpenReferenceFile(QTreeWidgetItem *, int)));
+}
+
+void MainWindow::slotOpenLinterFile(QListWidgetItem *item) {
+    const QString filepath = item->toolTip();// this should be file path, but we also want position
+    // ->text holds position, linter text, etc.
+    OpenFile(filepath);
+    // match position, by file
+    currentWidget->setCursorPosition(codeInfoDock->Handler->linterLocations[0].row, codeInfoDock->Handler->linterLocations[0].col);
+}
+
+void MainWindow::slotOpenReferenceFile(QTreeWidgetItem *item, int column) {
+    // we were searching only in current file
+    if (find_replace->SearchCurrentFile) {
+        find_replace->forwardToResult(item, column);
+        return;
+    }
+    // we have to figure out in what file result is, if there are more of them
+    //const int filepath_row = find_replace->results->indexOfTopLevelItem(item->parent());
+    //const int row = item->parent()->indexOfChild(item);
+    //const QString filepath = find_replace->temp_search_result_path; /* find_replace->results->topLevelItem(filepath_row)->text(0); */
+
+    // doubleClick, but click were before, so we have temporary variables already set
+    if (find_replace->temp_search_result_path.isEmpty()) {
+        qDebug() << "find_replace->temp_search_result_path is empty !!! line 584 MainWindow";
+    }
+    OpenFile(find_replace->temp_search_result_path);
+    currentWidget->extra_selections_search_results = find_replace->selections[find_replace->tempSelectionPos];
+    currentWidget->setCursorPosition(find_replace->temp_pos.y(), find_replace->temp_pos.x());
+
+    /*
+    // references from code
+    if(!find_replace->titleBarWidget()->isEnabled()){
+        // row holds file path and column position reference in that file
+        const std::string filepath = codeInfoDock->Handler->referencesLocation[row].filepath;
+        // match filepath with codeInfoDock->Handler->ReferencesLocation.filepath
+        // get index and find ...
+        const int posIndex = 0;
+        const int row = codeInfoDock->Handler->referencesLocation[posIndex].row;
+        const int col = codeInfoDock->Handler->referencesLocation[posIndex].col;
+
+        OpenFile(QString::fromStdString(filepath));
+
+        currentWidget->setCursorPosition(row, col);
+    }
+    */
 }
 
 
@@ -568,8 +646,22 @@ void MainWindow::SetupDebuggerView() {
 
     debuggerBridge = new lldbBridge(debuggerDock, debuggerWatchDock, this);
     debuggerBridge->setProjectFilePaths(file_manager.source_files);
-    debuggerBridge->setEditors(Tabs, currentWidget);
+
+    connect(debuggerBridge, SIGNAL(filePathUpdate(const QString &, const int &, const int &)), this,
+            SLOT(slotUpdateDebuggerFilePath(const QString &, const int &, const int &)));
 }
+
+void MainWindow::slotUpdateDebuggerFilePath(const QString &filepath, const int &row, const int &col) {
+    AssemblyLoading = true;
+    OpenFile(filepath);
+    AssemblyLoading = false;
+    // set position
+    currentWidget->setCursorPosition(row, col);
+
+    // since we go from debugger, set line selection for our line to BreakPoint type
+    currentWidget->setLineSelection(row, PlainTextEdit::BreakPoint);
+}
+
 void MainWindow::SetupBinaryView() {
     binaryView = new BinaryView(this);
 }
@@ -644,14 +736,34 @@ void MainWindow::OpenFile(const QString &filepath) {
         file_manager.getFilesRecursively(filepath);
         return;
     }
+    QString content;
+    PlainTextEdit *new_text_edit;
 
-    auto *new_text_edit = new PlainTextEdit();
-    new_text_edit->appendPlainText(file_manager.read(filepath));
+    if (!QFileInfo(filepath).exists()) {
+        if (SampleLoading) {
+            content = *(education->WorkingContent);
+            // all sample are not editable, but enabled, free to copy
+            new_text_edit = new PlainTextEdit();
+            new_text_edit->setReadOnly(true);
+        }
+        if (AssemblyLoading) {
+            content = debuggerBridge->WorkingContent;
+            new_text_edit = new PlainTextEdit();
+            new_text_edit->setReadOnly(true);
+        } else {
+            // not valid file path, no more exceptions
+            return;
+        }
+    } else {
+        content = file_manager.read(filepath);
+    }
+
+    new_text_edit = new PlainTextEdit();
+    new_text_edit->appendPlainText(content);
     new_text_edit->setFilePath(filepath);
     new_text_edit->setFileExtension(file_manager.getFileExtension(file_manager.current_file_name));
 
-    /* checks for duplicate file-openning and prevents it by opening identical tab twice */
-
+    // check for duplicate file-openning and prevents it by opening identical tab twice
     for (int i = 0; i < Tabs->count(); ++i)
         if (Tabs->tabToolTip(i) == file_manager.current_full_filepath) {
             Tabs->setCurrentIndex(i);
@@ -863,7 +975,7 @@ void ::MainWindow::UpdateParameter() {
 }
 
 
-void MainWindow::OpenFile(QModelIndex file_index) {
+void MainWindow::OpenFile(const QModelIndex &file_index) {
     if (!Explorer->FileModel->isDir(file_index)) {
         OpenFile(Explorer->FileModel->filePath(file_index));
 
@@ -942,7 +1054,7 @@ void MainWindow::slotBuild() {
             generator.addSourceFile((file_manager.source_files[i].toStdString()));
         }
         generator.createCmakeLists(file_manager.Project_Dir.toStdString());
-        executor->Build(cmake, file_manager.Project_Dir.toStdString(), console_dock->ConsoleOutput);
+        executor->Build(cmake, file_manager.Project_Dir.toStdString(), console_dock);
 
         // non static function need also an object to call it
 
@@ -960,14 +1072,14 @@ void MainWindow::slotBuild() {
             for (int i = 0; i < file_manager.source_files.size(); i++) {
                 sources.push_back(file_manager.source_files[i].toStdString());
             }
-            executor->Build(cmake, file_manager.Project_Dir.toStdString(), console_dock->ConsoleOutput);
+            executor->Build(cmake, file_manager.Project_Dir.toStdString(), console_dock);
         }
     }
 
     //QSettings settings("Evolution");
     //settings.setValue("Evolution/executable_path/", file_manager.Project_Dir + "/executable");
 
-    console_dock->ConsoleOutput->appendPlainText("Build done");
+    console_dock->ConsoleOutput->append("Build done");
     qDebug() << "build done";
 }
 
@@ -991,16 +1103,16 @@ void MainWindow::slotRun() {
         }
         if (file_manager.executable_file_path.isEmpty()) {
             file_manager.executable_file_path = file_manager.Project_Dir + "/cmake-build/" + file_manager.executable_file_name;
-            executor->Execute(cmake, file_manager.executable_file_path.toStdString(), console_dock->ConsoleOutput);
+            executor->Execute(cmake, file_manager.executable_file_path.toStdString(), console_dock);
         }
         //CommandLineExecutor::Execute(cmake, file_manager.Project_Dir.toStdString() + "/cmake-build/" + "executable", console_dock->ConsoleOutput);
         else {
-            executor->Execute(cmake, file_manager.executable_file_path.toStdString(), console_dock->ConsoleOutput);
+            executor->Execute(cmake, file_manager.executable_file_path.toStdString(), console_dock);
         }
     } else {
         // only 1 file, dir should exist already
         if (file_manager.source_files.size() == 1 || currentWidget->getFilePath().isEmpty()) {
-            executor->Execute(cmake, file_manager.Project_Dir.toStdString() + "/Evolution.temp/" + "executable", console_dock->ConsoleOutput);
+            executor->Execute(cmake, file_manager.Project_Dir.toStdString() + "/Evolution.temp/" + "executable", console_dock);
         }
         //executor.setExecutableName("executable", file_manager.Project_Dir.toStdString());
         //int pid = executor.getPid();
@@ -1008,20 +1120,21 @@ void MainWindow::slotRun() {
         //console_dock->setRawOutput(process);
     }
 }
+
 void MainWindow::slotClangFormat() {
     std::vector<std::string> sources;
-    console_dock->ConsoleOutput->appendPlainText(QString::fromStdString(CommandLineExecutor::ClangFormat(sources, file_manager.clang_format_path.toStdString())));
+    console_dock->ConsoleOutput->append(QString::fromStdString(CommandLineExecutor::ClangFormat(sources, file_manager.clang_format_path.toStdString())));
 }
 void MainWindow::slotClangTidy() {
     std::vector<std::string> sources;
-    console_dock->ConsoleOutput->appendPlainText(QString::fromStdString(CommandLineExecutor::ClangTidy(sources)));
+    console_dock->ConsoleOutput->append(QString::fromStdString(CommandLineExecutor::ClangTidy(sources)));
 }
 void MainWindow::slotClangCheck() {
     std::vector<std::string> sources;
-    console_dock->ConsoleOutput->appendPlainText(QString::fromStdString(CommandLineExecutor::ClangCheck(sources)));
+    console_dock->ConsoleOutput->append(QString::fromStdString(CommandLineExecutor::ClangCheck(sources)));
 }
 void MainWindow::slotValgrind() {
-    console_dock->ConsoleOutput->appendPlainText(QString::fromStdString(CommandLineExecutor::Valgrind(std::string())));
+    console_dock->ConsoleOutput->append(QString::fromStdString(CommandLineExecutor::Valgrind(std::string())));
 }
 void MainWindow::slotClangDocGenerate() {
     // clang-doc
@@ -1107,9 +1220,9 @@ void MainWindow::slotStopProcess() {
     int pid = CommandLineExecutor::getPid(std::string());
     if (pid != 0) {
         CommandLineExecutor::killProcess(0);
-        console_dock->ConsoleOutput->appendPlainText("Process killed , PID: " + QString::number(pid));
+        console_dock->ConsoleOutput->append("Process killed , PID: " + QString::number(pid));
     } else {
-        console_dock->ConsoleOutput->appendPlainText("No Process attached");
+        console_dock->ConsoleOutput->append("No Process attached");
     }
 }
 
@@ -1221,40 +1334,18 @@ void MainWindow::slotOpenCppSample(QListWidgetItem *item) {
     int index = item->listWidget()->currentRow();
     int num_files = education->cpp_code_samples[index].fileNames.size();
 
-    if (num_files == 1) {
-        auto *edit = new PlainTextEdit;
-        edit->setPlainText(education->cpp_code_samples[index].content[0]);// 0 -> only 1 file
-        Tabs->addTab(edit, education->cpp_code_samples[index].fileNames[0]);
-        Tabs->setCurrentIndex(Tabs->count());// since we add new tab at the end
-        // ensure that we can also make all functions accessible from sample
-        currentWidget = edit;
+    for (int i = 0; i < num_files; i++) {
+        SampleLoading = true;
+        education->WorkingContent = (QString *) (education->cpp_code_samples[index].content[i].data());
+        OpenFile("not valid filename");
+        SampleLoading = false;
     }
-    // 2 and more files
-    if (num_files > 1) {
-        for (int i = 0; i < num_files; i++) {
-            auto *edit = new PlainTextEdit;
-            edit->setPlainText(education->cpp_code_samples[index].content[i]);
-            Tabs->addTab(edit, education->cpp_code_samples[index].fileNames[i]);
-            Tabs->setCurrentIndex(Tabs->count());// since we add new tab at the end
-            currentWidget = edit;
-        }
-    }
-
-    // set icon that it was opened + add its index into registry
-    //item->setIcon(QIcon(IconFactory::Done));
-
-    // also solve current widget in tab here !!!
-    // take care of opening the same sample twice and more
 }
 
 void MainWindow::slotOpenCppUserSample(QListWidgetItem *item) {
     int index = item->listWidget()->currentRow();
-    QString content = education->cpp_user_samples[index];
-
-    auto *edit = new PlainTextEdit;
-    edit->setPlainText(content);
-    // TODO: QFileIconProvider provider; --- or not ?
-    Tabs->addTab(edit, item->text());
-    Tabs->setCurrentIndex(Tabs->count());// since we add new tab at the end
-    currentWidget = edit;
+    SampleLoading = true;
+    education->WorkingContent = &(education->cpp_user_samples[index]);
+    OpenFile("not valid filename");
+    SampleLoading = false;
 }

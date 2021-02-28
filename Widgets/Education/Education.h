@@ -84,6 +84,8 @@ public:
     // only readable, copyable
     void setPreviewHighlighter(Highlighter *highlighter) { previewHighlighter = highlighter; }
 
+    QString *WorkingContent = nullptr;
+
 private:
     // double click on item will open new tab (not saved) with exact code sample dependent on type
     // sample which will be opened, will be marked with icon as done
@@ -93,6 +95,7 @@ private:
     QToolButton *builtInSamples;
 
     QToolButton *usersSamples;
+    QToolButton *removeSample;
 
     // 1. sample name, 2. content  ---> at least 2 elements
     QStringList opened_samples;
@@ -112,6 +115,8 @@ private slots:
 
     void slotShowCppSamples();
     void slotShowCppUsersSamples();
+
+    void slotRemoveCppUsersSample();
 };
 
 #endif //EVOLUTION_IDE_EDUCATION_H

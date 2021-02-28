@@ -89,13 +89,15 @@ void DebuggerDock::createConsole() {
     completer = new QCompleter(this);
     DebuggerOutput = new QWidget(this);
 
-    VariablesView = new QTreeView(this);
+    VariablesView = new QTreeWidget(this);
     VariablesView->setHeaderHidden(true);
     // not editable yet, later possible to change values
     VariablesView->setEditTriggers(QAbstractItemView::NoEditTriggers);
     QFont font;
     font.setPixelSize(17);
     VariablesView->setFont(font);
+    auto *delegate = new Delegate();
+    VariablesView->setItemDelegate(delegate);
 
     debug_output->setReadOnly(true);
     completer->setCaseSensitivity(Qt::CaseInsensitive);

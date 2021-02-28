@@ -43,10 +43,7 @@
 
 #include "DebugWatchDock.h"
 #include "DebuggerDock.h"
-#include "Delegate.h"
 #include "TaskWidget/taskwidget.h"
-#include "Widgets/PlainTextEdit/plaintextedit.h"
-#include "Widgets/Tab/tab.h"
 #include "filemanager.h"
 
 using namespace lldb;
@@ -93,14 +90,8 @@ public:
 
     void setProjectFilePaths(const QStringList &paths) { sources = paths; }
     QStringList sources;
-    void setEditors(Tab *tabs, PlainTextEdit *editor) {
-        tab = tabs;
-        currentEdit = editor;
-    };
-    Tab *tab;
-    PlainTextEdit *currentEdit;
+
     // all file associated stuffs
-    void setStartPosition(const char *filepath, const int &line) const;
     void setFilePosition(const SBFrame &frame);
     void setExecutable(const std::string &exe_file_path);
 
@@ -121,11 +112,18 @@ public:
     void collectThreads();
     void fillCallStack();
 
+
+    QString WorkingContent;// for assembly
+
 private:
     DebugWatchDock *WatchDock;
     void connectDockWidgets();
 
     BreakPointListWindow *DialogBreakPoint_List;
+
+signals:
+    // set file and its position
+    void filePathUpdate(const QString &filepath, const int &row, const int &col);
 
 public slots:
     void slotStepOver();
@@ -143,15 +141,20 @@ private slots:
     void slotCmdlineExecute();
     void slotSetBreakPointByManualLine();
 
-    void slotOpenCallStackFile(QListWidgetItem *item) const;
-    void slotGoToBreakPointFile(QListWidgetItem *item) const;
+    void slotOpenCallStackFile(QListWidgetItem *item);
+    void slotGoToBreakPointFile(QTreeWidgetItem *item, int column);
 
     void slotRemoveBreakPoint();
     void slotRemoveAllBreakPoints();
+    void slotEnableAllBreakPoints();
+    void slotDisableAllBreakPoints();
+    void slotEnableAllWatchPoints();
+    void slotDisableAllWatchPoints();
 
-    void slotAddWatch() const;
-    void slotRemoveWatch();
-    void slotModifyWatch();
+    void slotAddWatchPoint();
+    void slotRemoveWatchPoint();
+    void slotRemoveAllWatchPoint();
+    void slotModifyWatchPoint();
 
 public:
     void pause();// when breakpoint is hit
@@ -161,9 +164,12 @@ public:
     void removeBreakpoint(const char *filepath, const int &line);
     void removeBreakpoint(const break_id_t &id);
 
+    // this will update frame variables trees, but also watched variables values
     void collectFrameData(SBFrame frame);
     // has children value
-    void recursiveValueIterator(SBValue value, QStandardItem *parent_row);
+    void recursiveValueIterator(SBValue value, QTreeWidgetItem *parent_row);
+    // compare values and watch, updates watch dock
+    void compareWatchedValues();
     SBThread getCurrentThread();
     SBFrame getCurrentFrame();
     std::string frameGetLocation(const SBFrame &frame);

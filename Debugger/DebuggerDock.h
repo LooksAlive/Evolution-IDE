@@ -11,10 +11,11 @@
 #include <QSplitter>
 #include <QToolBar>
 #include <QToolButton>
-#include <QTreeView>
 #include <QTreeWidget>
 #include <QVBoxLayout>
 #include <QWidget>
+
+#include "Delegate.h"
 
 class BreakPointListWindow : public QWidget {
     Q_OBJECT
@@ -75,7 +76,8 @@ public:
     QTabWidget *ConsoleTab;
     QWidget *DebuggerOutput;
 
-    QTreeView *VariablesView;
+    // no external columns all inserting into 0 col
+    QTreeWidget *VariablesView;
 
     QVBoxLayout *CallStackLayout;
     // active threads

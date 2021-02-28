@@ -67,6 +67,9 @@ public:
     static constexpr auto Replace = "/home/adam/Desktop/sources/Evolution-IDE/icons/replace.svg";
     static constexpr auto NewDirectory = "/home/adam/Desktop/sources/Evolution-IDE/icons/new_directory.svg";
     static constexpr auto Remove = "/home/adam/Desktop/sources/Evolution-IDE/icons/remove2.svg";
+    static constexpr auto RemoveAll2 = "/home/adam/Desktop/sources/Evolution-IDE/icons/remove_all.png";
+    static constexpr auto AllFiles = "/home/adam/Desktop/sources/Evolution-IDE/icons/all_files.png";
+    static constexpr auto CurrentFile = "/home/adam/Desktop/sources/Evolution-IDE/icons/current_file.png";
     static constexpr auto Done = "/home/adam/Desktop/sources/Evolution-IDE/icons/done.svg";
     static constexpr auto ScrollUp = "/home/adam/Desktop/sources/Evolution-IDE/icons/scroll_up.svg";
     static constexpr auto ScrollDown = "/home/adam/Desktop/sources/Evolution-IDE/icons/scroll_down.svg";

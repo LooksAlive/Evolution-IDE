@@ -73,17 +73,24 @@ public:
     };
     std::vector<searchResult> search_results;
     void findStoreAndSelectAll(const QString &search, const QTextDocument::FindFlags &find_options = QTextDocument::FindCaseSensitively);
-    // find() does not set text cursor, findNext() does
+    // set cursor
     bool find(const QString &search, const QTextDocument::FindFlags &find_options = QTextDocument::FindCaseSensitively);
+    // not seting cursor
+    bool find(QTextCursor &cursor, const QString &search, const QTextDocument::FindFlags &find_options = QTextDocument::FindCaseSensitively);
     void findNext(const QString &search, const QTextDocument::FindFlags &find_options = QTextDocument::FindCaseSensitively);
     void replace(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options = QTextDocument::FindCaseSensitively);
     void replaceAndFind(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options = QTextDocument::FindCaseSensitively);
     // returns how many occurrences were replaces
     int replaceAll(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options = QTextDocument::FindCaseSensitively);
 
-    // cursor
+    // only cursor pointer
+    void setCursorPosition(QTextCursor &cursor, const int &row, const int &col);
+    // will set cursor
     void setCursorPosition(const int &row, const int &col);
+    // useless, sets the cursor for position...
     QPoint getCursorPosition();
+    // onl with pointer
+    QPoint getCursorPosition(QTextCursor &cursor);
     void setCursorAtLine(const int &line);
 
     // text manipulation
@@ -125,30 +132,20 @@ public:
     // this one is fixed
     QList<QTextEdit::ExtraSelection> extra_selections_current_line;
 
-    enum lineSelection{
+    enum lineSelection {
         Warning = 0,
-        Error
+        Error,
+        BreakPoint
     };
     // remove specific line selection is tricky, so remove them all and again call this for all selections
     // clears warning or error selection list
-    void setLineSelection(const int &line, const lineSelection& type, const bool& removeAll = false);
-    // milliseconds, when touched and within 3sec will not be the same word
-    QTimer *touchSearchTimer;
-    static constexpr unsigned int MouseTouchTimeOut = 3000;
+    void setLineSelection(const int &line, const lineSelection &type, const bool &removeAll = false);
     // works with extra_selections_search_touched_results, select pairs, nested also
     // lookup pairs like <> () {} ""
-    void searchPairsSelections(const QString &first);
+    void searchPairsSelections(QTextCursor &cursor, const QString &first);
     // missing selected text for return -> no use for now
     void highlight(QList<QTextEdit::ExtraSelection> &selections, const bool &Background, const int &line,
                    const QColor &color = QColor::fromRgb(0, 255, 0));
-
-    // code info dock:
-    // timer for usages search: 6sec
-    QTimer *usagesSearchTimer;
-    static constexpr unsigned int usagesSearchTimeOut = 6000;
-    // timer for actions 5sec
-    QTimer *actionsTimer;
-    static constexpr unsigned int ActionsTimeOut = 5000;
 
 protected:
     void keyReleaseEvent(QKeyEvent *event) override;
@@ -167,8 +164,6 @@ private:
     Arrow *ArrowArea;
     QMenu *viewMenu;
 
-    // setup timers connects -> then call .start() where i want to use exact timer
-    void setTimers();
     void createMenu();
     QCompleter *completer;
 
@@ -198,8 +193,6 @@ public slots:
     void completerInsertText(const QString &text);
     // search and select mouse touched word in this file, for now, do nothing
     void searchByMouseTouch();
-    void searchUsages();
-    void actions();
 
     void toggleComment();
     void formatFile() const;

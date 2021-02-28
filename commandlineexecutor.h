@@ -1,8 +1,6 @@
 #ifndef COMMANDLINEEXECUTOR_H
 #define COMMANDLINEEXECUTOR_H
 
-#include <QPlainTextEdit>
-
 #include <iostream>
 #include <string>
 #include <vector>
@@ -10,6 +8,8 @@
 #include <QDir>// only for build section to find out if cmake-build already exists...
 #include <QString>
 #include <QThread>
+
+#include "Widgets/ConsoleDock/consoledock.h"
 
 class ExecutionHandler : public QObject {
     Q_OBJECT
@@ -46,8 +46,8 @@ public:
 
     void setSourceFiles(const std::vector<std::string> &sources);
     void setLibraryPaths(const std::vector<std::string> &library_paths);
-    void Build(const bool &cmake, const std::string &ProjectRootDir, QPlainTextEdit *editor = nullptr);
-    void Execute(const bool &cmake, const std::string &executable_path, QPlainTextEdit *editor = nullptr);
+    void Build(const bool &cmake, const std::string &ProjectRootDir, ConsoleDock *editor = nullptr);
+    void Execute(const bool &cmake, const std::string &executable_path, ConsoleDock *editor = nullptr);
     // kill running process with pid
     // TODO: set argument executable name to avoid QSettings usage here
     static int getPid(const std::string &executable_path);
@@ -71,7 +71,7 @@ private:
     QThread *ExecutionThread;
     ExecutionHandler *executionHandler;
 
-    QPlainTextEdit *edit;
+    ConsoleDock *edit;
 
 private slots:
     void setMessage(const QString &msg) const;

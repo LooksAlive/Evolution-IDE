@@ -59,6 +59,7 @@ void Education::createWindow() {
     language = new QToolButton(this);
     builtInSamples = new QToolButton(this);
     usersSamples = new QToolButton(this);
+    removeSample = new QToolButton(this);
     auto *spacer = new QWidget(this);// align to right with blank widget
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     titleBar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
@@ -68,8 +69,12 @@ void Education::createWindow() {
     builtInSamples->setText("Built in");
     usersSamples->setText("Users");
 
+    removeSample->setToolTip("Remove Sample");
+    removeSample->setIcon(QIcon(IconFactory::Remove));
+
     connect(builtInSamples, SIGNAL(clicked()), this, SLOT(slotShowCppSamples()));
     connect(usersSamples, SIGNAL(clicked()), this, SLOT(slotShowCppUsersSamples()));
+    connect(removeSample, SIGNAL(clicked()), this, SLOT(slotRemoveCppUsersSample()));
 
     stack->addWidget(CppCodeSamples);
     stack->addWidget(CppUsersSamples);
@@ -77,6 +82,7 @@ void Education::createWindow() {
     titleBar->addWidget(language);
     titleBar->addWidget(builtInSamples);
     titleBar->addWidget(usersSamples);
+    titleBar->addWidget(removeSample);
     titleBar->addWidget(spacer);
     titleBar->addAction(QIcon(IconFactory::Remove), "Close", this, SLOT(close()));
 
@@ -142,4 +148,14 @@ void Education::slotShowCppSamples() {
 }
 void Education::slotShowCppUsersSamples() {
     stack->setCurrentWidget(CppUsersSamples);
+}
+
+void Education::slotRemoveCppUsersSample() {
+    if (CppUsersSamples->selectedItems()[0]->isSelected()) {
+        const QString Sname = CppUsersSamples->selectedItems()[0]->listWidget()->item(0)->text();
+        delete CppUsersSamples->selectedItems()[0]->listWidget()->item(0);
+        // CppUsersSamples->currentIndex().row();
+        // find sample by its name
+        cpp_user_samples.pop_back();
+    }
 }

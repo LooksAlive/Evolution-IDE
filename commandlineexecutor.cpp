@@ -68,7 +68,7 @@ void CommandLineExecutor::DetermineCompilerVersion(const std::string &tool){
     // version = temp[end???];
 }
 
-void CommandLineExecutor::Build(const bool &cmake, const std::string &ProjectRootDir, QPlainTextEdit *editor) {
+void CommandLineExecutor::Build(const bool &cmake, const std::string &ProjectRootDir, ConsoleDock *editor) {
     edit = editor;
     ExecutionThread = new QThread(this);
     executionHandler = new ExecutionHandler();
@@ -85,13 +85,13 @@ void CommandLineExecutor::Build(const bool &cmake, const std::string &ProjectRoo
         if (dir.exists(QString::fromStdString(ProjectRootDir) + "/cmake-build")) {
             cmake_build = "cd " + ProjectRootDir + "/cmake-build" + " && cmake .. && make -j2 ";
             if (edit) {
-                edit->appendPlainText(cmake_build.c_str());
+                edit->processText(cmake_build.c_str());
             }
         } else {
             cmake_build += "mkdir " + ProjectRootDir + "/cmake-build && cd " + ProjectRootDir + "/cmake-build " +
                            " && cmake .. && make -j2";
             if (edit) {
-                edit->appendPlainText(cmake_build.c_str());
+                edit->processText(cmake_build.c_str());
             }
         }
         executionHandler->args = cmake_build;
@@ -106,7 +106,7 @@ void CommandLineExecutor::Build(const bool &cmake, const std::string &ProjectRoo
         //ExecuteCommand(compile_args, edit);
     }
 }
-void CommandLineExecutor::Execute(const bool &cmake, const std::string &executable_path, QPlainTextEdit *editor) {
+void CommandLineExecutor::Execute(const bool &cmake, const std::string &executable_path, ConsoleDock *editor) {
     edit = editor;
     std::string cmake_exec;
     ExecutionThread = new QThread(this);
@@ -121,7 +121,7 @@ void CommandLineExecutor::Execute(const bool &cmake, const std::string &executab
     if (cmake) {
         cmake_exec += executable_path;// ProjectRootDir;   Project_Dir + "/cmake-build/" + executable_name
         if (edit) {
-            edit->appendPlainText(cmake_exec.c_str());
+            edit->processText(cmake_exec.c_str());
         }
 
         executionHandler->args = cmake_exec;
@@ -196,7 +196,6 @@ void CommandLineExecutor::killProcess(const int &proc_id) {
     kill(proc_id, SIGKILL);
 }
 
-
 void CommandLineExecutor::setMessage(const QString &msg) const {
-    edit->appendPlainText(msg);
+    edit->processText(msg);
 }

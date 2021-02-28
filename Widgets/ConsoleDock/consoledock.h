@@ -4,6 +4,7 @@
 #include <QDockWidget>
 #include <QPlainTextEdit>
 #include <QTabWidget>
+#include <QTextBrowser>
 #include <QToolBar>
 #include <QToolButton>
 #include <QWidget>
@@ -25,11 +26,13 @@ public:
     explicit ConsoleDock(QWidget *parent = nullptr);
     ~ConsoleDock() = default;
 
-    QPlainTextEdit *ConsoleOutput;
+    QTextBrowser *ConsoleOutput;
 
     QToolButton *run;
     QToolButton *rerun;// stop and run again
     QToolButton *stop;
+
+    void processText(const QString &text);
 
 private:
     QHBoxLayout *MainLayout;
@@ -38,10 +41,11 @@ private:
 
     void BuildConsole();
 
+
 public slots:
     void slotScrollUp() const;
     void slotScrollDown() const;
-    void slotClearConsole() const;
+    void clearConsole() const;
 };
 
 #endif // COMPILEDOCK_H

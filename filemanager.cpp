@@ -143,8 +143,6 @@ QString FileDirManager::read(const QString &full_file_path){
 
     // appendFileExtension();
 
-
-
     QFile file(current_full_filepath);
 
     if (file.open(QIODevice::ReadOnly)){
@@ -152,7 +150,7 @@ QString FileDirManager::read(const QString &full_file_path){
     }
 
     else {
-        (new QErrorMessage())->showMessage("Cannot open file " + current_full_filepath);
+        // (new QErrorMessage())->showMessage("Cannot open file " + current_full_filepath);
         return "";
     }
 

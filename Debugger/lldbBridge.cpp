@@ -168,10 +168,11 @@ void lldbBridge::fillCallStack() {
     // const std::string backTrace = executeDebuggerCommand("thread backtrace all");
 }
 
-void lldbBridge::slotGoToBreakPointFile(QListWidgetItem *item) const {
+void lldbBridge::slotGoToBreakPointFile(QTreeWidgetItem *item, int column) {
+    Q_UNUSED(column);
     const char *filepath = Dock->BreakPoint_List->BpList->currentItem()->text(1).toLatin1().data();
     const int line = Dock->BreakPoint_List->BpList->currentItem()->text(2).toInt();
-    setStartPosition(filepath, line);
+    emit filePathUpdate(filepath, line, 1);
 }
 
 void lldbBridge::slotRemoveBreakPoint() {
@@ -187,7 +188,7 @@ void lldbBridge::slotRemoveBreakPoint() {
 }
 
 void lldbBridge::slotRemoveAllBreakPoints() {
-    for (int i = 0; i < BreakPointList.size(); i++) {
+    for (unsigned int i = 0; i < BreakPointList.size(); i++) {
         //const int ID = BreakPoint_List->BpList->currentItem()->text(0).toInt(); // ID
         // assume that break IDs are increasing constantly
         if (!Target.BreakpointDelete(i)) {
@@ -200,6 +201,39 @@ void lldbBridge::slotRemoveAllBreakPoints() {
     Dock->BreakPoint_List->BpList->clear();
     BreakPointList.clear();
 }
+
+void lldbBridge::slotEnableAllBreakPoints() {
+    Target.DisableAllBreakpoints();
+    for (int i = 0; i < Dock->BreakPoint_List->BpList->topLevelItemCount(); ++i) {
+        QTreeWidgetItem *item = Dock->BreakPoint_List->BpList->topLevelItem(i);
+        item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
+    }
+}
+
+void lldbBridge::slotDisableAllBreakPoints() {
+    Target.DisableAllBreakpoints();
+    for (int i = 0; i < Dock->BreakPoint_List->BpList->topLevelItemCount(); ++i) {
+        QTreeWidgetItem *item = Dock->BreakPoint_List->BpList->topLevelItem(i);
+        item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsUserCheckable /* | Qt::ItemIsEnabled */);
+    }
+}
+
+void lldbBridge::slotEnableAllWatchPoints() {
+    Target.EnableAllWatchpoints();
+    for (int i = 0; i < WatchDock->VariableTreeValues->topLevelItemCount(); ++i) {
+        QTreeWidgetItem *item = WatchDock->VariableTreeValues->topLevelItem(i);
+        item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
+    }
+}
+
+void lldbBridge::slotDisableAllWatchPoints() {
+    Target.EnableAllWatchpoints();
+    for (int i = 0; i < WatchDock->VariableTreeValues->topLevelItemCount(); ++i) {
+        QTreeWidgetItem *item = WatchDock->VariableTreeValues->topLevelItem(i);
+        item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsUserCheckable /* | Qt::ItemIsEnabled */);
+    }
+}
+
 
 // -----------------------------------------------------------------------------------------
 
@@ -267,18 +301,18 @@ void lldbBridge::showBreakPointsList() {
         DialogBreakPoint_List->insertBreakPoint(i.break_id, i.filepath, i.line);
     }
     // connect tool buttons + some new slots
-    connect(DialogBreakPoint_List->BpList, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotGoToBreakPointFile(QListWidgetItem *)));
+    connect(DialogBreakPoint_List->BpList, SIGNAL(itemDoubleClicked(QListWidgetItem *, int column)), this, SLOT(slotGoToBreakPointFile(QListWidgetItem *, int column)));
     connect(DialogBreakPoint_List->remove, SIGNAL(clicked()), this, SLOT(slotRemoveBreakPoint()));
     connect(DialogBreakPoint_List->removeAll, SIGNAL(clicked()), this, SLOT(slotRemoveAllBreakPoints()));
 
     DialogBreakPoint_List->show();
 }
 
-void lldbBridge::slotOpenCallStackFile(QListWidgetItem *item) const {
+void lldbBridge::slotOpenCallStackFile(QListWidgetItem *item) {
     QString filepath = item->text();
     //item->listWidget()->currentItem()->text();
     // TODO: get line associated with stack + might wanna get assembly in function
-    setStartPosition(filepath.toLatin1().data(), 0);
+    emit filePathUpdate(filepath, 1, 1);
 }
 
 void lldbBridge::showSetManualBreakPoint(const QString &filepath) {
@@ -322,7 +356,7 @@ void lldbBridge::collectThreads() {
     }
 }
 
-void lldbBridge::slotAddWatch() const {
+void lldbBridge::slotAddWatchPoint() {
     QModelIndex index = Dock->VariablesView->currentIndex();
     if (!index.isValid()) {
         return;
@@ -331,22 +365,58 @@ void lldbBridge::slotAddWatch() const {
     int row = index.row();
     const char *var = FrameVariablesList.GetValueAtIndex(row).GetName();
 
-    WatchDock->WatchedVariables->addItem(var);
+    Target.WatchAddress(FrameVariablesList.GetValueAtIndex(row).GetAddress().GetOffset(),
+                        FrameVariablesList.GetValueAtIndex(row).GetByteSize(), true, false, error);
+
+
+    //Target.GetNumWatchpoints();
+    QTreeWidgetItem *item = new QTreeWidgetItem();
+    item->setText(0, var);
+    QTreeWidgetItem *value_item = new QTreeWidgetItem();
+    value_item->setText(0, FrameVariablesList.GetValueAtIndex(row).GetValue());
+    item->addChild(value_item);
+    WatchDock->VariableTreeValues->addTopLevelItem(item);
     WatchDock->setVisible(true);
+
+    // enable all action if we have some elements
+    WatchDock->removeWatch->setEnabled(true);
+    WatchDock->modifyWatch->setEnabled(true);
 }
 
-void lldbBridge::slotRemoveWatch() {
-    QModelIndex index = WatchDock->WatchedVariables->currentIndex();
+void lldbBridge::slotRemoveWatchPoint() {
+    QModelIndex index = WatchDock->VariableTreeValues->currentIndex();
     if (!index.isValid()) {
         return;
     }
+    delete WatchDock->VariableTreeValues->takeTopLevelItem(index.row());
+    // index -> watch_id; only 1 col, hope IDs are changing according to they sum :)
+    Target.DeleteWatchpoint(index.row());
+
+    if (WatchDock->VariableTreeValues->topLevelItemCount() != 0) {
+        WatchDock->removeWatch->setEnabled(false);
+        WatchDock->modifyWatch->setEnabled(false);
+    }
 }
 
-void lldbBridge::slotModifyWatch() {
-    QModelIndex index = WatchDock->WatchedVariables->currentIndex();
+void lldbBridge::slotRemoveAllWatchPoint() {
+    WatchDock->VariableTreeValues->clear();// why this not work ?
+    //for (int i = 0; i< WatchDock->VariableTreeValues->topLevelItemCount(); i++) {
+    //    delete WatchDock->VariableTreeValues->topLevelItem(i);
+    //}
+    Target.DeleteAllWatchpoints();
+
+    // disable all buttons, no elements left
+    WatchDock->removeWatch->setEnabled(false);
+    WatchDock->modifyWatch->setEnabled(false);
+}
+
+void lldbBridge::slotModifyWatchPoint() {
+    QModelIndex index = WatchDock->VariableTreeValues->currentIndex();
     if (!index.isValid()) {
         return;
     }
+    // this is inner item, find out
+    WatchDock->VariableTreeValues->topLevelItem(index.row())->child(0)->setFlags(Qt::ItemIsEditable);
 }
 
 void lldbBridge::connectDockWidgets() {
@@ -354,11 +424,11 @@ void lldbBridge::connectDockWidgets() {
     connect(Dock->DebuggerPrompt, SIGNAL(returnPressed()), this, SLOT(slotCmdlineExecute()));
 
     // BP List view
-    connect(Dock->BreakPoint_List->BpList, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotGoToBreakPointFile(QListWidgetItem *)));
+    connect(Dock->BreakPoint_List->BpList, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)), this, SLOT(slotGoToBreakPointFile(QTreeWidgetItem *, int)));
     connect(Dock->BreakPoint_List->remove, SIGNAL(clicked()), this, SLOT(slotRemoveBreakPoint()));
     connect(Dock->BreakPoint_List->removeAll, SIGNAL(clicked()), this, SLOT(slotRemoveAllBreakPoints()));
     //connect(BreakPoint_List->mute, SIGNAL(clicked()), this, SLOT(slotMuteBreakPoint()));
-    //connect(BreakPoint_List->muteAll, SIGNAL(clicked()), this, SLOT(slotMuteAllBreakPoint()));
+    connect(Dock->BreakPoint_List->muteAll, SIGNAL(clicked()), this, SLOT(slotDisableAllBreakPoints()));
 
     connect(Dock->btn_StartDebug, SIGNAL(clicked()), this, SLOT(slotStartDebug()));
     connect(Dock->btn_StopDebug, SIGNAL(clicked()), this, SLOT(slotStopDebug()));
@@ -375,12 +445,15 @@ void lldbBridge::connectDockWidgets() {
     connect(Dock->CallStack, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotOpenCallStackFile(QListWidgetItem *)));
 
     // VariablesView
-    connect(Dock->btn_addWatch, SIGNAL(clicked()), this, SLOT(slotAddWatch()));
+    connect(Dock->btn_addWatch, SIGNAL(clicked()), this, SLOT(slotAddWatchPoint()));
 
     // WatchDock
     // addWatch is in dock title bar
-    connect(WatchDock->removeWatch, SIGNAL(clicked()), this, SLOT(slotRemoveWatch()));
-    connect(WatchDock->modifyWatch, SIGNAL(clicked()), this, SLOT(slotModifyWatch()));
+    connect(WatchDock->removeWatch, SIGNAL(clicked()), this, SLOT(slotRemoveWatchPoint()));
+    connect(WatchDock->modifyWatch, SIGNAL(clicked()), this, SLOT(slotModifyWatchPoint()));
+    connect(WatchDock->removeAll, SIGNAL(clicked()), this, SLOT(slotRemoveAllWatchPoint()));
+    connect(WatchDock->enableAll, SIGNAL(clicked()), this, SLOT(slotEnableAllWatchPoints()));
+    connect(WatchDock->disableAll, SIGNAL(clicked()), this, SLOT(slotDisableAllWatchPoints()));
 }
 
 void lldbBridge::setMessage(const QString &msg) const {
@@ -433,7 +506,6 @@ void lldbBridge::handleWatchPointHit() {
 // have to ensure some things are done, when closed
 lldbBridge::~lldbBridge() {
     //lldb::pid_t pid = Process.GetProcessID();
-    Dock->debug_output->appendPlainText("Killing process ");
     Process.Kill();
     SBDebugger::Destroy(Debugger);
     SBDebugger::Terminate();
@@ -591,10 +663,19 @@ void lldbBridge::attachToRunningProcess(const int &proc_id) {
 
 void lldbBridge::collectFrameData(SBFrame frame) {
     // clear
-    Dock->VariablesView->reset();
-    auto *model = new QStandardItemModel(this);
+    Dock->VariablesView->clear();
+    const QString TypeStyle = "style=color:yellow;";
+    const QString ValueStyle = "style=color:red;";
+    const QString VariableNameStyle = "style=color:green;";
 
-    QStandardItem *rootNode = model->invisibleRootItem();
+    // !!!! SPENT 4 HOURS WITH ELEMENT <p> (display:inline-block  css property stuffs)---
+    // <p> appends \n like in html !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    const QString Stag = "<span ";// between them goes style
+    const QString Mtag = " >";
+    const QString Etag = " </span>";
+
+
+    QTreeWidgetItem *rootNode = Dock->VariablesView->invisibleRootItem();
 
     FrameVariablesList = frame.GetVariables(true,// args
                                             true,// locals
@@ -605,55 +686,88 @@ void lldbBridge::collectFrameData(SBFrame frame) {
     for (uint32_t i = 0; i < FrameVariablesList.GetSize(); i++) {
         auto value = FrameVariablesList.GetValueAtIndex(i);
         // value.GetDeclaration()
-        auto *row = new QStandardItem();
+        auto *row = new QTreeWidgetItem();
         // first iteration
         QString desc;
         //  myVal (type) value
         if (!QString::fromLatin1(value.GetName()).isEmpty())
-            desc += QString::fromLatin1(value.GetName()) + " ";
+            desc += Stag + VariableNameStyle + Mtag + QString::fromLatin1(value.GetName()) + Etag;
         if (!QString::fromLatin1(value.GetTypeName()).isEmpty())
-            desc += "(" + QString::fromLatin1(value.GetTypeName()) + ")  ";
+            desc += "(" + Stag + TypeStyle + Mtag + QString::fromLatin1(value.GetTypeName()) + Etag + ")  ";
         if (QString::fromLatin1(value.GetValue()).isEmpty())
             // TODO: how tot lookup here if NULL or nullptr or some hex values
             // TODO: also how to view war characters, numbers, booleans instead of hex, ...
-            desc += "{}";
+            desc += Stag + ValueStyle + Mtag + "{}" + Etag;
         else
-            desc += QString::fromLatin1(value.GetValue());
+            desc += Stag + ValueStyle + Mtag + QString::fromLatin1(value.GetValue()) + Etag;
 
-        row->setText(desc);
+        row->setText(0, desc);
 
-        rootNode->appendRow(row);
+        rootNode->addChild(row);
 
         if (value.MightHaveChildren()) {
             recursiveValueIterator(value, row);
         }
     }
-    //auto *delegate = new Delegate();
-    //Dock->VariablesView->setItemDelegate(delegate);
-    Dock->VariablesView->setModel(model);
     Dock->VariablesView->collapseAll();
+
+    // update watched variables values
+    // TODO: how to manage containers, strings, etc.
+    // TODO: if var goes out of scope row will contain "OUT OF SCOPE"
+    compareWatchedValues();
 }
 
-void lldbBridge::recursiveValueIterator(SBValue value, QStandardItem *parent_row) {
+void lldbBridge::compareWatchedValues() {
+    QList<int> allVariablesIndices;
+    for (uint32_t i = 0; i < FrameVariablesList.GetSize(); i++) {
+        for (int z = 0; z < WatchDock->VariableTreeValues->topLevelItemCount(); z++) {
+            if (FrameVariablesList.GetValueAtIndex(i).GetName() == WatchDock->VariableTreeValues->topLevelItem(z)->text(0).toLatin1().data()) {
+                // matched variable names, update variables values
+                WatchDock->VariableTreeValues->topLevelItem(z)->child(0)->setText(0, FrameVariablesList.GetValueAtIndex(i).GetValue());
+                allVariablesIndices.append(z);
+            } else {
+                // no match ... out of scope
+            }
+        }
+    }
+    // deal with out of scope variables, not exists anymore ...
+    if (allVariablesIndices.size() != WatchDock->VariableTreeValues->topLevelItemCount()) {
+        for (int i = 0; i < WatchDock->VariableTreeValues->topLevelItemCount(); i++) {
+            if (!allVariablesIndices.contains(i)) {
+                WatchDock->VariableTreeValues->topLevelItem(i)->child(0)->setText(0, "OUT OF SCOPE");
+            }
+        }
+    }
+}
+
+void lldbBridge::recursiveValueIterator(SBValue value, QTreeWidgetItem *parent_row) {
+    const QString TypeStyle = "style=color:yellow;";
+    const QString ValueStyle = "style=color:red;";
+    const QString VariableNameStyle = "style=color:green;";
+
+    const QString Stag = "<span ";// between them goes style
+    const QString Mtag = " >";
+    const QString Etag = " </span>";
+
     for (uint32_t i = 0; i < value.GetNumChildren(); i++) {
-        auto *child_row = new QStandardItem();
+        auto *child_row = new QTreeWidgetItem();
 
         QString desc;
         //  myVal (type) value
         if (!QString::fromLatin1(value.GetChildAtIndex(i).GetName()).isEmpty()) {
-            desc += QString::fromLatin1(value.GetChildAtIndex(i).GetName()) + " ";
+            desc += Stag + VariableNameStyle + Mtag + QString::fromLatin1(value.GetChildAtIndex(i).GetName()) + Etag;
         }
         if (!QString::fromLatin1(value.GetChildAtIndex(i).GetTypeName()).isEmpty()) {
-            desc += "(" + QString::fromLatin1(value.GetChildAtIndex(i).GetTypeName()) + ")  ";
+            desc += "(" + Stag + TypeStyle + Mtag + QString::fromLatin1(value.GetChildAtIndex(i).GetTypeName()) + Etag + ") ";
         }
         if (QString::fromLatin1(value.GetChildAtIndex(i).GetValue()).isEmpty()) {
-            desc += "{}";
+            desc += Stag + ValueStyle + Mtag + "{}" + Etag;
         } else {
-            desc += QString::fromLatin1(value.GetChildAtIndex(i).GetValue());
+            desc += Stag + ValueStyle + Mtag + QString::fromLatin1(value.GetChildAtIndex(i).GetValue()) + Etag;
         }
 
-        child_row->setText(desc);
-        parent_row->appendRow(child_row);
+        child_row->setText(0, desc);
+        parent_row->addChild(child_row);
         qDebug() << desc;
         qDebug() << "\n";
         /*
@@ -687,31 +801,6 @@ std::string lldbBridge::frameGetLocation(const SBFrame &frame) {
     return description;
 }
 
-void lldbBridge::setStartPosition(const char *filepath, const int &line) const {
-    for (int i = 0; i < tab->count(); i++) {
-        // already opened file, only set focus on it and line
-        // currentEdit is set automatically when tab focus is changed
-        if (tab->tabToolTip(i) == filepath) {
-            tab->setCurrentIndex(i);
-            currentEdit->setCursorAtLine(line);
-            currentEdit->extra_selections_warning_line.clear();// clear selection if there is some of this king
-            currentEdit->setLineSelection(line, PlainTextEdit::Warning);
-            return;
-        }
-    }
-    FileDirManager fmanager;
-    QString content = fmanager.simple_read(filepath);
-    auto *edit = new PlainTextEdit();
-    edit->setPlainText(content);
-    edit->setCursorAtLine(line);// later maybe some effect
-    edit->setLineSelection(line, PlainTextEdit::Warning);
-    // icon (cpp, h, py, ...)
-    QFileIconProvider provider;
-    tab->addTab(edit, provider.icon(QFileInfo(filepath)), QFileInfo(filepath).fileName());
-    tab->setTabToolTip(tab->currentIndex(), filepath);// required to recognize again later
-    tab->setCurrentIndex(tab->count());
-}
-
 void lldbBridge::setFilePosition(const SBFrame &frame) {
     const char *filename = frame.GetLineEntry().GetFileSpec().GetFilename();
     SBFunction function = frame.GetFunction();
@@ -736,44 +825,10 @@ void lldbBridge::setFilePosition(const SBFrame &frame) {
             break;
         }
     }
+    // assembly
+    WorkingContent = "some assembly";
 
-    // boring file management, but too important
-    if (!filepath.isEmpty()) {
-        for (int i = 0; i <= tab->count(); i++) {
-            // already opened file, only set focus on it and line
-            if (tab->tabToolTip(i) == filepath) {
-                tab->setCurrentIndex(i);
-                currentEdit->setCursorAtLine(line);
-                currentEdit->extra_selections_warning_line.clear();// clear selection if there is some of this king
-                currentEdit->setLineSelection(line, PlainTextEdit::Warning);
-                return;
-            }
-        }
-        FileDirManager fmanager;
-        QString content = fmanager.simple_read(filepath);
-        auto *edit = new PlainTextEdit();
-        edit->setPlainText(content);
-        edit->setCursorAtLine(line);// later maybe some effect
-        edit->setLineSelection(line, PlainTextEdit::Warning);
-        // icon (cpp, h, py, ...)
-        QFileIconProvider provider;
-        tab->addTab(edit, provider.icon(QFileInfo(filepath)), filename);
-        tab->setTabToolTip(tab->currentIndex(), filepath);
-        tab->setCurrentIndex(tab->count());
-    }
-    // we need to get assembly code a find source file somehow
-    else {
-        const char *content = getAssembly(getCurrentThread());
-        auto *edit = new PlainTextEdit();
-        edit->setPlainText(content);
-        edit->setCursorAtLine(line);// will there be a line ??
-        edit->setLineSelection(line, PlainTextEdit::Warning);
-        // FIXME: filepath is empty ... fill it and set, or not is frame returns something
-        //filepath = ...;
-        tab->addTab(edit, filename);
-        tab->setTabToolTip(tab->currentIndex(), filepath);// required to recognize again later
-        tab->setCurrentIndex(tab->count());
-    }
+    emit filePathUpdate(filepath, line, 1);
 }
 
 void lldbBridge::createBreakpoint(const char *filepath, const int &line) {
