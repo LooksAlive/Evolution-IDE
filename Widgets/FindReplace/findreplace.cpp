@@ -174,24 +174,38 @@ void FindReplaceWidget::getOptionsAndTexts()
     }
 }
 
+void FindReplaceWidget::savePreview() {
+    FileDirManager file_manager;
+    file_manager.write(temp_search_result_path, preview->toPlainText().toLatin1().data());
+}
+
 void FindReplaceWidget::searchEverywhere() {
+    if (search_text == temp_search_text_everywhere) {
+        return;
+    }
+
     getOptionsAndTexts();
+
     results->clear();
+    selections.clear();
+    MultifileSearchResults.clear();
+    search_text = temp_search_text_everywhere;
 
     FileDirManager file_manager;
     // search all files, help with PlainTextEdit methods by changing preview
     for (int i = 0; i < AllFiles.length(); i++) {
         const QString content = file_manager.read(AllFiles[i]);
-        preview->setPlainText(content);
+        preview->appendPlainText(content);
         preview->setFilePath(AllFiles[i]);// needed for findStoreAndSelectAll[0] item which is filepath
         preview->findStoreAndSelectAll(search_text, find_options);
         if (preview->search_results.empty()) {
-            break;// continue with another file
+            continue;// continue with another file
         }
-        const QString Stag = "<pre ";
-        const QString Style = " style=color:orange;";
-        const QString Mtag = " > ";
-        const QString Etag = " </pre>";
+        // spaces are crytical here, we do not want to add some " "
+        const QString Stag = "<span ";
+        const QString Style = "style=color:orange;";
+        const QString Mtag = " >";
+        const QString Etag = "</span>";
 
         MultifileSearchResults.push_back(preview->search_results);
         selections.push_back(preview->extra_selections_search_results);
@@ -202,22 +216,22 @@ void FindReplaceWidget::searchEverywhere() {
         for (const auto &elem : preview->search_results) {
             QString row_col = QString::number(elem.row) + ":" + QString::number(elem.col);
             QString line_content = preview->getLineContent(elem.row);
-            // append html (highlight background for searched text), resizing content so make confort
-            line_content.insert(elem.col, Stag);
-            line_content.insert(elem.col + Stag.length(), Style);
-            line_content.insert(elem.col + Stag.length() + Style.length(), Mtag);
-            line_content.insert(elem.col + Stag.length() + Style.length() + Mtag.length() + search_text.length(), Etag);
+            // append html (highlight background for searched text)
+            const QString start = line_content.mid(0, elem.col);
+            const QString end = line_content.mid(start.length(), line_content.length());
+
+            line_content = start + Stag + Style + Mtag + search_text + Etag + end;
             auto *pos = new QTreeWidgetItem();
             pos->setText(0, line_content + "    " + row_col);
             file->addChild(pos);
         }
     }
     results->collapseAll();
-    // preview = m_Edit;
 
     // m_Edit not effective here, it would open many tabs, let this behavior to view (clicks)
     // m_Edit->findNext(search_text, find_options);
 }
+
 
 void FindReplaceWidget::slotNext() {
     // SearchCurrentFile
@@ -229,43 +243,46 @@ void FindReplaceWidget::slotNext() {
         return;
     }
 
-    if (search_text != temp_search_text) {
-        temp_search_text = search_text;
-        selections.clear();
-        MultifileSearchResults.clear();
-        results->clear();
-
-        m_Edit->findStoreAndSelectAll(search_text, find_options);
-        selections.push_back(m_Edit->extra_selections_search_results);// selections[0]
-
-        if (m_Edit->search_results.empty()) {
-            //m_Edit->findNext(search_text, find_options);
-            labelOccurences->setText("0/0");
-            return;
-        }
-        const QString Stag = " <span ";
-        const QString Style = "style=color:orange;";
-        const QString Mtag = " > ";
-        const QString Etag = " </span> ";
-
-        auto *file = new QTreeWidgetItem();
-        file->setText(0, m_Edit->search_results[0].fileName);
-        results->addTopLevelItem(file);
-        for (const auto &elem : m_Edit->search_results) {
-            QString row_col = QString::number(elem.row) + ":" + QString::number(elem.col);
-            QString line_content = m_Edit->getLineContent(elem.row);
-            // append html (highlight background for searched text), resizing content so make confort
-            line_content.insert(elem.col, Stag);
-            line_content.insert(elem.col + Stag.length(), Style);
-            line_content.insert(elem.col + Stag.length() + Style.length(), Mtag);
-            line_content.insert(elem.col + Stag.length() + Style.length() + Mtag.length() + search_text.length(), Etag);
-            qDebug() << line_content;
-            auto *pos = new QTreeWidgetItem();
-            pos->setText(0, line_content + "    " + row_col);
-            file->addChild(pos);
-        }
-        results->collapseAll();
+    if (search_text == temp_search_text) {// on the begining "" != "00"
+        return;
     }
+
+    selections.clear();
+    MultifileSearchResults.clear();
+    results->clear();
+    temp_search_text = search_text;
+
+    m_Edit->findStoreAndSelectAll(search_text, find_options);
+    selections.push_back(m_Edit->extra_selections_search_results);// selections[0]
+
+    if (m_Edit->search_results.empty()) {
+        //m_Edit->findNext(search_text, find_options);
+        labelOccurences->setText("0/0");
+        return;
+    }
+    // spaces are crytical here, we do not want to add some " "
+    const QString Stag = "<span ";
+    const QString Style = "style=color:orange;";
+    const QString Mtag = " >";
+    const QString Etag = "</span>";
+
+    auto *file = new QTreeWidgetItem();
+    file->setText(0, m_Edit->search_results[0].fileName);
+    results->addTopLevelItem(file);
+    for (const auto &elem : m_Edit->search_results) {
+        QString row_col = QString::number(elem.row) + ":" + QString::number(elem.col);
+        QString line_content = m_Edit->getLineContent(elem.row);
+        // append html (highlight background for searched text)
+        const QString start = line_content.mid(0, elem.col);
+        const QString end = line_content.mid(start.length(), line_content.length());
+
+        line_content = start + Stag + Style + Mtag + search_text + Etag + end;
+        qDebug() << line_content;
+        auto *pos = new QTreeWidgetItem();
+        pos->setText(0, line_content + "    " + row_col);
+        file->addChild(pos);
+    }
+    results->collapseAll();
 
     m_Edit->findNext(search_text, find_options);
     // increase labelOccurences
@@ -331,7 +348,7 @@ void FindReplaceWidget::slotShowPreviewResult(QTreeWidgetItem *item, int column)
     const QString filepath = results->topLevelItem(filepath_row)->text(0);
 
     if (SearchEverywhere) {
-        if (temp_search_result_path == filepath) {
+        if (filepath == temp_search_result_path) {
             preview->setCursorPosition(temp_pos.y(), temp_pos.x());
             preview->extra_selections_search_results = selections[tempSelectionPos];
         }
@@ -339,7 +356,7 @@ void FindReplaceWidget::slotShowPreviewResult(QTreeWidgetItem *item, int column)
         FileDirManager file_manager;
         // tree holds filepath
         const QString content = file_manager.read(filepath);
-        preview->setPlainText(content);
+        preview->appendPlainText(content);
         preview->setFilePath(filepath);
         // iterate filepath, find our resuts for active filepath row
         for (unsigned int i = 0; i < MultifileSearchResults.size(); i++) {
@@ -357,6 +374,8 @@ void FindReplaceWidget::slotShowPreviewResult(QTreeWidgetItem *item, int column)
     }
 
     // current file search
+    // document pointer updates both views according to changes in each of them, tab close requests
+    // handles saving on their own
     preview->setDocument(m_Edit->document());
     preview->setFilePath(m_Edit->getFilePath());
     preview->setCursorPosition(m_Edit->search_results[row].row, m_Edit->search_results[row].col);

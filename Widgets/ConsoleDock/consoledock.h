@@ -32,7 +32,7 @@ public:
     QToolButton *rerun;// stop and run again
     QToolButton *stop;
 
-    void processText(const QString &text);
+    void processText(const QString &text) const;
 
 private:
     QHBoxLayout *MainLayout;

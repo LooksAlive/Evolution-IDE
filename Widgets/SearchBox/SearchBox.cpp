@@ -54,7 +54,7 @@ void SearchBox::createWindow() {
 
     MainLayout->addWidget(find_options_menu_button);
     MainLayout->addWidget(lineEdit);
-    MainLayout->addSpacing(5);
+    MainLayout->addStretch(5);
     MainLayout->addWidget(labelOccurences);
     MainLayout->addWidget(next);
     MainLayout->addWidget(previous);

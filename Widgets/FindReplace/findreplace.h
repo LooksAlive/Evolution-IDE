@@ -91,12 +91,15 @@ private:
 
     QTextDocument::FindFlags find_options;
     QString search_text;
-    QString temp_search_text = "";// for whole file parsing, to not repeat with that same text
+    QString temp_search_text = "00";           // for whole file parsing, to not repeat with that same text, assure we
+    QString temp_search_text_everywhere = "00";// have not  match at start
     QString replace_text;
 
     QStringList AllFiles;
 
     void searchEverywhere();
+
+    void savePreview();
 
 public slots:
     void slotNext();// MainWindow search

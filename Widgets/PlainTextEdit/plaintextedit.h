@@ -68,8 +68,8 @@ public:
     // search
     struct searchResult {
         QString fileName;
-        int row;
-        int col;
+        unsigned int row;
+        unsigned int col;
     };
     std::vector<searchResult> search_results;
     void findStoreAndSelectAll(const QString &search, const QTextDocument::FindFlags &find_options = QTextDocument::FindCaseSensitively);

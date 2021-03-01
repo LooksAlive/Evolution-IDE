@@ -151,11 +151,12 @@ void Education::slotShowCppUsersSamples() {
 }
 
 void Education::slotRemoveCppUsersSample() {
-    if (CppUsersSamples->selectedItems()[0]->isSelected()) {
+    if (CppUsersSamples->currentIndex().isValid() && CppUsersSamples->takeItem(CppUsersSamples->currentIndex().row())->isSelected()) {
         const QString Sname = CppUsersSamples->selectedItems()[0]->listWidget()->item(0)->text();
-        delete CppUsersSamples->selectedItems()[0]->listWidget()->item(0);
-        // CppUsersSamples->currentIndex().row();
+        delete CppUsersSamples->takeItem(CppUsersSamples->currentIndex().row());
         // find sample by its name
         cpp_user_samples.pop_back();
+    } else {// cannot remove built in samples
+        return;
     }
 }

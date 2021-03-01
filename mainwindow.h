@@ -231,7 +231,7 @@ private slots:
 
     void CreateFile();
     void OpenFile();
-    void OpenFile(const QString &);
+    void OpenFile(const QString &filepath, const bool &readAndSetDocument = true);
     void OpenFile(const QModelIndex &);
     void SaveFile();
     void SaveFileAs();
@@ -252,10 +252,12 @@ private slots:
     void showBinaryView();
     void showDecompilerView();
 
+    void showInvitationScreen();
+
     void ChangeTabIndexInList(int, int);
     void DeleteTabFromList(int);
     void UpdateCurrentIndex(int);
-    void UpdateCurrentIndex(QListWidgetItem*);
+    void UpdateCurrentIndex(QListWidgetItem *);
     void UpdateCurrentIndexOnDelete(int);
 
 

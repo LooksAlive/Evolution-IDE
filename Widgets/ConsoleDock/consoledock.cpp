@@ -91,127 +91,90 @@ void ConsoleDock::BuildConsole() {
     MainLayout->setContentsMargins(0, 0, 0, 0);
     MainLayout->setSpacing(0);
 
-    ConsoleOutput->setHtml("<a href = http://google.com > moj text </a>");
-    ConsoleOutput->append("<a href = http://google.com > moj text </a>");
-    processText("/home/adam/Desktop/Qt5_forum \n");                                                                                                   // TODO: bad formatting preserve !!!!!!!!!!
-    ConsoleOutput->append("<a style=color:red; href = /home/adam/Desktop/Qt5_forum > /home/adam/Desktop/Qt5_forum </a>");                             // works well
-    ConsoleOutput->append("<a style='color:red;background-color:lightblue;' href = /home/adam/Desktop/Qt5_forum > /home/adam/Desktop/Qt5_forum </a>");// works well
-    ConsoleOutput->append("<a style=color:lightblue; href = /home/adam/Desktop/Qt5_forum > /home/adam/Desktop/Qt5_forum </a>");                       // works well
+    //ConsoleOutput->setHtml("<a href = http://google.com > moj text </a>");
+    //ConsoleOutput->append("<a href = http://google.com > moj text </a>");
+    processText("Warning /home/adam/Desktop/Qt5_forum kjskldafjhk kjsadfhkjsdlhakjf gfdsgakhfg");
+    processText("Error /home/adam/Desktop/GITHUB sjkdfh b");
+    processText("kkwjrlwhetjhlew jkew /home/adam/Desktop/GITHUB lahfjakslhdj ");
+    //processText("kkwjrlwhetjhlew    /home/adam/Desktop/GITHUB");
+    //ConsoleOutput->append("<a style=color:red; href = /home/adam/Desktop/Qt5_forum > /home/adam/Desktop/Qt5_forum </a>");                             // works well
+    //ConsoleOutput->append("<a style='color:red;background-color:lightblue;' href = /home/adam/Desktop/Qt5_forum > /home/adam/Desktop/Qt5_forum </a>");// works well
+    //ConsoleOutput->append("<a style=color:lightblue; href = /home/adam/Desktop/Qt5_forum > /home/adam/Desktop/Qt5_forum </a>");                       // works well
 }
 
 
-void ConsoleDock::processText(const QString &text) {
-    /*
+void ConsoleDock::processText(const QString &text) const {
     // separate to words + also for performance check for lenght
-    const QString Stag = "<a href = ";
-    const QString Mtag = " > ";
-    QString tagText = "";  // here goes real text to be shown to user (html syntax)
-    const QString Etag = " </a>";
+    // spaces are critical, we do not want to merge with " "
+    const QString Stag = "<a ";
+    const QString href = " href = ";
+    const QString Mtag = ">";
+    const QString Etag = "</a> ";
     // right after <a {}        ++ possible background ,  !! hover <style> not working ...
-    const QString styleWarning = "style=color:yellow";
-    const QString styleError = "style=color:red";
+    const QString styleWarning = "style=color:yellow;";
+    const QString styleError = "style=color:red;";
 
-    QString ProcessedText = text;
+    QString ProcessedText;
     QString link;
-    QString temp_link;
 
     bool Warning = false;
     bool Error = false;
 
-    if(text.contains("Warning")){
+    if (text.contains("Warning")) {
         Warning = true;
     }
-    if(text.contains("Error")){
+    if (text.contains("Error")) {
         Error = true;
     }
 
     // separate to words
-    const QStringList words = text.split(QRegExp("\\s+"), QString::SkipEmptyParts);
+    //const QStringList words = text.split(QRegExp("\\s+"), QString::SkipEmptyParts);
 
-    for (int word = 0; word < words.length(); word++) {
-        const QString CWORD = words[word];      // helper string
-
-        if(CWORD.length() <= 5){
-            ProcessedText.append(CWORD);
-            break;
-        }
-        // is this condition necessary ??
-        if(CWORD.contains("/")){
-            // select whole link
-            bool followTillEnd = false;
-            int count = 0;
-            for (int i = 0; i< CWORD.length(); i++) {
-                // every path starts with /, on windows with opposite
-                if(CWORD[i] == "/"){
-                    count++;
-                }
-                if(CWORD[i] == "/" && !followTillEnd){
-                    // we found path, follow to end
-                    followTillEnd = true;
-                    link.append("/");
-                }
-                if(followTillEnd){
-                    link.append(CWORD[i]);
-                }
-                if(count && followTillEnd && QFileInfo(link).exists()){
-                    temp_link = link;
-                }
-                // There is no way that 2 links can be merged so no need to clear variables
-                // encapsulate into href link
-                if(CWORD.end() && !QFileInfo(link).exists()){
-                    // final part, take last valid link ... temp_link
-                    tagText = temp_link;
-                    temp_link.insert(0, Stag);
-                    // change is text is good now
-                    if(Warning){
-                        temp_link.insert(Stag.length(), styleWarning + Mtag + " ");
-                        temp_link.insert(Stag.length() + styleWarning.length() + Mtag.length(), tagText);
-                        temp_link.insert(Stag.length() + styleWarning.length() + Mtag.length() + tagText.length(), Etag);
-                    }
-                    if(Error){
-                        temp_link.insert(Stag.length(), styleError + Mtag +  " ");
-                        temp_link.insert(Stag.length() + styleError.length() + Mtag.length(), tagText);
-                        temp_link.insert(Stag.length() + styleError.length() + Mtag.length() + tagText.length(), Etag);
-                    }
-                    else
-                        temp_link.insert(Stag.length(), Mtag + tagText + Etag);
-                }
-                if(CWORD.end() && QFileInfo(link).exists()){
-                    // final part, take valid link ... link
-                    tagText = temp_link;
-                    link.insert(0, Stag);
-                    // change is text is good now
-                    if(Warning){
-                        link.insert(Stag.length(), styleWarning + Mtag + " ");
-                        link.insert(Stag.length() + styleWarning.length() + Mtag.length(), tagText);
-                        link.insert(Stag.length() + styleWarning.length() + Mtag.length() + tagText.length(), Etag);
-                    }
-                    if(Error){
-                        link.insert(Stag.length(), styleError + Mtag +  " ");
-                        link.insert(Stag.length() + styleError.length() + Mtag.length(), tagText);
-                        link.insert(Stag.length() + styleError.length() + Mtag.length() + tagText.length(), Etag);
-                    }
-                    else
-                        link.insert(Stag.length(), Mtag + tagText + Etag);
-                }
-                // often after links follows position in format row:col ; or line: xx ; or line xx
-
-                if(CWORD[i] != "/" && !followTillEnd){
-                    ProcessedText.append(CWORD[i]);
-                }
+    // select whole link
+    for (int i = 0; i < text.length(); i++) {
+        if (text[i] == "/") {
+            // take whole path, find space from index i
+            const unsigned int pos = text.indexOf(" ", i);
+            link = text.mid(i, pos - i);
+            i = pos;// -----------------
+            /*
+            if(QFileInfo(link).exists()){
+                i = pos;    // jump over link
             }
-            link.clear();
-            temp_link.clear();
-            tagText.clear();
-            count = 0;
+            else{
+                link.clear();
+            }
+            */
         }
-        else{
-            // no link there, just append it
-            ProcessedText.append(words[word]);
+        // There is no way that 2 links can be merged so no need to clear variables
+        if (!link.isEmpty()) {
+            QString tagText = link;
+            link.insert(0, Stag);
+            // change is text is good now
+            if (Warning) {
+                link = Stag + styleWarning + href + tagText + Mtag + tagText + Etag;// <a style=...; href= ... > (real text)
+                qDebug() << link;
+                Warning = false;
+            }
+            if (Error) {
+                link = Stag + styleError + href + tagText + Mtag + tagText + Etag;// <a style=...; href= ... > (real text)
+                qDebug() << link;
+                Error = false;
+            } else
+                link = Stag + href + tagText + Mtag + tagText + Etag;
+
+            ProcessedText.append(link);
+            link.clear();
+            tagText.clear();
+        }
+        // often after links follows position in format row:col ; or line: xx ; or line xx
+
+        else {
+            ProcessedText.append(text[i]);
         }
     }
+
     ConsoleOutput->append(ProcessedText);
-    */
 }
 
 void ConsoleDock::clearConsole() const {

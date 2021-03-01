@@ -84,7 +84,7 @@ public:
     // only readable, copyable
     void setPreviewHighlighter(Highlighter *highlighter) { previewHighlighter = highlighter; }
 
-    QString *WorkingContent = nullptr;
+    QString WorkingContent;
 
 private:
     // double click on item will open new tab (not saved) with exact code sample dependent on type

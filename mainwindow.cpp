@@ -34,17 +34,19 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     SetupMenuBar();
     SetupToolBar();
 
-    //invitation_screen = new InvitationScreen(this);
-    //setCentralWidget(invitation_screen);
-    CreateFile();
+    //CreateFile();
     SetupStatusBar();
 
     SetupDockWidgetsLayering();
 
     setCentralWidget(vertical_stack);
-    Tabs->setFocus();
-    vertical_stack->setCurrentWidget(Tabs);
-    Tabs->currentWidget()->setFocus();
+    // Tabs->setFocus();
+    // vertical_stack->setCurrentWidget(Tabs);
+    // equivalent to :
+    // showEditorView();
+    showInvitationScreen();
+
+    //Tabs->currentWidget()->setFocus();
     highlighter = new Highlighter(":/highlights/languages.xml", this);
     executor = new CommandLineExecutor(this);
 
@@ -87,6 +89,9 @@ void MainWindow::LoadRegisters() {
             (qobject_cast<PlainTextEdit *>(Tabs->widget(i)))->textCursor().setPosition(positions[i].toInt());
         }
     }
+
+    if(vertical_stack->currentIndex() != 5)     // invitanion screen
+        showEditorView();       // switch from Invitation Screen which is default
     */
 
     QString Project_Root_Dir = settings.value("Evolution/Project_Root_Dir").toString();
@@ -140,10 +145,11 @@ void MainWindow::SetupVerticalBar() {
     vertical_stack->setParent(this);
 
     vertical_stack->insertWidget(0, Tabs);
-    vertical_stack->insertWidget(3, nodeview);
-    vertical_stack->insertWidget(1, binaryView);
-    vertical_stack->insertWidget(2, Tabs);// debuggerBridge
-    vertical_stack->insertWidget(3, hexview);
+    vertical_stack->insertWidget(1, nodeview);
+    vertical_stack->insertWidget(2, hexview);
+    vertical_stack->insertWidget(3, binaryView);
+    vertical_stack->insertWidget(4, Tabs);             // debuggerBridge
+    vertical_stack->insertWidget(5, invitation_screen);// helpfull, do not belong to this stack, but is there
 
     vertical_stack->setCurrentIndex(0);// start with editor
 
@@ -244,7 +250,7 @@ void MainWindow::SetupMenuBar() {
     fileMenu->addSeparator();
     fileMenu->addAction(QIcon(IconFactory::Settings), "Settings", this, SLOT(SetupSettingsWindow()), Qt::CTRL + Qt::Key_P);
     fileMenu->addSeparator();
-    fileMenu->addAction("Restart", this, SLOT(slotRestart()));
+    fileMenu->addAction("Restart", this, SLOT(slotRestart()), Qt::CTRL + Qt::SHIFT + Qt::Key_R);
     fileMenu->addAction(QIcon(IconFactory::ShutDown), "Exit", this, SLOT(CloseWindow()), Qt::CTRL + Qt::Key_Q);
 
     editMenu->addAction(QIcon(IconFactory::Copy), "Copy", this, SLOT(slotCopy()), Qt::CTRL + Qt::Key_C);
@@ -270,7 +276,7 @@ void MainWindow::SetupMenuBar() {
     viewMenu->addAction(debuggerDock->toggleViewAction());
     viewMenu->addAction(debuggerWatchDock->toggleViewAction());
     viewMenu->addSeparator();
-    viewMenu->addAction(QIcon(IconFactory::FullScreen), "Full Screen", this, SLOT(slotFullScreen()));
+    viewMenu->addAction(QIcon(IconFactory::FullScreen), "Full Screen", this, SLOT(slotFullScreen()), Qt::Key_F11);
     viewMenu->addAction("Converter", this, SLOT(SetupConverter()));
 
     DebugMenu->addAction(QIcon(IconFactory::StartDebug), "Start Debug", this, SLOT(slotStartDebug()), Qt::Key_F5);
@@ -362,6 +368,12 @@ void MainWindow::SetupDockWidgetsLayering() {
 
 // switching views
 void MainWindow::showEditorView() {
+    // not really necessary, but good to have it
+    if (Tabs->count() == 0) {
+        // showInvitationScreen();
+        // invitation screen is still ON
+        return;
+    }
     ShowHiddenDockWidgets();
     // might be visible anyway, if debug view was...
     debuggerDock->hide();
@@ -396,6 +408,10 @@ void MainWindow::showDebuggerView() {
 }
 
 void MainWindow::showHexView() {
+    if (Tabs->count() == 0) {
+        // invitation screen is still ON, create some file first
+        return;
+    }
     HideAllDockWidgets();
 
     // Tabs->tabToolTip(Tabs->currentIndex());
@@ -409,6 +425,11 @@ void MainWindow::showHexView() {
         hexview->setText(data.toUtf8());
         vertical_stack->setCurrentWidget(hexview);
     }
+}
+
+void MainWindow::showInvitationScreen() {
+    HideAllDockWidgets();
+    vertical_stack->setCurrentWidget(invitation_screen);
 }
 
 void MainWindow::HideAllDockWidgets() {
@@ -463,6 +484,10 @@ void MainWindow::SetupTabWidget() {
     connect(Tabs->tabBar(), SIGNAL(tabCloseRequested(int)), this, SLOT(UpdateCurrentIndexOnDelete(int)));
     connect(Tabs->tabBar(), SIGNAL(tabMoved(int, int)), this, SLOT(ChangeTabIndexInList(int, int)));
     connect(Tabs->AddNewTabButton, SIGNAL(clicked()), this, SLOT(CreateFile()));
+
+    invitation_screen = new InvitationScreen(this);
+    // we do not know yet if there is some file loaded, reopened or else ...
+    invitation_screen->setVisible(false);
 }
 
 
@@ -580,12 +605,12 @@ void MainWindow::slotOpenReferenceFile(QTreeWidgetItem *item, int column) {
     //const int filepath_row = find_replace->results->indexOfTopLevelItem(item->parent());
     //const int row = item->parent()->indexOfChild(item);
     //const QString filepath = find_replace->temp_search_result_path; /* find_replace->results->topLevelItem(filepath_row)->text(0); */
-
     // doubleClick, but click were before, so we have temporary variables already set
     if (find_replace->temp_search_result_path.isEmpty()) {
         qDebug() << "find_replace->temp_search_result_path is empty !!! line 584 MainWindow";
     }
-    OpenFile(find_replace->temp_search_result_path);
+    OpenFile(find_replace->temp_search_result_path, false);// we will set document from preview to share memory
+    currentWidget->setDocument(find_replace->preview->document());
     currentWidget->extra_selections_search_results = find_replace->selections[find_replace->tempSelectionPos];
     currentWidget->setCursorPosition(find_replace->temp_pos.y(), find_replace->temp_pos.x());
 
@@ -704,6 +729,9 @@ void MainWindow::CreateFile() {
     Docker->DockerFileList->addItem(new_item);
 
     UpdateCurrentIndex(index);
+
+    if (vertical_stack->currentIndex() != 5)// invitanion screen
+        showEditorView();                   // switch from Invitation Screen which is default
 }
 
 /* Base operations in MenuBar
@@ -726,7 +754,7 @@ void MainWindow::OpenFile() {
     OpenFile(filepath);
 }
 
-void MainWindow::OpenFile(const QString &filepath) {
+void MainWindow::OpenFile(const QString &filepath, const bool &readAndSetDocument) {
 
     // directory operations
     if (QFileInfo(filepath).isDir()) {
@@ -741,25 +769,35 @@ void MainWindow::OpenFile(const QString &filepath) {
 
     if (!QFileInfo(filepath).exists()) {
         if (SampleLoading) {
-            content = *(education->WorkingContent);
+            content = education->WorkingContent;
             // all sample are not editable, but enabled, free to copy
             new_text_edit = new PlainTextEdit();
             new_text_edit->setReadOnly(true);
+            file_manager.current_file_name = filepath;
+            file_manager.current_full_filepath = filepath;
+            goto end;
         }
         if (AssemblyLoading) {
             content = debuggerBridge->WorkingContent;
             new_text_edit = new PlainTextEdit();
             new_text_edit->setReadOnly(true);
+            file_manager.current_file_name = filepath;
+            file_manager.current_full_filepath = filepath;
+            goto end;
         } else {
             // not valid file path, no more exceptions
             return;
         }
+    // handy goto statement to escape nested loop but not return;
+    end:;
     } else {
-        content = file_manager.read(filepath);
+        new_text_edit = new PlainTextEdit();
+        if (readAndSetDocument) {
+            content = file_manager.read(filepath);
+            new_text_edit->appendPlainText(content);
+        }
     }
 
-    new_text_edit = new PlainTextEdit();
-    new_text_edit->appendPlainText(content);
     new_text_edit->setFilePath(filepath);
     new_text_edit->setFileExtension(file_manager.getFileExtension(file_manager.current_file_name));
 
@@ -779,6 +817,8 @@ void MainWindow::OpenFile(const QString &filepath) {
         delete Tabs->widget(Tabs->currentIndex());
     }
 
+    if (vertical_stack->currentIndex() != 5)// invitanion screen
+        showEditorView();                   // switch from Invitation Screen which is default
 
     // tab
     // icons for tab, like in file view
@@ -886,8 +926,12 @@ void MainWindow::CloseFile(int index_) {
     delete Tabs->widget(index_);
     DeleteTabFromList(index_);
 
-    if (!Tabs->count())
-        CreateFile();
+    if (!Tabs->count()) {
+        // CreateFile();
+        showInvitationScreen();
+        return;// tab is not active, (code below)
+    }
+
     Tabs->currentWidget()->setFocus();
 }
 
@@ -912,13 +956,16 @@ void MainWindow::CloseAllFiles() {
     } else if (ALWAYS_SAVE) {
         SaveAllFiles();
     }
-    while (Tabs->count() > 0)
-        delete Tabs->widget(0);
+
+    // while (Tabs->count() > 0)
+    // delete Tabs->widget(0);
+    Tabs->clear();
 
     Docker->DockerFileList->clear();
 
-    CreateFile();
-    Tabs->currentWidget()->setFocus();
+    showInvitationScreen();
+    // CreateFile();
+    // Tabs->currentWidget()->setFocus();
 }
 
 /* close all files, prevent memory leak */
@@ -1336,8 +1383,8 @@ void MainWindow::slotOpenCppSample(QListWidgetItem *item) {
 
     for (int i = 0; i < num_files; i++) {
         SampleLoading = true;
-        education->WorkingContent = (QString *) (education->cpp_code_samples[index].content[i].data());
-        OpenFile("not valid filename");
+        education->WorkingContent = education->cpp_code_samples[index].content[i];
+        OpenFile(education->cpp_code_samples[index].fileNames[i]);
         SampleLoading = false;
     }
 }
@@ -1345,7 +1392,7 @@ void MainWindow::slotOpenCppSample(QListWidgetItem *item) {
 void MainWindow::slotOpenCppUserSample(QListWidgetItem *item) {
     int index = item->listWidget()->currentRow();
     SampleLoading = true;
-    education->WorkingContent = &(education->cpp_user_samples[index]);
-    OpenFile("not valid filename");
+    education->WorkingContent = education->cpp_user_samples[index];
+    OpenFile(item->text());// item hold sample name
     SampleLoading = false;
 }
