@@ -41,6 +41,20 @@ CodeInfoDock::CodeInfoDock(QWidget *parent) : QDockWidget(parent) {
     setWidget(MainWidget);
 }
 
+CodeInfoDock::~CodeInfoDock() {
+    /*
+    signatureThread->deleteLater();
+    codeCompleteThread->deleteLater();
+    renameThread->deleteLater();
+    codeCheckThread->deleteLater();
+    clangTidyCheckThread->deleteLater();
+    findReferencesThread->deleteLater();
+    formatFileThread->deleteLater();
+    goToDefinitionThread->deleteLater();
+    generateThread->deleteLater();
+    */
+}
+
 void CodeInfoDock::createWindow() {
     MainLayout = new QHBoxLayout();// this,  to be set for dock
     SignatureActionLayout = new QVBoxLayout();

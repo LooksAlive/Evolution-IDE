@@ -130,7 +130,7 @@ class CodeInfoDock : public QDockWidget {
     Q_OBJECT
 public:
     explicit CodeInfoDock(QWidget *parent = nullptr);
-    ~CodeInfoDock() = default;
+    ~CodeInfoDock();
 
     // outside in MainWindow because it suppose to be a dock
     void setEditor(PlainTextEdit *editor) { edit = editor; }

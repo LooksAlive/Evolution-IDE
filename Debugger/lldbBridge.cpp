@@ -603,23 +603,21 @@ void lldbBridge::start() {
         return;
     }
 
+    // setup thread
     ProcessingThread = new QThread(this);
-    //auto ptr = std::make_shared<DebuggerSession>(this);
-    processHandler = new ProcessHandler(/*ptr*/ this);// QObject::moveToThread: Cannot move objects with a parent
-    //&lldbBridge::setProcessInterruptFeatures
-    connect(ProcessingThread, &QThread::started, processHandler, &ProcessHandler::setProcessInterruptFeatures);
-    connect(ProcessingThread, &QThread::finished, ProcessingThread, &QObject::deleteLater);
+    processHandler = new ProcessHandler(this);// QObject::moveToThread: Cannot move objects with a parent
+    connect(ProcessingThread, &QThread::started, processHandler, &ProcessHandler::setProcessInterruptFeatures, Qt::QueuedConnection);
+    connect(ProcessingThread, &QThread::finished, ProcessingThread, &QObject::deleteLater, Qt::QueuedConnection);
 
-    connect(processHandler, SIGNAL(addMessage(const QString &)), this, SLOT(setMessage(const QString &)));
-    connect(processHandler, SIGNAL(enableButtons()), this, SLOT(enableDebuggerButtons()));
-    connect(processHandler, SIGNAL(disableButtons()), this, SLOT(disableDebuggerButtons()));
-    connect(processHandler, SIGNAL(breakPointHit()), this, SLOT(handleBreakPointHit()));
-    connect(processHandler, SIGNAL(watchPointHit()), this, SLOT(handleWatchPointHit()));
+    connect(processHandler, SIGNAL(addMessage(const QString &)), this, SLOT(setMessage(const QString &)), Qt::QueuedConnection);
+    connect(processHandler, SIGNAL(enableButtons()), this, SLOT(enableDebuggerButtons()), Qt::QueuedConnection);
+    connect(processHandler, SIGNAL(disableButtons()), this, SLOT(disableDebuggerButtons()), Qt::QueuedConnection);
+    connect(processHandler, SIGNAL(breakPointHit()), this, SLOT(handleBreakPointHit()), Qt::QueuedConnection);
+    connect(processHandler, SIGNAL(watchPointHit()), this, SLOT(handleWatchPointHit()), Qt::QueuedConnection);
     ProcessingThread->setObjectName("DebuggerThread");
     processHandler->moveToThread(ProcessingThread);
-    //qRegisterMetaType<QSharedPointer<lldbBridge>>();
+
     ProcessingThread->start();
-    // when process stopped, return true, pause process
     //setProcessInterruptFeatures();
 }
 

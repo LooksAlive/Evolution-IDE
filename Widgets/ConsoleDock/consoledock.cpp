@@ -104,6 +104,10 @@ void ConsoleDock::BuildConsole() {
 
 
 void ConsoleDock::processText(const QString &text) const {
+    if (text.isEmpty()) {
+        return;
+    }
+
     // separate to words + also for performance check for lenght
     // spaces are critical, we do not want to merge with " "
     const QString Stag = "<a ";
@@ -134,17 +138,14 @@ void ConsoleDock::processText(const QString &text) const {
     for (int i = 0; i < text.length(); i++) {
         if (text[i] == "/") {
             // take whole path, find space from index i
-            const unsigned int pos = text.indexOf(" ", i);
+            const int pos = text.indexOf(" ", i);
             link = text.mid(i, pos - i);
-            i = pos;// -----------------
-            /*
-            if(QFileInfo(link).exists()){
-                i = pos;    // jump over link
-            }
-            else{
+
+            if (QFileInfo(link).exists() && !QFileInfo(link).isDir()) {
+                i = pos;// jump over link
+            } else {
                 link.clear();
             }
-            */
         }
         // There is no way that 2 links can be merged so no need to clear variables
         if (!link.isEmpty()) {
@@ -153,12 +154,12 @@ void ConsoleDock::processText(const QString &text) const {
             // change is text is good now
             if (Warning) {
                 link = Stag + styleWarning + href + tagText + Mtag + tagText + Etag;// <a style=...; href= ... > (real text)
-                qDebug() << link;
+                //qDebug() << link;
                 Warning = false;
             }
             if (Error) {
                 link = Stag + styleError + href + tagText + Mtag + tagText + Etag;// <a style=...; href= ... > (real text)
-                qDebug() << link;
+                //qDebug() << link;
                 Error = false;
             } else
                 link = Stag + href + tagText + Mtag + tagText + Etag;

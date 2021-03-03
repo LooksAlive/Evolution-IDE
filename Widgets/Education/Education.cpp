@@ -156,6 +156,7 @@ void Education::slotRemoveCppUsersSample() {
         delete CppUsersSamples->takeItem(CppUsersSamples->currentIndex().row());
         // find sample by its name
         cpp_user_samples.pop_back();
+        cpp_user_samples.clear();
     } else {// cannot remove built in samples
         return;
     }

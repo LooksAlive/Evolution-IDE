@@ -66,16 +66,11 @@ public:
     QTextBlock firstVisibleBlockProxy() const;
 
     // search
-    struct searchResult {
-        QString fileName;
-        unsigned int row;
-        unsigned int col;
-    };
-    std::vector<searchResult> search_results;
+    std::vector<QPoint> search_results;
     void findStoreAndSelectAll(const QString &search, const QTextDocument::FindFlags &find_options = QTextDocument::FindCaseSensitively);
     // set cursor
     bool find(const QString &search, const QTextDocument::FindFlags &find_options = QTextDocument::FindCaseSensitively);
-    // not seting cursor
+    // not setting cursor
     bool find(QTextCursor &cursor, const QString &search, const QTextDocument::FindFlags &find_options = QTextDocument::FindCaseSensitively);
     void findNext(const QString &search, const QTextDocument::FindFlags &find_options = QTextDocument::FindCaseSensitively);
     void replace(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options = QTextDocument::FindCaseSensitively);
@@ -95,9 +90,12 @@ public:
 
     // text manipulation
     void selectLineUnderCursor();
+    // will set cursor
     QString getLineUnderCursor();
+    // only pointer
+    QString getLineUnderCursor(QTextCursor &cursor);
     // returns content for specified line/row + set cursor there
-    QString getLineContent(const int &row);
+    QString getLineContent(const int &row, const bool &setCursor = true);
     void selectWordUnderCursor();
     QString getWordUnderCursor();
     void deleteLine();

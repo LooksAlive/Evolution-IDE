@@ -30,6 +30,7 @@ public:
     explicit FindReplaceWidget(Tab *tab, QWidget *parent = nullptr);
     ~FindReplaceWidget() = default;
 
+    // all files we will searching
     void setFiles(const QStringList &files) { AllFiles = files; }
 
     QLineEdit *LineEditFind;
@@ -43,12 +44,13 @@ public:
     // indicates if we are still on the same file, to bypass new file reading, when it is already set
     QString temp_search_result_path;
     QPoint temp_pos;
-    // which selecion we should set from data storage
+    // which selection we should set from data storage
     int tempSelectionPos;
     // selections storage (for references its needed to preform manual search)
     std::vector<QList<QTextEdit::ExtraSelection>> selections;
     // kinda tricky PlainTextEdit::search_results cannot be a type
-    std::vector<std::vector<PlainTextEdit::searchResult>> MultifileSearchResults;
+    std::vector<std::vector<QPoint>> MultifileSearchResults;
+    std::vector<QString> SearchFilesPaths;
     bool SearchCurrentFile = true;
     bool SearchingReferences = false;
 
@@ -56,6 +58,10 @@ public:
     // must be done from outside (tab, edit, file dock, ...)
     // this function navigate main edit with SearchCurrentFile mode
     void forwardToResult(QTreeWidgetItem *, int);
+
+    // when searching multiple files and user make change in preview, lets save this new content
+    // called whenever preview file changes to another
+    void savePreview() const;
 
 private:
     QHBoxLayout *MainLayout;
@@ -98,8 +104,6 @@ private:
     QStringList AllFiles;
 
     void searchEverywhere();
-
-    void savePreview();
 
 public slots:
     void slotNext();// MainWindow search

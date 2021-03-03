@@ -202,8 +202,8 @@ void MainWindow::slotCursorPositionChanged() {
     // later consider creating new button here
     // What if on the changed tab is no cursor set -> remain last cursor position
     if (Tabs->isVisible()) {
-        QPoint point = currentWidget->getCursorPosition();
-        QString pos = QString::number(point.x()) + ":" + QString::number(point.y());// row:col
+        const QPoint point = currentWidget->getCursorPosition();
+        const QString pos = QString::number(point.y()) + ":" + QString::number(point.x());// row:col
 
         btn_position->setText(pos);
     } else {
@@ -369,11 +369,13 @@ void MainWindow::SetupDockWidgetsLayering() {
 // switching views
 void MainWindow::showEditorView() {
     // not really necessary, but good to have it
+    /*
     if (Tabs->count() == 0) {
         // showInvitationScreen();
         // invitation screen is still ON
         return;
     }
+    */
     ShowHiddenDockWidgets();
     // might be visible anyway, if debug view was...
     debuggerDock->hide();
@@ -428,7 +430,7 @@ void MainWindow::showHexView() {
 }
 
 void MainWindow::showInvitationScreen() {
-    HideAllDockWidgets();
+    // HideAllDockWidgets();
     vertical_stack->setCurrentWidget(invitation_screen);
 }
 
@@ -596,6 +598,9 @@ void MainWindow::slotOpenLinterFile(QListWidgetItem *item) {
 }
 
 void MainWindow::slotOpenReferenceFile(QTreeWidgetItem *item, int column) {
+    if (!item->parent()) {
+        return;
+    }
     // we were searching only in current file
     if (find_replace->SearchCurrentFile) {
         find_replace->forwardToResult(item, column);
@@ -609,10 +614,12 @@ void MainWindow::slotOpenReferenceFile(QTreeWidgetItem *item, int column) {
     if (find_replace->temp_search_result_path.isEmpty()) {
         qDebug() << "find_replace->temp_search_result_path is empty !!! line 584 MainWindow";
     }
+    // user changed file
+    find_replace->savePreview();
     OpenFile(find_replace->temp_search_result_path, false);// we will set document from preview to share memory
     currentWidget->setDocument(find_replace->preview->document());
     currentWidget->extra_selections_search_results = find_replace->selections[find_replace->tempSelectionPos];
-    currentWidget->setCursorPosition(find_replace->temp_pos.y(), find_replace->temp_pos.x());
+    currentWidget->setCursorPosition(find_replace->temp_pos.x(), find_replace->temp_pos.y());
 
     /*
     // references from code
@@ -681,7 +688,7 @@ void MainWindow::slotUpdateDebuggerFilePath(const QString &filepath, const int &
     OpenFile(filepath);
     AssemblyLoading = false;
     // set position
-    currentWidget->setCursorPosition(row, col);
+    currentWidget->setCursorPosition(col, row);
 
     // since we go from debugger, set line selection for our line to BreakPoint type
     currentWidget->setLineSelection(row, PlainTextEdit::BreakPoint);
@@ -730,8 +737,8 @@ void MainWindow::CreateFile() {
 
     UpdateCurrentIndex(index);
 
-    if (vertical_stack->currentIndex() != 5)// invitanion screen
-        showEditorView();                   // switch from Invitation Screen which is default
+    // we definitelly have a new tab
+    showEditorView();// switch from Invitation Screen which is default
 }
 
 /* Base operations in MenuBar
@@ -772,6 +779,7 @@ void MainWindow::OpenFile(const QString &filepath, const bool &readAndSetDocumen
             content = education->WorkingContent;
             // all sample are not editable, but enabled, free to copy
             new_text_edit = new PlainTextEdit();
+            new_text_edit->appendPlainText(content);
             new_text_edit->setReadOnly(true);
             file_manager.current_file_name = filepath;
             file_manager.current_full_filepath = filepath;
@@ -780,6 +788,7 @@ void MainWindow::OpenFile(const QString &filepath, const bool &readAndSetDocumen
         if (AssemblyLoading) {
             content = debuggerBridge->WorkingContent;
             new_text_edit = new PlainTextEdit();
+            new_text_edit->appendPlainText(content);
             new_text_edit->setReadOnly(true);
             file_manager.current_file_name = filepath;
             file_manager.current_full_filepath = filepath;
@@ -788,8 +797,6 @@ void MainWindow::OpenFile(const QString &filepath, const bool &readAndSetDocumen
             // not valid file path, no more exceptions
             return;
         }
-    // handy goto statement to escape nested loop but not return;
-    end:;
     } else {
         new_text_edit = new PlainTextEdit();
         if (readAndSetDocument) {
@@ -797,6 +804,8 @@ void MainWindow::OpenFile(const QString &filepath, const bool &readAndSetDocumen
             new_text_edit->appendPlainText(content);
         }
     }
+// handy goto statement to escape nested loop but not return;
+end:;
 
     new_text_edit->setFilePath(filepath);
     new_text_edit->setFileExtension(file_manager.getFileExtension(file_manager.current_file_name));
@@ -809,7 +818,7 @@ void MainWindow::OpenFile(const QString &filepath, const bool &readAndSetDocumen
         }
 
     // ????????????????????????????????????????????????????????
-    if (currentWidget->document()->isEmpty() &&
+    if (new_text_edit->document()->isEmpty() &&
         Tabs->tabToolTip(Tabs->currentIndex()) == "" &&
         Tabs->tabText(Tabs->currentIndex()) == NEW_TAB_NAME) {
 
@@ -817,8 +826,8 @@ void MainWindow::OpenFile(const QString &filepath, const bool &readAndSetDocumen
         delete Tabs->widget(Tabs->currentIndex());
     }
 
-    if (vertical_stack->currentIndex() != 5)// invitanion screen
-        showEditorView();                   // switch from Invitation Screen which is default
+    // we definitely have a new tab
+    showEditorView();// switch from Invitation Screen which is default
 
     // tab
     // icons for tab, like in file view
@@ -1315,8 +1324,8 @@ void MainWindow::slotStepOut() {
 
 // this might go only through containBlock and decide to create or remove
 void MainWindow::slotToggleBreakPoint() {
-    QString filename = currentWidget->getFilePath();
-    int line = currentWidget->getCursorPosition().y();
+    const QString filename = currentWidget->getFilePath();
+    const int line = currentWidget->getCursorPosition().y();
     // in edit
     bool created = currentWidget->toggleBreakPoint(line);
 
@@ -1349,8 +1358,8 @@ void MainWindow::slotDeleteBreakPoint(const int &line) {
 }
 
 void MainWindow::slotSetBreakpointAtLine() {
-    QString filename = currentWidget->getFilePath();
-    int line = currentWidget->getCursorPosition().y();
+    const QString filename = currentWidget->getFilePath();
+    const int line = currentWidget->getCursorPosition().y();
 
     // in debugger
     if (!filename.isEmpty()) {
@@ -1383,7 +1392,7 @@ void MainWindow::slotOpenCppSample(QListWidgetItem *item) {
 
     for (int i = 0; i < num_files; i++) {
         SampleLoading = true;
-        education->WorkingContent = education->cpp_code_samples[index].content[i];
+        education->WorkingContent = education->cpp_code_samples[index].content[i];// index might be out of range if not filled all samples !!!!!
         OpenFile(education->cpp_code_samples[index].fileNames[i]);
         SampleLoading = false;
     }

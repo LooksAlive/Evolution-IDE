@@ -99,14 +99,14 @@ QTextBlock PlainTextEdit::firstVisibleBlockProxy() const {
 }
 
 
-void PlainTextEdit::setCursorPosition(const int &row, const int &col)
-{
-    if(!isReadOnly()){
+void PlainTextEdit::setCursorPosition(const int &x, const int &y) {
+    // no idea why -1 for both coords, but works that way ... in searching
+    if (!isReadOnly()) {
         QTextCursor cursor = textCursor();
-        cursor.setPosition(document()->findBlockByNumber(row).position());
+        cursor.setPosition(document()->findBlockByLineNumber(y - 1).position());
         cursor.movePosition(QTextCursor::NextCharacter,
                             QTextCursor::MoveAnchor,
-                            col);
+                            x - 1);
         setTextCursor(cursor);
         ensureCursorVisible();
     }
@@ -123,30 +123,30 @@ void PlainTextEdit::setCursorPosition(const int &row, const int &col)
 }
 
 // cursor
-void PlainTextEdit::setCursorPosition(QTextCursor &cursor, const int &row, const int &col) {
-    cursor.setPosition(document()->findBlockByNumber(row).position());
-    cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, col);
+void PlainTextEdit::setCursorPosition(QTextCursor &cursor, const int &x, const int &y) {
+    cursor.setPosition(document()->findBlockByNumber(y - 1).position());
+    cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, x - 1);
 }
 
 QPoint PlainTextEdit::getCursorPosition() {
     QTextCursor cursor = textCursor();
     // there is no 0 col or row in view but it is acts like it is
-    const int row = cursor.blockNumber() + 1;
-    const int col = cursor.columnNumber() + 1;
+    const int y = cursor.blockNumber() + 1;
+    const int x = cursor.columnNumber() + 1;
 
-    return QPoint(row, col);
+    return QPoint(x, y);
 }
 
 QPoint PlainTextEdit::getCursorPosition(QTextCursor &cursor) {
     // there is no 0 col or row in view but it is acts like it is
-    const int row = cursor.blockNumber() + 1;
-    const int col = cursor.columnNumber() + 1;
+    const int y = cursor.blockNumber() + 1;
+    const int x = cursor.columnNumber() + 1;
 
-    return QPoint(row, col);
+    return QPoint(x, y);
 }
 
 void PlainTextEdit::setCursorAtLine(const int &line) {
-    setCursorPosition(line, 1);// +1 ; yet no idea how ? jumps as it wants
+    setCursorPosition(1, line);// +1 ; yet no idea how ? jumps as it wants
 }
 
 // text manipulation
@@ -169,12 +169,24 @@ QString PlainTextEdit::getLineUnderCursor(){
     return line;
 }
 
-QString PlainTextEdit::getLineContent(const int &row) {
-    setCursorPosition(row, 1);
+QString PlainTextEdit::getLineUnderCursor(QTextCursor &cursor) {
+    cursor.select(QTextCursor::LineUnderCursor);
+    QString line = cursor.selectedText();
+    cursor.clearSelection();
+    return line;
+}
+
+QString PlainTextEdit::getLineContent(const int &row, const bool &setCursor) {
+    if (!setCursor) {
+        QTextCursor cursor = textCursor();
+        setCursorPosition(cursor, 1, row);
+        return getLineUnderCursor(cursor);
+    }
+    setCursorPosition(1, row);
     return getLineUnderCursor();
 }
 
-void PlainTextEdit::selectWordUnderCursor(){
+void PlainTextEdit::selectWordUnderCursor() {
     QTextCursor cur = textCursor();
     cur.movePosition(QTextCursor::StartOfWord, QTextCursor::MoveAnchor);
     cur.movePosition(QTextCursor::EndOfWord, QTextCursor::KeepAnchor);
@@ -250,10 +262,10 @@ void PlainTextEdit::toggleComment(){
             cur.setPosition(endSelection);
             cur.movePosition(QTextCursor::EndOfLine, QTextCursor::MoveAnchor);
             setTextCursor(cur);
-            QString line = getLineUnderCursor();
+            QString line2 = getLineUnderCursor();
 
-            if(line.endsWith(commentEnd)){
-                for(int i=0; i < commentEnd.length(); i++){
+            if (line2.endsWith(commentEnd)) {
+                for (int i = 0; i < commentEnd.length(); i++) {
                     cur.deletePreviousChar();
                 }
             }
@@ -264,9 +276,9 @@ void PlainTextEdit::toggleComment(){
             cur.setPosition(endSelection);
             cur.movePosition(QTextCursor::EndOfLine, QTextCursor::MoveAnchor);
             setTextCursor(cur);
-            QString line = getLineUnderCursor();
+            QString line2 = getLineUnderCursor();
 
-            if(!line.endsWith(commentEnd)){
+            if (!line2.endsWith(commentEnd)) {
                 cur.insertText(commentEnd);
             }
         }
@@ -465,7 +477,7 @@ void PlainTextEdit::autoEnterTextIndentation() {
         setTextCursor(cursor);
         return;
     } else {
-        // no change, needed, do not set cursor so nothing really happend
+        // no change, needed, do not set cursor so nothing really happened
         //cursor.movePosition(QTextCursor::NextBlock, QTextCursor::MoveAnchor);
         //setTextCursor(cursor);
     }
@@ -619,7 +631,7 @@ void PlainTextEdit::findStoreAndSelectAll(const QString &search, const QTextDocu
     QTextCursor cursor = textCursor();
     //extra_selections_search_results.setSharable(true);
     // set to start, 1 file search
-    setCursorPosition(cursor, 0, 0);
+    setCursorPosition(cursor, 1, 1);
 
     QColor highlight(Qt::darkRed);
     highlight.setAlpha(25);
@@ -627,23 +639,18 @@ void PlainTextEdit::findStoreAndSelectAll(const QString &search, const QTextDocu
     // results do not contain search text, it simply got where it is used and parsed as argument
     while (find(cursor, search, find_options)) {
         QTextEdit::ExtraSelection selection;
-        searchResult search_result_data;
 
         selection.format.setBackground(highlight);
         selection.cursor = cursor;
         //selection.format.setProperty(QTextCharFormat::FullWidthSelection, true);
-        qDebug() << selection.cursor.selectedText();
+        //qDebug() << selection.cursor.selectedText();
         extra_selections_search_results.append(selection);
         // !!!!!!!!!! clear it after append !!!!!!!!!!!!!
         selection.cursor.clearSelection();
 
         // get data
-        QPoint point = getCursorPosition(cursor);
-        search_result_data.fileName = filepath;
-        search_result_data.row = point.x();
-        search_result_data.col = point.y();
-        // later search_results for multiple file search
-        search_results.push_back(search_result_data);
+        search_results.push_back(getCursorPosition(cursor));
+        // qDebug() << getCursorPosition(cursor);
     }
     // set position we came from
     updateExtraSelections();
@@ -818,7 +825,7 @@ QString PlainTextEdit::getFilePath(){
 }
 
 bool PlainTextEdit::toggleBreakPoint(const int& line) const {
-    if(BreakpointArea->containBlock(line)){
+    if (BreakpointArea->containBlock(line - 1)) {
         return false;
     }
     return true;
@@ -905,7 +912,7 @@ void PlainTextEdit::searchPairsSelections(QTextCursor &cursor, const QString &fi
 void PlainTextEdit::setLineSelection(const int &line, const PlainTextEdit::lineSelection& type, const bool& removeAll) {
     QTextEdit::ExtraSelection selection;
     QTextCursor cursor = textCursor();
-    setCursorPosition(cursor, line, 0);
+    setCursorPosition(cursor, 1, line);
     selection.cursor = cursor;
     QColor color;
     selection.format.setBackground(color);
@@ -972,7 +979,7 @@ void PlainTextEdit::slotCreateSample() {
 }
 
 void PlainTextEdit::slotToggleBreakPoint() {
-    BreakpointArea->containBlock(getCursorPosition().y());
+    BreakpointArea->containBlock(getCursorPosition().y() - 1);
 }
 
 void PlainTextEdit::formatFile() const {
@@ -1071,14 +1078,13 @@ void PlainTextEdit::searchByMouseTouch() {
         if (wordUnderCursor != "" && wordUnderCursor != ";" && wordUnderCursor != "/" && wordUnderCursor != "\\" &&
             wordUnderCursor != ":" && wordUnderCursor != "::" && wordUnderCursor != "\'" && wordUnderCursor != "\"") {
             //extra_selections_search_touched_results.setSharable(true);
-            setCursorPosition(cursor, 0, 0);
+            setCursorPosition(cursor, 1, 1);
 
             QColor highlight = Qt::darkGreen;
             highlight.setAlpha(25);
             // results do not contain search text, it is simply got where it is used and parsed as argument
             while (find(cursor, wordUnderCursor, QTextDocument::FindWholeWords)) {
                 QTextEdit::ExtraSelection selection;
-                searchResult search_result_data;
 
                 selection.cursor = cursor;
                 selection.format.setBackground(highlight);
@@ -1389,8 +1395,8 @@ void LineNumberArea::paintEvent(QPaintEvent *e)
             font.setFamily(m_Edit->font().family());
             font.setPointSize(m_Edit->font().pointSize());
             if (m_Edit->textCursor().blockNumber() == i) {
-                painter.fillRect(box, palette().color(QPalette::Highlight));
-                painter.setPen(palette().color(QPalette::HighlightedText));
+                //painter.fillRect(box, palette().color(QPalette::Highlight));
+                //painter.setPen(palette().color(QPalette::HighlightedText));
                 font.setWeight(QFont::Bold);
             } else {
                 font.setWeight(QFont::Normal);

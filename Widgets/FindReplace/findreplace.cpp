@@ -174,7 +174,7 @@ void FindReplaceWidget::getOptionsAndTexts()
     }
 }
 
-void FindReplaceWidget::savePreview() {
+void FindReplaceWidget::savePreview() const {
     FileDirManager file_manager;
     file_manager.write(temp_search_result_path, preview->toPlainText().toLatin1().data());
 }
@@ -189,40 +189,44 @@ void FindReplaceWidget::searchEverywhere() {
     results->clear();
     selections.clear();
     MultifileSearchResults.clear();
-    search_text = temp_search_text_everywhere;
+    SearchFilesPaths.clear();
+    temp_search_text_everywhere = search_text;
 
     FileDirManager file_manager;
     // search all files, help with PlainTextEdit methods by changing preview
     for (int i = 0; i < AllFiles.length(); i++) {
         const QString content = file_manager.read(AllFiles[i]);
-        preview->appendPlainText(content);
-        preview->setFilePath(AllFiles[i]);// needed for findStoreAndSelectAll[0] item which is filepath
+        preview->setPlainText(content);
         preview->findStoreAndSelectAll(search_text, find_options);
         if (preview->search_results.empty()) {
             continue;// continue with another file
         }
-        // spaces are crytical here, we do not want to add some " "
+        preview->setFilePath(AllFiles[i]);// needed for findStoreAndSelectAll[0] item which is filepath
+
+        MultifileSearchResults.push_back(preview->search_results);
+        SearchFilesPaths.push_back(AllFiles[i]);
+        selections.push_back(preview->extra_selections_search_results);
+        // spaces are critical here, we do not want to add some " "
         const QString Stag = "<span ";
         const QString Style = "style=color:orange;";
         const QString Mtag = " >";
         const QString Etag = "</span>";
 
-        MultifileSearchResults.push_back(preview->search_results);
-        selections.push_back(preview->extra_selections_search_results);
         // fill view
         auto *file = new QTreeWidgetItem();
-        file->setText(0, preview->search_results[0].fileName);
+        file->setText(0, QFileInfo(AllFiles[i]).fileName());
+        file->setToolTip(0, AllFiles[i]);
         results->addTopLevelItem(file);
         for (const auto &elem : preview->search_results) {
-            QString row_col = QString::number(elem.row) + ":" + QString::number(elem.col);
-            QString line_content = preview->getLineContent(elem.row);
+            QString row_col = QString::number(elem.y()) + ":" + QString::number(elem.x());
+            QString line_content = preview->getLineContent(elem.y(), false);
             // append html (highlight background for searched text)
-            const QString start = line_content.mid(0, elem.col);
-            const QString end = line_content.mid(start.length(), line_content.length());
+            const QString start = line_content.mid(0, elem.x());
+            const QString end = line_content.mid(elem.x(), line_content.length());
 
             line_content = start + Stag + Style + Mtag + search_text + Etag + end;
             auto *pos = new QTreeWidgetItem();
-            pos->setText(0, line_content + "    " + row_col);
+            pos->setText(0, line_content + " &nbsp;&nbsp; " + row_col);
             file->addChild(pos);
         }
     }
@@ -244,44 +248,47 @@ void FindReplaceWidget::slotNext() {
     }
 
     if (search_text == temp_search_text) {// on the begining "" != "00"
+        m_Edit->findNext(search_text, find_options);
         return;
     }
 
     selections.clear();
     MultifileSearchResults.clear();
+    SearchFilesPaths.clear();
     results->clear();
     temp_search_text = search_text;
 
     m_Edit->findStoreAndSelectAll(search_text, find_options);
-    selections.push_back(m_Edit->extra_selections_search_results);// selections[0]
 
     if (m_Edit->search_results.empty()) {
         //m_Edit->findNext(search_text, find_options);
         labelOccurences->setText("0/0");
         return;
     }
-    // spaces are crytical here, we do not want to add some " "
+    //qDebug() << m_Edit->search_results;
+    selections.push_back(m_Edit->extra_selections_search_results);// selections[0]
+    // spaces are critical here, we do not want to add some " "
     const QString Stag = "<span ";
     const QString Style = "style=color:orange;";
     const QString Mtag = " >";
     const QString Etag = "</span>";
 
     auto *file = new QTreeWidgetItem();
-    file->setText(0, m_Edit->search_results[0].fileName);
-    results->addTopLevelItem(file);
+    file->setText(0, QFileInfo(m_Edit->getFilePath()).fileName());
+    file->setToolTip(0, m_Edit->getFilePath());
     for (const auto &elem : m_Edit->search_results) {
-        QString row_col = QString::number(elem.row) + ":" + QString::number(elem.col);
-        QString line_content = m_Edit->getLineContent(elem.row);
+        QString row_col = QString::number(elem.y()) + ":" + QString::number(elem.x());
+        QString line_content = preview->getLineContent(elem.y(), false);
         // append html (highlight background for searched text)
-        const QString start = line_content.mid(0, elem.col);
-        const QString end = line_content.mid(start.length(), line_content.length());
+        const QString start = line_content.mid(0, elem.x() /* - search_text.length()*/);
+        const QString end = line_content.mid(elem.x() /*start.length()*/, line_content.length());
 
         line_content = start + Stag + Style + Mtag + search_text + Etag + end;
-        qDebug() << line_content;
         auto *pos = new QTreeWidgetItem();
-        pos->setText(0, line_content + "    " + row_col);
+        pos->setText(0, line_content + " &nbsp;&nbsp; " + row_col);
         file->addChild(pos);
     }
+    results->addTopLevelItem(file);
     results->collapseAll();
 
     m_Edit->findNext(search_text, find_options);
@@ -300,7 +307,6 @@ void FindReplaceWidget::slotPrevious() {
     find_options |= QTextDocument::FindBackward;// flag for previous search
     m_Edit->findNext(search_text, find_options);
 
-    m_Edit->findNext(search_text, find_options);
     // decrease labelOccurences
     const QString label = labelOccurences->text();
     const int c = label.indexOf("/");
@@ -337,36 +343,42 @@ void FindReplaceWidget::forwardToResult(QTreeWidgetItem *item, int column) {
     const int filepath_row = results->indexOfTopLevelItem(item->parent());
     const int row = item->parent()->indexOfChild(item);
 
-    m_Edit->setCursorPosition(m_Edit->search_results[row].row, m_Edit->search_results[row].col);
+    m_Edit->setCursorPosition(m_Edit->search_results[row].x(), m_Edit->search_results[row].y());
 }
 
 void FindReplaceWidget::slotShowPreviewResult(QTreeWidgetItem *item, int column) {
     Q_UNUSED(column);// basically it is 0 in code, but we have only 1 column soo
     // we have to figure out in what file result is, if there are more of them
+
+    // parent item clicked, it expands tree -> cannot continue
+    if (!item->parent()) {
+        return;
+    }
+
     const int filepath_row = results->indexOfTopLevelItem(item->parent());
     const int row = item->parent()->indexOfChild(item);
     const QString filepath = results->topLevelItem(filepath_row)->text(0);
 
     if (SearchEverywhere) {
         if (filepath == temp_search_result_path) {
-            preview->setCursorPosition(temp_pos.y(), temp_pos.x());
+            preview->setCursorPosition(temp_pos.x(), temp_pos.y());
             preview->extra_selections_search_results = selections[tempSelectionPos];
         }
 
         FileDirManager file_manager;
         // tree holds filepath
         const QString content = file_manager.read(filepath);
-        preview->appendPlainText(content);
+        preview->setPlainText(content);
         preview->setFilePath(filepath);
-        // iterate filepath, find our resuts for active filepath row
-        for (unsigned int i = 0; i < MultifileSearchResults.size(); i++) {
-            if (MultifileSearchResults[i][0].fileName == filepath) {
-                preview->setCursorPosition(MultifileSearchResults[i][row].row, MultifileSearchResults[i][row].col);
+        // iterate filepath, find our results for active filepath row
+        for (int i = 0; i < MultifileSearchResults.size(); i++) {
+            if (SearchFilesPaths[i] == filepath) {
+                preview->setCursorPosition(MultifileSearchResults[i][row].x(), MultifileSearchResults[i][row].y());
                 preview->extra_selections_search_results = selections[i];
                 tempSelectionPos = i;
-                temp_pos.setX(MultifileSearchResults[i][row].col);
-                temp_pos.setY(MultifileSearchResults[i][row].row);
-                break;// we have found file and posotions
+                temp_pos.setX(MultifileSearchResults[i][row].x());
+                temp_pos.setY(MultifileSearchResults[i][row].y());
+                break;// we have found file and positions
             }
         }
         temp_search_result_path = results->topLevelItem(filepath_row)->text(0);
@@ -376,9 +388,19 @@ void FindReplaceWidget::slotShowPreviewResult(QTreeWidgetItem *item, int column)
     // current file search
     // document pointer updates both views according to changes in each of them, tab close requests
     // handles saving on their own
-    preview->setDocument(m_Edit->document());
+
+    // user might have removed tab, we have to be sure
+    // TODO: solve this outside to open a new tab
+    if (m_Edit->document()) {
+        preview->setDocument(m_Edit->document());
+    } else {
+        FileDirManager file_manager;
+        // preview is still the same
+        const QString content = file_manager.read(preview->getFilePath());
+        m_Edit->setPlainText(content);
+    }
     preview->setFilePath(m_Edit->getFilePath());
-    preview->setCursorPosition(m_Edit->search_results[row].row, m_Edit->search_results[row].col);
+    preview->setCursorPosition(m_Edit->search_results[row].x(), m_Edit->search_results[row].y());
     preview->extra_selections_search_results = selections[0];// SearchCurrentFile
     preview->updateExtraSelections();
 }

@@ -6,36 +6,18 @@
 #include <vector>
 
 #include <QDir>// only for build section to find out if cmake-build already exists...
+#include <QProcess>
 #include <QString>
 #include <QThread>
 
 #include "Widgets/ConsoleDock/consoledock.h"
-
-class ExecutionHandler : public QObject {
-    Q_OBJECT
-public:
-    explicit ExecutionHandler(QObject *parent = nullptr);
-    ~ExecutionHandler() = default;
-
-    // actual command to run
-    std::string args;
-
-public slots:
-    // second argument represents output widget to append data constantly
-    // ????????? will there be any conflict with edit class ?? since it is Qt
-    void ExecuteCommand();
-
-signals:
-    void addMessage(const QString &msg);
-};
-
 
 class CommandLineExecutor : public QObject {
     Q_OBJECT
 public:
     explicit CommandLineExecutor(QObject *parent = nullptr);
 
-    ~CommandLineExecutor() = default;
+    ~CommandLineExecutor();
 
     enum BuildMode {
         Debug = 1,
@@ -67,18 +49,12 @@ public:
 private:
     static void DetermineCompilerVersion(const std::string &tool);
 
-    // consider only stack allocation
-    QThread *ExecutionThread;
-    ExecutionHandler *executionHandler;
-
     ConsoleDock *edit;
 
+    QProcess *process;
+
 private slots:
-    void setMessage(const QString &msg) const;
+    void slotSetOutput();
 };
-
-
-
-
 
 #endif // COMMANDLINEEXECUTOR_H

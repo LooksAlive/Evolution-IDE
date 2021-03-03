@@ -1,28 +1,23 @@
 #include "commandlineexecutor.h"
+#include <QDebug>
 #include <QSettings>
 #include <QString>
 #include <csignal>
 
-ExecutionHandler::ExecutionHandler(QObject *parent) : QObject(parent) {}
+CommandLineExecutor::CommandLineExecutor(QObject *parent) : QObject(parent) {
 
-void ExecutionHandler::ExecuteCommand() {
-    FILE *stream;
-    const int max_buffer = 256;
-    char buffer[max_buffer];
-
-    stream = popen(args.c_str(), "r");
-    if (stream) {
-        while (!feof(stream)) {
-            if (fgets(buffer, max_buffer, stream) != NULL) {
-                emit addMessage(buffer);
-            }
-        }
-        pclose(stream);
-    }
+    process = new QProcess(this);
+    connect(process, SIGNAL(finished(int, QProcess::ExitStatus)), process, SLOT(kill()));
+    connect(process, SIGNAL(readyReadStandardOutput()), this, SLOT(slotSetOutput()));
+    connect(process, SIGNAL(readyReadStandardError()), this, SLOT(slotSetOutput()));
 }
 
-
-CommandLineExecutor::CommandLineExecutor(QObject *parent) : QObject(parent) {}
+CommandLineExecutor::~CommandLineExecutor() {
+    //delete buildHandler;
+    //BuildThread->deleteLater();
+    //delete executionHandler;
+    //ExecutionThread->deleteLater();
+}
 
 std::string CommandLineExecutor::ExecuteSimpleCommand(const std::string &cmd) {
     std::string data;
@@ -70,66 +65,63 @@ void CommandLineExecutor::DetermineCompilerVersion(const std::string &tool){
 
 void CommandLineExecutor::Build(const bool &cmake, const std::string &ProjectRootDir, ConsoleDock *editor) {
     edit = editor;
-    ExecutionThread = new QThread(this);
-    executionHandler = new ExecutionHandler();
 
-    connect(ExecutionThread, &QThread::started, executionHandler, &ExecutionHandler::ExecuteCommand);
-    connect(ExecutionThread, &QThread::finished, this, &QObject::deleteLater);
-
-    connect(executionHandler, SIGNAL(ExecutionHandler::addMessage(const QString &)), this, SLOT(setMessage(const QString &)));
-    executionHandler->moveToThread(ExecutionThread);
     if (cmake) {// later -> cmake only generates file(cmake ..), so real build (make -j2) separate later,
         // also num of cpu cores as argument to build + add them to non cmake build
         std::string cmake_build;
         QDir dir;
         if (dir.exists(QString::fromStdString(ProjectRootDir) + "/cmake-build")) {
-            cmake_build = "cd " + ProjectRootDir + "/cmake-build" + " && cmake .. && make -j2 ";
+            cmake_build = "cd " + ProjectRootDir + "/cmake-build" + " && /bin/cmake .. && /bin/make -j2 ";
             if (edit) {
-                edit->processText(cmake_build.c_str());
+                edit->ConsoleOutput->append(cmake_build.c_str());
             }
-        } else {
-            cmake_build += "mkdir " + ProjectRootDir + "/cmake-build && cd " + ProjectRootDir + "/cmake-build " +
-                           " && cmake .. && make -j2";
-            if (edit) {
-                edit->processText(cmake_build.c_str());
-            }
-        }
-        executionHandler->args = cmake_build;
-        ExecutionThread->start();
 
-        //ExecuteCommand(cmake_build, edit);
+            process->setWorkingDirectory(QString::fromStdString(ProjectRootDir) + "/cmake-build");
+            process->start("/bin/cmake", QStringList() << "..", QProcess::ReadWrite);
+            if (!process->waitForFinished())
+                qDebug() << "Process failed: " << process->errorString();
+            process->start("/bin/make", QStringList() << "-j2", QProcess::ReadWrite);
+            if (!process->waitForFinished())
+                qDebug() << "Process failed: " << process->errorString();
+
+        } else {
+            cmake_build += "/bin/mkdir " + ProjectRootDir + "/cmake-build && cd " + ProjectRootDir + "/cmake-build " +
+                           " && /bin/cmake .. && /bin/make -j2";
+            if (edit) {
+                edit->ConsoleOutput->append(cmake_build.c_str());
+            }
+
+            process->start("/bin/mkdir", QStringList() << QString::fromStdString(ProjectRootDir) + "/cmake-build", QProcess::ReadWrite);
+            process->waitForFinished();
+            process->setWorkingDirectory(QString::fromStdString(ProjectRootDir) + "/cmake-build");
+            process->start("/bin/cmake", QStringList() << "..", QProcess::ReadWrite);
+            if (!process->waitForFinished())
+                qDebug() << "Process failed: " << process->errorString();
+            process->start("/bin/make", QStringList() << "-j2", QProcess::ReadWrite);
+            if (!process->waitForFinished())
+                qDebug() << "Process failed: " << process->errorString();
+        }
+
     } else {
         std::string compile_args;
-        executionHandler->args = compile_args;
-        ExecutionThread->start();
         // string will be returned into console
-        //ExecuteCommand(compile_args, edit);
     }
 }
 void CommandLineExecutor::Execute(const bool &cmake, const std::string &executable_path, ConsoleDock *editor) {
     edit = editor;
     std::string cmake_exec;
-    ExecutionThread = new QThread(this);
-    executionHandler = new ExecutionHandler();
-
-    connect(ExecutionThread, &QThread::started, executionHandler, &ExecutionHandler::ExecuteCommand);
-    connect(ExecutionThread, &QThread::finished, this, &QObject::deleteLater);
-
-    connect(executionHandler, SIGNAL(ExecutionHandler::addMessage(const QString &)), this, SLOT(setMessage(const QString &)));
-    executionHandler->moveToThread(ExecutionThread);
 
     if (cmake) {
         cmake_exec += executable_path;// ProjectRootDir;   Project_Dir + "/cmake-build/" + executable_name
         if (edit) {
-            edit->processText(cmake_exec.c_str());
+            edit->ConsoleOutput->append(cmake_exec.c_str());
         }
 
-        executionHandler->args = cmake_exec;
-        ExecutionThread->start();
+        process->start(QString::fromStdString(cmake_exec), QStringList(), QProcess::ReadWrite);
+        if (!process->waitForFinished())
+            qDebug() << "Process failed: " << process->errorString();
 
     } else {
-        executionHandler->args = cmake_exec;
-        ExecutionThread->start();
         //ExecuteCommand(executable_path, edit);
     }
 }
@@ -196,6 +188,11 @@ void CommandLineExecutor::killProcess(const int &proc_id) {
     kill(proc_id, SIGKILL);
 }
 
-void CommandLineExecutor::setMessage(const QString &msg) const {
-    edit->processText(msg);
+void CommandLineExecutor::slotSetOutput() {
+    qDebug() << "in slot !!!";
+    if (!process->waitForFinished())
+        qDebug() << "Process failed: " << process->errorString();
+
+    edit->processText(QString(process->readAllStandardOutput()));
+    edit->processText(QString(process->readAllStandardError()));
 }
