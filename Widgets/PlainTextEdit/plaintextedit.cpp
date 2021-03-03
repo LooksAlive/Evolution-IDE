@@ -1385,18 +1385,18 @@ void LineNumberArea::paintEvent(QPaintEvent *e)
     int i = block.blockNumber();
     int top = static_cast<int>(m_Edit->blockBoundingGeometryProxy(block).translated(m_Edit->contentOffsetProxy()).top());
     int bottom = top + static_cast<int>(m_Edit->blockBoundingRectProxy(block).height());
-    QRect full = e->rect();
+    const QRect full = e->rect();
     painter.fillRect(full, palette().color(QPalette::Base));
     while (block.isValid() && (top <= full.bottom())) {
         if (block.isVisible() && (bottom >= full.top())) {
             // !!! since BreakPoint is on left, i need to move first x pos, or on left -> change break area x pos
-            QRect box(0, top, width(), m_Edit->fontMetrics().height());
+            const QRect box(0, top, width(), m_Edit->fontMetrics().height());
             QFont font = painter.font();
             font.setFamily(m_Edit->font().family());
             font.setPointSize(m_Edit->font().pointSize());
             if (m_Edit->textCursor().blockNumber() == i) {
-                //painter.fillRect(box, palette().color(QPalette::Highlight));
-                //painter.setPen(palette().color(QPalette::HighlightedText));
+                painter.fillRect(box, palette().color(QPalette::Highlight));
+                painter.setPen(palette().color(QPalette::HighlightedText));
                 font.setWeight(QFont::Bold);
             } else {
                 font.setWeight(QFont::Normal);
@@ -1506,7 +1506,7 @@ QSize BreakPointArea::sizeHint() const {
 
 void BreakPointArea::mouseEvent(QMouseEvent *event) {
     QTextCursor cursor = m_Edit->cursorForPosition(QPoint(0, event->pos().y()));
-    QTextBlock touched_block = cursor.block();
+    const QTextBlock touched_block = cursor.block();
     cursor.setVisualNavigation(true);
     if ((event->type() == QEvent::MouseButtonPress) && (event->button() == Qt::LeftButton)) {
         // can be called only here, before push
@@ -1530,7 +1530,7 @@ void BreakPointArea::paintEvent(QPaintEvent *event) {
     int top = static_cast<int>(m_Edit->blockBoundingGeometryProxy(block).translated(m_Edit->contentOffsetProxy()).top());
     int bottom = top + static_cast<int>(m_Edit->blockBoundingRectProxy(block).height());
     // widget area rectangle
-    QRect area_rect = event->rect();
+    const QRect area_rect = event->rect();
     // while not all lines are painted, at the end increasing, checking if valid
     while (block.isValid() && (top <= area_rect.bottom())) {
         if (block.isVisible() && (bottom >= area_rect.top())) {

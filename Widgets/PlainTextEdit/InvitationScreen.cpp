@@ -45,5 +45,5 @@ void InvitationScreen::setInvitationMessage() {
     // font.setKerning(true);
     setFont(font);
     // setViewportMargins(200, 200, 200, 200);
-    document()->setDocumentMargin(200);
+    document()->setDocumentMargin(300);
 }

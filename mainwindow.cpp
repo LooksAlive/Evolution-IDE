@@ -43,8 +43,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     // Tabs->setFocus();
     // vertical_stack->setCurrentWidget(Tabs);
     // equivalent to :
-    // showEditorView();
-    showInvitationScreen();
+    showEditorView();
+    // showInvitationScreen();
 
     //Tabs->currentWidget()->setFocus();
     highlighter = new Highlighter(":/highlights/languages.xml", this);
@@ -149,7 +149,7 @@ void MainWindow::SetupVerticalBar() {
     vertical_stack->insertWidget(2, hexview);
     vertical_stack->insertWidget(3, binaryView);
     vertical_stack->insertWidget(4, Tabs);             // debuggerBridge
-    vertical_stack->insertWidget(5, invitation_screen);// helpfull, do not belong to this stack, but is there
+    vertical_stack->insertWidget(5, invitation_screen);// helpful, do not belong to this stack, but is there
 
     vertical_stack->setCurrentIndex(0);// start with editor
 
@@ -368,14 +368,13 @@ void MainWindow::SetupDockWidgetsLayering() {
 
 // switching views
 void MainWindow::showEditorView() {
-    // not really necessary, but good to have it
-    /*
-    if (Tabs->count() == 0) {
-        // showInvitationScreen();
-        // invitation screen is still ON
+    // empty tab has count -1 probably :)  --> also show only invitation, not empty tab !
+    if (Tabs->count() == -1) {
+        // invitation screen is still ON, or we could move from somewhere else, to be sure
+        showInvitationScreen();
         return;
     }
-    */
+
     ShowHiddenDockWidgets();
     // might be visible anyway, if debug view was...
     debuggerDock->hide();
