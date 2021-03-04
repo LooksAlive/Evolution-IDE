@@ -26,7 +26,7 @@ public:
         Error
     };
 
-    void addItem(const QString &content, const Background &background);
+    void addItem(const QString &content, const Background &background) const;
 
 private:
     void createWindow();

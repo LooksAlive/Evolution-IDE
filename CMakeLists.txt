@@ -230,8 +230,8 @@ set(SOURCE_FILES
         Widgets/Settings/CmakeGenerator/cmakegenerator.h
         Widgets/Settings/CmakeGenerator/cmakegeneratorwidget.cpp
         Widgets/Settings/CmakeGenerator/cmakegeneratorwidget.h
-        Widgets/Settings/git/gitbridge.cpp
-        Widgets/Settings/git/gitbridge.h
+        Widgets/Git/gitbridge.cpp
+        Widgets/Git/gitbridge.h
         Widgets/Settings/git/gitwidget.cpp
         Widgets/Settings/git/gitwidget.h
         icons/IconFactory.h
@@ -262,7 +262,7 @@ set(SOURCE_FILES
         Debugger/DebuggerDock.cpp
         Debugger/DebuggerDock.h
         Debugger/DebugWatchDock.cpp
-        Debugger/DebugWatchDock.h Widgets/SearchBox/SearchBox.cpp Widgets/SearchBox/SearchBox.h Delegate.cpp Delegate.h Widgets/CodeInfoDock/RefactoringDock.cpp Widgets/CodeInfoDock/RefactoringDock.h Widgets/CodeInfoDock/LinterDock.cpp Widgets/CodeInfoDock/LinterDock.h Widgets/PlainTextEdit/InvitationScreen.cpp Widgets/PlainTextEdit/InvitationScreen.h)
+        Debugger/DebugWatchDock.h Widgets/SearchBox/SearchBox.cpp Widgets/SearchBox/SearchBox.h Delegate.cpp Delegate.h Widgets/CodeInfoDock/RefactoringDock.cpp Widgets/CodeInfoDock/RefactoringDock.h Widgets/CodeInfoDock/LinterDock.cpp Widgets/CodeInfoDock/LinterDock.h Widgets/PlainTextEdit/InvitationScreen.cpp Widgets/PlainTextEdit/InvitationScreen.h Widgets/Git/GitDock.cpp Widgets/Git/GitDock.h)
 
 
 
@@ -370,6 +370,8 @@ set(LLVM_LIBS
 
         )
 
+set(GIT_LIBS git2)
+
 link_directories(/usr/local/lib)
 
 add_executable(editor ${SOURCE_FILES} resources.qrc)
@@ -395,4 +397,4 @@ find_package( Qt5 REQUIRED
 set_target_properties(Qt5::Core PROPERTIES MAP_IMPORTED_CONFIG_COVERAGE "DEBUG")
 
 target_link_libraries(editor -Wl,--start-group Qt5::Widgets Qt5::Gui Qt5::Core Qt5::Xml Qt5::PrintSupport
-         ${SYSTEM_LIBS} ${LLVM_LIBS} ${CLANG_LIBS} ${LLDB_LIBS_SHARED} -Wl,--end-group)
+        ${SYSTEM_LIBS} ${LLVM_LIBS} ${CLANG_LIBS} ${LLDB_LIBS_SHARED} ${GIT_LIBS} -Wl,--end-group)

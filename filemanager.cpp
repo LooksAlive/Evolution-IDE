@@ -45,6 +45,7 @@ void FileDirManager::getFilesRecursively(const QString &Project_RootDir) {
                 executable_file_name = directories.fileName();
                 settings.setValue("Evolution/executable_path", executable_file_path);
                 settings.setValue("Evolution/executable_name", executable_file_name);
+                continue;
             } else {
                 continue;
             }
@@ -67,9 +68,10 @@ void FileDirManager::getFilesRecursively(const QString &Project_RootDir) {
             executable_file_name = directories.fileName();
             settings.setValue("Evolution/executable_path", executable_file_path);
             settings.setValue("Evolution/executable_name", executable_file_name);
+            continue;
         }
         if (directories.fileInfo().isDir() && directories.fileInfo().dir().dirName() == ".git") {
-            settings.setValue("Evolution/git_dir", directories.filePath().remove(0, 2));
+            settings.setValue("Evolution/git_path", directories.filePath().remove(0, 2));
         }
         if (directories.fileInfo().isFile() && directories.fileInfo().fileName() == ".clang-format") {
             settings.setValue("Evolution/clang-format_path", directories.filePath().remove(0, 2));

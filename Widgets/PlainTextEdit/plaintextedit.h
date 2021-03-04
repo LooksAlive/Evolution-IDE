@@ -90,6 +90,8 @@ public:
 
     // text manipulation
     void selectLineUnderCursor();
+    // only pointer
+    void selectLineUnderCursor(QTextCursor &cursor);
     // will set cursor
     QString getLineUnderCursor();
     // only pointer
@@ -119,8 +121,10 @@ public:
     // updates extra selections, and set all of them in update requests, !! merges all of them together !!
     // redundancy and updating each selection list is done within functions/slots they are filled ...  .clear()
     void updateExtraSelections();
+    // in search
+    bool doNotSetSelections = false;
     QList<QTextEdit::ExtraSelection> extra_selections_search_results;
-    QList<QTextEdit::ExtraSelection> extra_selections_search_touched_results;  // also {} contained here
+    QList<QTextEdit::ExtraSelection> extra_selections_search_touched_results;// also {} contained here
     // current word
     QString wordUnderCursor;
     // word after next mouse touch
@@ -185,6 +189,8 @@ private:
 
     // file associated with editor
     QString filepath;
+
+    QTimer *touchTimer;
 
 public slots:
 

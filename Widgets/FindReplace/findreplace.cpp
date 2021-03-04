@@ -107,6 +107,9 @@ void FindReplaceWidget::createWindow() {
     replaceall->setIcon(QIcon(IconFactory::Replace));
     inCurrentFile->setIcon(QIcon(IconFactory::CurrentFile));
     everywhere->setIcon(QIcon(IconFactory::AllFiles));
+    inCurrentFile->setCheckable(true);
+    everywhere->setCheckable(true);
+    inCurrentFile->setChecked(true);// defines default property with SearchCurrentFile = true
 
     // enter shortcut
     connect(LineEditFind, SIGNAL(returnPressed()), this, SLOT(slotNext()));
@@ -114,9 +117,8 @@ void FindReplaceWidget::createWindow() {
     connect(previous, SIGNAL(clicked()), this, SLOT(slotPrevious()));
     connect(replace, SIGNAL(clicked()), this, SLOT(slotReplace()));
     connect(replaceall, SIGNAL(clicked()), this, SLOT(slotReplaceAll()));
-    connect(inCurrentFile, &QAbstractButton::clicked, this, [=] { SearchCurrentFile = true; SearchEverywhere = false; inCurrentFile->setEnabled(false); everywhere->setEnabled(true); });
-    connect(everywhere, &QAbstractButton::clicked, this, [=] { SearchEverywhere = true; SearchCurrentFile = false; everywhere->setEnabled(false); inCurrentFile->setEnabled(true); });
-    everywhere->setEnabled(false);// defines default property with SearchCurrentFile = true
+    //connect(inCurrentFile, SIGNAL(toggled(bool)), this, SLOT(kjh()));
+    //connect(everywhere, SIGNAL(toggled(bool)), this, [=] { SearchEverywhere = true; SearchCurrentFile = false; everywhere->setEnabled(false); inCurrentFile->setEnabled(true); });
     TitleBar->addWidget(find_options_menu_button);
     TitleBar->addWidget(LineEditFind);
     TitleBar->addSeparator();
@@ -167,6 +169,12 @@ void FindReplaceWidget::getOptionsAndTexts()
     }
     // regex removed ...
 
+    // no tab for current file search, otherwise we do not need m_Edit
+    if (m_Tab->count() == 0) {
+        m_Edit = nullptr;
+        return;
+    }
+
     /* same_file == ""  --> means that file has no filepath yet (blank) */
     if (same_file != m_Tab->tabToolTip(m_Tab->currentIndex()) || same_file == "") {
         m_Edit = qobject_cast<PlainTextEdit *>(m_Tab->currentWidget());
@@ -176,7 +184,9 @@ void FindReplaceWidget::getOptionsAndTexts()
 
 void FindReplaceWidget::savePreview() const {
     FileDirManager file_manager;
-    file_manager.write(temp_search_result_path, preview->toPlainText().toLatin1().data());
+    if (preview->document()) {
+        file_manager.write(temp_search_result_path, preview->toPlainText().toLatin1().data());
+    }
 }
 
 void FindReplaceWidget::searchEverywhere() {
@@ -196,6 +206,10 @@ void FindReplaceWidget::searchEverywhere() {
     // search all files, help with PlainTextEdit methods by changing preview
     for (int i = 0; i < AllFiles.length(); i++) {
         const QString content = file_manager.read(AllFiles[i]);
+        qDebug() << content;
+        if (!preview) {
+            qDebug() << "!preview----------";
+        }
         preview->setPlainText(content);
         preview->findStoreAndSelectAll(search_text, find_options);
         if (preview->search_results.empty()) {
@@ -230,6 +244,7 @@ void FindReplaceWidget::searchEverywhere() {
             file->addChild(pos);
         }
     }
+    preview->clear();
     results->collapseAll();
 
     // m_Edit not effective here, it would open many tabs, let this behavior to view (clicks)
@@ -240,14 +255,17 @@ void FindReplaceWidget::searchEverywhere() {
 void FindReplaceWidget::slotNext() {
     // SearchCurrentFile
     getOptionsAndTexts();
-
     // TODO: consider new thread
-    if (SearchEverywhere) {
+    if (everywhere->isChecked()) {
         searchEverywhere();
         return;
     }
 
-    if (search_text == temp_search_text) {// on the begining "" != "00"
+    if (!m_Edit) {
+        return;
+    }
+
+    if (search_text == temp_search_text) {// on the beginning "" != "00"
         m_Edit->findNext(search_text, find_options);
         return;
     }
@@ -280,8 +298,8 @@ void FindReplaceWidget::slotNext() {
         QString row_col = QString::number(elem.y()) + ":" + QString::number(elem.x());
         QString line_content = preview->getLineContent(elem.y(), false);
         // append html (highlight background for searched text)
-        const QString start = line_content.mid(0, elem.x() /* - search_text.length()*/);
-        const QString end = line_content.mid(elem.x() /*start.length()*/, line_content.length());
+        const QString start = line_content.mid(0, elem.x());
+        const QString end = line_content.mid(elem.x(), line_content.length());
 
         line_content = start + Stag + Style + Mtag + search_text + Etag + end;
         auto *pos = new QTreeWidgetItem();
@@ -304,6 +322,9 @@ void FindReplaceWidget::slotNext() {
 
 void FindReplaceWidget::slotPrevious() {
     getOptionsAndTexts();
+    if (!m_Edit) {
+        return;
+    }
     find_options |= QTextDocument::FindBackward;// flag for previous search
     m_Edit->findNext(search_text, find_options);
 
@@ -317,21 +338,30 @@ void FindReplaceWidget::slotPrevious() {
     labelOccurences->setText(QString::number(num - 1) + "/" + QString::number(m_Edit->extra_selections_search_results.count()));
 }
 
-void FindReplaceWidget::slotReplace(){
+void FindReplaceWidget::slotReplace() {
     getOptionsAndTexts();
+    if (!m_Edit) {
+        return;
+    }
     m_Edit->replace(search_text, replace_text, find_options);
 }
 
-void FindReplaceWidget::slotReplaceAll()
-{
+void FindReplaceWidget::slotReplaceAll() {
     getOptionsAndTexts();
-    int occurrences = m_Edit->replaceAll(search_text, replace_text, find_options);
+    if (!m_Edit) {
+        return;
+    }
+    const int occurrences = m_Edit->replaceAll(search_text, replace_text, find_options);
     labelOccurences->setText(tr("Replace %1 occurrences of the search term.").arg(occurrences));
 }
 
 void FindReplaceWidget::slotVisible(bool visible) {
     if (!visible) {
         titleBarWidget()->setEnabled(true);// references were disabling/replacing this
+        // not in tab anymore, forcefully closed
+        if (!m_Edit) {
+            return;
+        }
         m_Edit->extra_selections_search_results.clear();
         m_Edit->updateExtraSelections();
     }
@@ -355,14 +385,25 @@ void FindReplaceWidget::slotShowPreviewResult(QTreeWidgetItem *item, int column)
         return;
     }
 
-    const int filepath_row = results->indexOfTopLevelItem(item->parent());
+    // const int filepath_row = results->indexOfTopLevelItem(item->parent());
     const int row = item->parent()->indexOfChild(item);
-    const QString filepath = results->topLevelItem(filepath_row)->text(0);
+    // const QString filepath = results->topLevelItem(filepath_row)->text(0);
+    const QString filepath = item->parent()->toolTip(0);// TOOLTIP is filepath, not text
+    qDebug() << filepath;
 
-    if (SearchEverywhere) {
+    if (everywhere->isChecked()) {
         if (filepath == temp_search_result_path) {
+            if (!temp_pos.x() || !temp_pos.y()) {
+                qDebug() << "!temp_pos.x() || !temp_pos.y() --------";
+            }
             preview->setCursorPosition(temp_pos.x(), temp_pos.y());
+            qDebug() << tempSelectionPos;
+            if (selections.empty()) {
+                qDebug() << "empty selections --------";
+            }
+            qDebug() << selections.size();
             preview->extra_selections_search_results = selections[tempSelectionPos];
+            preview->updateExtraSelections();
         }
 
         FileDirManager file_manager;
@@ -373,15 +414,19 @@ void FindReplaceWidget::slotShowPreviewResult(QTreeWidgetItem *item, int column)
         // iterate filepath, find our results for active filepath row
         for (int i = 0; i < MultifileSearchResults.size(); i++) {
             if (SearchFilesPaths[i] == filepath) {
+                qDebug() << "path is matching";
                 preview->setCursorPosition(MultifileSearchResults[i][row].x(), MultifileSearchResults[i][row].y());
+                preview->extra_selections_search_results.clear();
                 preview->extra_selections_search_results = selections[i];
                 tempSelectionPos = i;
                 temp_pos.setX(MultifileSearchResults[i][row].x());
                 temp_pos.setY(MultifileSearchResults[i][row].y());
                 break;// we have found file and positions
+            } else {
+                qDebug() << "path is NOT matching";
             }
         }
-        temp_search_result_path = results->topLevelItem(filepath_row)->text(0);
+        temp_search_result_path = filepath;
         return;
     }
 
@@ -407,4 +452,10 @@ void FindReplaceWidget::slotShowPreviewResult(QTreeWidgetItem *item, int column)
 
 void FindReplaceWidget::slotShowMenu(const QPoint &pos) {
     menu->exec(mapToGlobal(pos));
+}
+
+void FindReplaceWidget::inCurrentFileToggled(bool) {
+}
+
+void FindReplaceWidget::everywhereToggled(bool) {
 }

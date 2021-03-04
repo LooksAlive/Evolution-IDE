@@ -32,7 +32,7 @@ void LinterDock::createWindow() {
     setWidget(Items);
 }
 
-void LinterDock::addItem(const QString &content, const LinterDock::Background &background) {
+void LinterDock::addItem(const QString &content, const LinterDock::Background &background) const {
     auto *item = new QListWidgetItem();
     switch (background) {
         case Warning:

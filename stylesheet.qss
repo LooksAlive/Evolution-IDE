@@ -141,7 +141,7 @@ QToolButton:disabled{
   background-color: rgb(55, 55, 55);
 }
 QToolButton:checked{
-  background-color: rgb(85, 85, 85);
+    background-color: rgb(255, 0, 0);
 }
 
 QPushButton{

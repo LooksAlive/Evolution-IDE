@@ -51,8 +51,6 @@ public:
     // kinda tricky PlainTextEdit::search_results cannot be a type
     std::vector<std::vector<QPoint>> MultifileSearchResults;
     std::vector<QString> SearchFilesPaths;
-    bool SearchCurrentFile = true;
-    bool SearchingReferences = false;
 
     // references are set in data storage and as well in tree, but opening certain file by doubleClick
     // must be done from outside (tab, edit, file dock, ...)
@@ -63,6 +61,9 @@ public:
     // called whenever preview file changes to another
     void savePreview() const;
 
+    QToolButton *inCurrentFile;
+    QToolButton *everywhere;
+
 private:
     QHBoxLayout *MainLayout;
     QToolBar *TitleBar;
@@ -71,9 +72,6 @@ private:
     QToolButton *previous;
     QToolButton *replace;
     QToolButton *replaceall;
-
-    QToolButton *inCurrentFile;
-    QToolButton *everywhere;
 
     QToolButton *find_options_menu_button;
     QAction *caseSensitive;
@@ -118,6 +116,9 @@ private slots:
     void slotReplaceAll();
 
     void slotShowMenu(const QPoint &);
+
+    void inCurrentFileToggled(bool);
+    void everywhereToggled(bool);
 
     // clear search selections where not visible
     void slotVisible(bool visible);

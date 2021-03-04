@@ -61,6 +61,8 @@
 #include "Widgets/FindReplace/findreplace.h"
 #include "Widgets/SearchBox/SearchBox.h"
 
+#include "Widgets/Git/GitDock.h"
+
 #include "EnvironmentSettings.h"
 #include "Widgets/Converter/converter.h"
 #include "Widgets/ProgressBar/ProgressBar.h"
@@ -185,6 +187,8 @@ private:
 
     Education *education;
 
+    GitDock *gitDock;
+
     void dragEnterEvent(QDragEnterEvent *drag_event) override;
     void dropEvent(QDropEvent *drop_event) override;
 
@@ -198,6 +202,7 @@ private:
     void SetupCompileDock();
     void SetupCodeInfoDock();
     void SetupEducationDock();
+    void SetupGitDock();
 
     void SetupVerticalBar();
     void SetupNodeView();

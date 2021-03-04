@@ -24,6 +24,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     SetupCompileDock();
     SetupCodeInfoDock();
     SetupEducationDock();
+    SetupGitDock();
 
     SetupNodeView();
     SetupDebuggerView();
@@ -137,7 +138,6 @@ void MainWindow::SetupVerticalBar() {
     vertical_bar->setAcceptDrops(false);
     vertical_bar->setIconSize(QSize(70, 35));
 
-    //vertical_bar->setContentsMargins(10,10,10,10);
     vertical_bar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
     vertical_bar->setFocusPolicy(Qt::ClickFocus);
 
@@ -273,6 +273,7 @@ void MainWindow::SetupMenuBar() {
     viewMenu->addAction(codeInfoDock->toggleViewAction());
     viewMenu->addAction(Linter->toggleViewAction());
     viewMenu->addAction(Refactor->toggleViewAction());
+    viewMenu->addAction(gitDock->toggleViewAction());
     viewMenu->addAction(debuggerDock->toggleViewAction());
     viewMenu->addAction(debuggerWatchDock->toggleViewAction());
     viewMenu->addSeparator();
@@ -369,9 +370,12 @@ void MainWindow::SetupDockWidgetsLayering() {
 // switching views
 void MainWindow::showEditorView() {
     // empty tab has count -1 probably :)  --> also show only invitation, not empty tab !
-    if (Tabs->count() == -1) {
+    if (Tabs->count() <= 0) {
         // invitation screen is still ON, or we could move from somewhere else, to be sure
         showInvitationScreen();
+        debuggerDock->hide();
+        debuggerWatchDock->hide();
+        ShowHiddenDockWidgets();
         return;
     }
 
@@ -487,8 +491,6 @@ void MainWindow::SetupTabWidget() {
     connect(Tabs->AddNewTabButton, SIGNAL(clicked()), this, SLOT(CreateFile()));
 
     invitation_screen = new InvitationScreen(this);
-    // we do not know yet if there is some file loaded, reopened or else ...
-    invitation_screen->setVisible(false);
 }
 
 
@@ -601,23 +603,30 @@ void MainWindow::slotOpenReferenceFile(QTreeWidgetItem *item, int column) {
         return;
     }
     // we were searching only in current file
-    if (find_replace->SearchCurrentFile) {
+    if (find_replace->inCurrentFile->isChecked()) {
         find_replace->forwardToResult(item, column);
         return;
     }
     // we have to figure out in what file result is, if there are more of them
-    //const int filepath_row = find_replace->results->indexOfTopLevelItem(item->parent());
-    //const int row = item->parent()->indexOfChild(item);
-    //const QString filepath = find_replace->temp_search_result_path; /* find_replace->results->topLevelItem(filepath_row)->text(0); */
     // doubleClick, but click were before, so we have temporary variables already set
     if (find_replace->temp_search_result_path.isEmpty()) {
         qDebug() << "find_replace->temp_search_result_path is empty !!! line 584 MainWindow";
     }
+
+    // const QString filepath = item->parent()->toolTip(0); // TOOLTIP is filepath, not text
+    if (find_replace->temp_search_result_path == currentWidget->getFilePath()) {
+        currentWidget->setCursorPosition(find_replace->temp_pos.x(), find_replace->temp_pos.y());
+    }
+
     // user changed file
     find_replace->savePreview();
-    OpenFile(find_replace->temp_search_result_path, false);// we will set document from preview to share memory
-    currentWidget->setDocument(find_replace->preview->document());
+
+    OpenFile(find_replace->temp_search_result_path, true);// we will set document from preview to share memory
+    find_replace->preview->setDocument(currentWidget->document());
+    // currentWidget->setDocument(find_replace->preview->document());
     currentWidget->extra_selections_search_results = find_replace->selections[find_replace->tempSelectionPos];
+    currentWidget->updateExtraSelections();
+    find_replace->preview->updateExtraSelections();
     currentWidget->setCursorPosition(find_replace->temp_pos.x(), find_replace->temp_pos.y());
 
     /*
@@ -659,6 +668,11 @@ void MainWindow::SetupEducationDock() {
     connect(education->CppCodeSamples, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotOpenCppSample(QListWidgetItem *)));
     connect(education->CppUsersSamples, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotOpenCppUserSample(QListWidgetItem *)));
     // should there be a disconnection when main window is destructed ?
+}
+
+void MainWindow::SetupGitDock() {
+    gitDock = new GitDock();
+    addDockWidget(Qt::RightDockWidgetArea, gitDock);
 }
 
 void MainWindow::SetupNodeView() {
@@ -778,7 +792,7 @@ void MainWindow::OpenFile(const QString &filepath, const bool &readAndSetDocumen
             content = education->WorkingContent;
             // all sample are not editable, but enabled, free to copy
             new_text_edit = new PlainTextEdit();
-            new_text_edit->appendPlainText(content);
+            new_text_edit->setPlainText(content);
             new_text_edit->setReadOnly(true);
             file_manager.current_file_name = filepath;
             file_manager.current_full_filepath = filepath;
@@ -787,7 +801,7 @@ void MainWindow::OpenFile(const QString &filepath, const bool &readAndSetDocumen
         if (AssemblyLoading) {
             content = debuggerBridge->WorkingContent;
             new_text_edit = new PlainTextEdit();
-            new_text_edit->appendPlainText(content);
+            new_text_edit->setPlainText(content);
             new_text_edit->setReadOnly(true);
             file_manager.current_file_name = filepath;
             file_manager.current_full_filepath = filepath;
@@ -800,18 +814,20 @@ void MainWindow::OpenFile(const QString &filepath, const bool &readAndSetDocumen
         new_text_edit = new PlainTextEdit();
         if (readAndSetDocument) {
             content = file_manager.read(filepath);
-            new_text_edit->appendPlainText(content);
+            new_text_edit->setPlainText(content);
+        } else {
+            new_text_edit->setPlainText("");
         }
     }
 // handy goto statement to escape nested loop but not return;
 end:;
 
     new_text_edit->setFilePath(filepath);
-    new_text_edit->setFileExtension(file_manager.getFileExtension(file_manager.current_file_name));
+    new_text_edit->setFileExtension(file_manager.getFileExtension(QFileInfo(filepath).fileName()));
 
-    // check for duplicate file-openning and prevents it by opening identical tab twice
+    // check for duplicate file-opening and prevents it by opening identical tab twice
     for (int i = 0; i < Tabs->count(); ++i)
-        if (Tabs->tabToolTip(i) == file_manager.current_full_filepath) {
+        if (Tabs->tabToolTip(i) == filepath) {
             Tabs->setCurrentIndex(i);
             return;
         }
@@ -825,15 +841,13 @@ end:;
         delete Tabs->widget(Tabs->currentIndex());
     }
 
-    // we definitely have a new tab
-    showEditorView();// switch from Invitation Screen which is default
 
     // tab
     // icons for tab, like in file view
     QFileIconProvider provider;
-    int index = Tabs->addTab(new_text_edit, provider.icon(QFileInfo(filepath)), file_manager.current_file_name);
+    int index = Tabs->addTab(new_text_edit, provider.icon(QFileInfo(filepath)), QFileInfo(filepath).fileName());
     Tabs->setCurrentIndex(index);
-    Tabs->setTabToolTip(index, file_manager.current_full_filepath);
+    Tabs->setTabToolTip(index, filepath);
     Tabs->setTabWhatsThis(index, "No changes");
     connect(new_text_edit, SIGNAL(textChanged()), this, SLOT(UpdateParameter()));
 
@@ -845,13 +859,16 @@ end:;
     Docker->DockerFileList->addItem(new_item);
 
     // setting up highlight
-    if (highlighter->setExtension(file_manager.getFileExtension(file_manager.current_file_name))) {
+    if (highlighter->setExtension(file_manager.getFileExtension(QFileInfo(filepath).fileName()))) {
         highlighter->setDocument(new_text_edit->document());
         highlighter->highlightBlock(new_text_edit->toPlainText());
     }
 
     Tabs->setTabWhatsThis(index, "No changes");
     UpdateCurrentIndex(index);// setting up selected item in opened_docs_dock
+
+    // we definitely have a new tab
+    showEditorView();// switch from Invitation Screen which is default
 }
 
 
@@ -937,6 +954,7 @@ void MainWindow::CloseFile(int index_) {
     if (!Tabs->count()) {
         // CreateFile();
         showInvitationScreen();
+        currentWidget = nullptr;
         return;// tab is not active, (code below)
     }
 
@@ -1085,7 +1103,7 @@ void MainWindow::UpdateCurrentIndex(int new_selection_index) {
 void MainWindow::slotBuild() {
 
     // clear terminal window
-    //console_dock->slotClearConsole();
+    console_dock->ConsoleOutput->clear();
     // deactivate action build
 
     bool cmake = true;
@@ -1141,7 +1159,7 @@ void MainWindow::slotBuild() {
 void MainWindow::slotRun() {
 
     // clear terminal window
-    //console_dock->slotClearConsole();
+    console_dock->ConsoleOutput->clear();
 
     bool cmake = true;
     if (CHANGES_IN_PROJECT) {
@@ -1206,45 +1224,78 @@ void MainWindow::UpdateCurrentIndexOnDelete(int) {
 
 // text operations
 void MainWindow::slotCopy() {
+    if (!currentWidget) {
+        return;
+    }
     currentWidget->copy();
 }
 
 void MainWindow::slotCut() {
+    if (!currentWidget) {
+        return;
+    }
     currentWidget->cut();
 }
 
 void MainWindow::slotUndo() {
+    if (!currentWidget) {
+        return;
+    }
     currentWidget->undo();
 }
 void MainWindow::slotRedo() {
+    if (!currentWidget) {
+        return;
+    }
     currentWidget->redo();
 }
 
 void MainWindow::slotSelectAll() {
+    if (!currentWidget) {
+        return;
+    }
     currentWidget->selectAll();
 }
 
 void MainWindow::slotPaste() {
+    if (!currentWidget) {
+        return;
+    }
     currentWidget->paste();
 }
 
 void MainWindow::slotRemoveAll() {
+    if (!currentWidget) {
+        return;
+    }
     currentWidget->clear();
 }
 
 void MainWindow::slotExpand() {
+    if (!currentWidget) {
+        return;
+    }
     currentWidget->slotExpand();
 }
 
 void MainWindow::slotCollapse() {
+    if (!currentWidget) {
+        return;
+    }
     currentWidget->slotCollapse();
 }
 
 void MainWindow::slotToggleComment() {
+    if (!currentWidget) {
+        return;
+    }
     currentWidget->toggleComment();
 }
 
 void MainWindow::slotFormat() {
+    if (!currentWidget) {
+        return;
+    }
 }
 
 
@@ -1323,6 +1374,9 @@ void MainWindow::slotStepOut() {
 
 // this might go only through containBlock and decide to create or remove
 void MainWindow::slotToggleBreakPoint() {
+    if (!currentWidget) {
+        return;
+    }
     const QString filename = currentWidget->getFilePath();
     const int line = currentWidget->getCursorPosition().y();
     // in edit
@@ -1357,6 +1411,9 @@ void MainWindow::slotDeleteBreakPoint(const int &line) {
 }
 
 void MainWindow::slotSetBreakpointAtLine() {
+    if (!currentWidget) {
+        return;
+    }
     const QString filename = currentWidget->getFilePath();
     const int line = currentWidget->getCursorPosition().y();
 
