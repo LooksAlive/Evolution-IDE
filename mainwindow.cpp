@@ -619,9 +619,12 @@ void MainWindow::slotOpenReferenceFile(QTreeWidgetItem *item, int column) {
         qDebug() << "find_replace->temp_search_result_path is empty !!! line 584 MainWindow";
     }
 
-    // const QString filepath = item->parent()->toolTip(0); // TOOLTIP is filepath, not text
-    if (find_replace->temp_search_result_path == currentWidget->getFilePath()) {
-        currentWidget->setCursorPosition(find_replace->temp_pos.x(), find_replace->temp_pos.y());
+    // if we do not have (nullptr), we cant do this, continue and add one, old way
+    if (currentWidget) {
+        // const QString filepath = item->parent()->toolTip(0); // TOOLTIP is filepath, not text
+        if (find_replace->temp_search_result_path == currentWidget->getFilePath()) {
+            currentWidget->setCursorPosition(find_replace->temp_pos.x(), find_replace->temp_pos.y());
+        }
     }
 
     // user changed file
