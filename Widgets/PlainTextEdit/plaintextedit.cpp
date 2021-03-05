@@ -444,10 +444,9 @@ QString PlainTextEdit::indentText(QString text, int count) const
     return text;
 }
 
-void PlainTextEdit::autoEnterTextIndentation() {
+bool PlainTextEdit::autoEnterTextIndentation() {
     QTextCursor cursor = textCursor();
     // we are at line we were before enter, return, just with pointer
-    cursor.movePosition(QTextCursor::PreviousBlock, QTextCursor::MoveAnchor);
     // get line content
     const QString lineContent = getLineUnderCursor(cursor);
     cursor.clearSelection();
@@ -463,26 +462,27 @@ void PlainTextEdit::autoEnterTextIndentation() {
         }
     }
 
-    cursor.beginEditBlock();
     // insert 1 line with spaces, tabs
     if (spaces != 0) {
-        cursor.movePosition(QTextCursor::NextBlock, QTextCursor::MoveAnchor);
         QString space;
-        cursor.insertText(space.fill(QLatin1Char(' '), spaces));
+        // cursor.movePosition(QTextCursor::NextBlock, QTextCursor::MoveAnchor);
+        cursor.beginEditBlock();
+        cursor.insertText(space.fill(QLatin1Char(' '), spaces).prepend("\n"));
         cursor.endEditBlock();
         setTextCursor(cursor);
-        return;
+        return true;
     }
     if (tabs != 0) {
-        cursor.movePosition(QTextCursor::NextBlock, QTextCursor::MoveAnchor);
         QString space;
-        cursor.insertText(space.fill(QLatin1Char('\t'), tabs));
+        // cursor.movePosition(QTextCursor::NextBlock, QTextCursor::MoveAnchor);
+        cursor.beginEditBlock();
+        cursor.insertText(space.fill(QLatin1Char('\t'), tabs).prepend("\n"));
         cursor.endEditBlock();
         setTextCursor(cursor);
-        return;
+        return true;
     } else {
         // no change, needed, do not set cursor so nothing really happened
-        cursor.endEditBlock();
+        return false;
     }
 }
 
@@ -492,10 +492,8 @@ void PlainTextEdit::autoBlankLineDeletion() {
     const QString lineContent = getLineUnderCursor(cursor);
     for (const auto &i : lineContent) {
         if (i == ' ' || i == '\t') {
-            qDebug() << lineContent;
-            //return;
+
         } else {
-            qDebug() << "bad character :  " + QString(i);
             return;
         }
     }
@@ -504,7 +502,7 @@ void PlainTextEdit::autoBlankLineDeletion() {
     selectLineUnderCursor(cursor);
     cursor.removeSelectedText();
     cursor.endEditBlock();
-    cursor.movePosition(QTextCursor::PreviousBlock);
+    // cursor.movePosition(QTextCursor::PreviousBlock);
     setTextCursor(cursor);
 }
 
@@ -1196,8 +1194,6 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
         this->cursor().setShape(Qt::PointingHandCursor);
     }
 
-
-    QString completionPrefix = getWordUnderCursor();
     /*
     const bool ctrlOrShift = event->modifiers() && (Qt::ControlModifier | Qt::ShiftModifier);
     if (!completer || (ctrlOrShift && event->text().isEmpty())) {
@@ -1217,29 +1213,6 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
         return;
     }
     */
-
-    if (event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Space &&
-        completionPrefix != completer->completionPrefix()) {
-        completer->setCompletionPrefix(completionPrefix);
-        completer->popup()->setCurrentIndex(completer->completionModel()->index(0, 0));
-
-        QRect cr = cursorRect();
-        cr.setWidth(/*completer->popup()->sizeHintForColumn(0)
-                    + completer->popup()->verticalScrollBar()->sizeHint().width()*/
-                    200);
-        completer->complete(cr);// popup it up!
-    }
-
-    if ((completer && completer->popup()->isActiveWindow()) || completer->popup()->isVisible()) {
-        // The following keys are forwarded by the completer to the widget
-        if (event->key() == Qt::Key_Enter || event->key() == Qt::Key_Tab) {
-            completerInsertText(completionPrefix);
-            qDebug() << "visible--------------";
-            completer->popup()->hide();// complete done, hide popup and continue
-        } else {
-            //event->ignore();
-        }
-    }
 
     // select and copy whole line
     if (event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_C && cursor.selectedText().isEmpty()) {
@@ -1263,14 +1236,7 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
                 return;
             }
             break;
-        }
-        case Qt::Key_Enter:
-        case Qt::Key_Return:
-            autoEnterTextIndentation();
-            break;
-        case Qt::Key_Backspace:
-            autoBlankLineDeletion();
-            break;
+            }
         case Qt::Key_Down:
         case Qt::Key_Up:
             if (QApplication::keyboardModifiers().testFlag(Qt::ControlModifier)) {
@@ -1350,11 +1316,51 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
     }
     QPlainTextEdit::keyReleaseEvent(event);
 }
-/*
+
 void PlainTextEdit::keyPressEvent(QKeyEvent *event) {
+
+    QString completionPrefix = getWordUnderCursor();
+
+    if (event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Space &&
+        completionPrefix != completer->completionPrefix()) {
+        completer->setCompletionPrefix(completionPrefix);
+        completer->popup()->setCurrentIndex(completer->completionModel()->index(0, 0));
+
+        QRect cr = cursorRect();
+        cr.setWidth(/*completer->popup()->sizeHintForColumn(0)
+                    + completer->popup()->verticalScrollBar()->sizeHint().width()*/
+                    200);
+        completer->complete(cr);// popup it up!
+    }
+
+    if ((completer && completer->popup()->isActiveWindow()) || completer->popup()->isVisible()) {
+        // The following keys are forwarded by the completer to the widget
+        if (event->key() == Qt::Key_Enter || event->key() == Qt::Key_Tab) {
+            completerInsertText(completionPrefix);
+            qDebug() << "visible--------------";
+            completer->popup()->hide();// complete done, hide popup and continue
+        } else {
+            //event->ignore();
+        }
+    }
+
+    switch (event->key()){
+        case Qt::Key_Enter:
+        case Qt::Key_Return:
+            /*
+            if(autoEnterTextIndentation()){
+                return;
+            }
+            */
+            break;
+        case Qt::Key_Backspace:
+            autoBlankLineDeletion();
+            break;
+    }
+
     QPlainTextEdit::keyPressEvent(event);
 }
- */
+
 
 void PlainTextEdit::focusInEvent(QFocusEvent *e) {
 

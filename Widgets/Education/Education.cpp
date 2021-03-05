@@ -1,5 +1,7 @@
 #include <QSettings>
 #include <QIcon>
+#include <QDebug>
+#include <QFileInfo>
 
 #include "icons/IconFactory.h"
 #include "Education.h"
@@ -25,35 +27,37 @@ void Education::createWindow() {
     preview = new QPlainTextEdit(this);
     cpp_user_samples.reserve(2);
 
-    CppCodeSamples->insertItem(0, "Introduction");
-    CppCodeSamples->insertItem(1, "Main");
-    CppCodeSamples->insertItem(2, "Variables");
-    CppCodeSamples->insertItem(3, "Data types");
-    CppCodeSamples->insertItem(4, "For loop");
-    CppCodeSamples->insertItem(5, "While loop");
-    CppCodeSamples->insertItem(6, "Do While loop");
-    CppCodeSamples->insertItem(7, "Foreach loop");
-    CppCodeSamples->insertItem(8, "Functions");
-    CppCodeSamples->insertItem(9, "Classes");
-    CppCodeSamples->insertItem(10, "Structs");
-    CppCodeSamples->insertItem(11, "Containers");
-    CppCodeSamples->insertItem(12, "Const");
-    CppCodeSamples->insertItem(13, "Static");
-    CppCodeSamples->insertItem(14, "Pointers");
-    CppCodeSamples->insertItem(15, "References");
-    CppCodeSamples->insertItem(16, "Lambdas");
-    CppCodeSamples->insertItem(17, "Operator Overloading");
+    CppCodeSamples->addItem("Introduction");
+    CppCodeSamples->addItem("Main");
+    CppCodeSamples->addItem("Variables");
+    CppCodeSamples->addItem("Data types");
+    CppCodeSamples->addItem("For loop");
+    CppCodeSamples->addItem("While loop");
+    CppCodeSamples->addItem("Do While loop");
+    CppCodeSamples->addItem("Foreach loop");
+    CppCodeSamples->addItem("Functions");
+    CppCodeSamples->addItem("Classes");
+    CppCodeSamples->addItem("Structs");
+    CppCodeSamples->addItem("Containers");
+    CppCodeSamples->addItem("Const");
+    CppCodeSamples->addItem("Static");
+    CppCodeSamples->addItem("Pointers");
+    CppCodeSamples->addItem("References");
+    CppCodeSamples->addItem("Lambdas");
+    CppCodeSamples->addItem("Operator Overloading");
 
     CppCodeSamples->setMinimumHeight(400);
     CppUsersSamples->setMinimumHeight(400);
     preview->setReadOnly(true);
+    preview->setEnabled(true);
     preview->setCenterOnScroll(true);
     preview->setUndoRedoEnabled(false);
-    preview->hide();
     // lower font size, bot possible increase
     QFont font;
-    font.setPixelSize(3);
+    font.setPixelSize(10);
     preview->setFont(font);
+
+    connect(CppCodeSamples, SIGNAL(itemClicked(QListWidgetItem *)), this, SLOT(slotShowCppSampleInPreview(QListWidgetItem *)));
 
     titleBar = new QToolBar(this);
     language = new QToolButton(this);
@@ -88,12 +92,17 @@ void Education::createWindow() {
 
     setTitleBarWidget(titleBar);
     stack->setCurrentWidget(CppCodeSamples);// starting widget list
-    setWidget(stack);
+    QWidget *MainWidget = new QWidget(this);
+    QVBoxLayout *MainLayout = new QVBoxLayout();
+    MainLayout->addWidget(stack);
+    MainLayout->addWidget(preview);
+    MainWidget->setLayout(MainLayout);
+    setWidget(MainWidget);
 }
 
 void Education::loadUsersSamples() {
-    QSettings settings("Evolution-IDE");
-    opened_samples = settings.value("Evolution-IDE/users_samples").toStringList();
+    QSettings settings("Evolution");
+    opened_samples = settings.value("Evolution/users_samples").toStringList();
 
     if (opened_samples.empty()) {
         return;
@@ -111,7 +120,7 @@ void Education::loadUsersSamples() {
             names.push_back(opened_samples[i]);
         }
     }
-    for (int i = 0; i < contents.size(); i++) {
+    for (unsigned int i = 0; i < contents.size(); i++) {
         addUserSample(contents[i], names[i]);
     }
 }
@@ -128,8 +137,8 @@ void Education::saveUsersSamples() {
         // sample content
         opened_samples.append(cpp_user_samples[i]);
     }
-    QSettings settings("Evolution-IDE");
-    settings.setValue("Evolution-IDE/users_samples", opened_samples);
+    QSettings settings("Evolution");
+    settings.setValue("Evolution/users_samples", opened_samples);
 }
 
 void Education::closeEvent(QCloseEvent *event) {
@@ -138,8 +147,7 @@ void Education::closeEvent(QCloseEvent *event) {
 }
 
 void Education::addUserSample(const QString &content, const QString &sampleName) {
-    int index = CppUsersSamples->count();// place to last position index
-    CppUsersSamples->insertItem(index, sampleName);
+    CppUsersSamples->addItem(sampleName);
     cpp_user_samples.push_back(content);
 }
 
@@ -160,4 +168,26 @@ void Education::slotRemoveCppUsersSample() {
     } else {// cannot remove built in samples
         return;
     }
+}
+
+void Education::slotShowCppSampleInPreview(QListWidgetItem *item) {
+    // CppUsersSamples->currentItem();
+    // const QString sampleName = item->text();
+    const int row = item->listWidget()->row(item);
+    /*
+    qDebug() << row;
+    qDebug() << "\n";
+    qDebug() << cpp_code_samples.size();
+    qDebug() << "\n";
+    qDebug() << cpp_code_samples[0].content.size();
+    qDebug() << "\n";
+    */
+    const QString content = cpp_code_samples[row].content[0];// TODO: this should be file if more ...
+    preview->setPlainText(content);
+    // Highlighter for sample
+    previewHighlighter->setDocument(preview->document());
+    // in this case built in code have extensions, bit for user samples use rather ...
+    previewHighlighter->setExtension(QFileInfo(cpp_code_samples[row].fileNames[0]).completeSuffix());
+    // previewHighlighter->setExtension(".cpp");
+    previewHighlighter->highlightBlock(content);
 }

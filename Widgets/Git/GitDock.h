@@ -6,12 +6,15 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
-#include <QListWidget>
+//#include <QListWidget>
 #include <QPushButton>
 #include <QStackedWidget>
 #include <QTreeWidget>
 #include <QVBoxLayout>
 #include <QWidget>
+
+#include <QStatusBar>
+#include <QFileIconProvider>
 
 #include "gitbridge.h"
 
@@ -22,10 +25,16 @@ public:
     explicit GitDock(QWidget *parent = nullptr);
     ~GitDock() = default;
 
-private:
-    void createWindow();
+    void setStatusBar(QStatusBar *status_bar) { statusBar = status_bar; }
 
     QStackedWidget *Stack;
+
+private:
+    QStatusBar *statusBar;
+
+
+    void createWindow();
+
     QWidget *MainWidget;
     QFormLayout *Main_Layout;
     QPushButton *commitTo;
@@ -49,7 +58,7 @@ private:
     QVBoxLayout *PushLayout;
     QWidget *PushWidget;
     QPushButton *push;
-    QListWidget *PushList;
+    QTreeWidget *PushList;
 
     void createCloneWindow();
     QFormLayout *CloneLayout;
@@ -65,7 +74,17 @@ private:
     QPushButton *createRepository;
     QLineEdit *newRepoDestination;
 
+    // TODO: PullWidget  --- only updates current directory from github
+
     void setConnections();
+
+    // not added files in project, checked will be added and commited on request
+    // there might be more repos in ours...
+    void fillCommitWithFiles(const QStringList &repositoriesPaths, const QList<QStringList>& filePaths);
+
+    // commited files, which user want to push
+    // there might be more repos in ours...
+    void fillPushWithFiles(const QStringList &repositoriesPaths, const QList<QStringList>& filePaths);
 
     GitBridge gitBridge;
 

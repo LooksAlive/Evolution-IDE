@@ -42,6 +42,10 @@ public:
     static constexpr auto Stop = "/home/adam/Desktop/sources/Evolution-IDE/icons/stop.svg";
     static constexpr auto ShutDown = "/home/adam/Desktop/sources/Evolution-IDE/icons/shutdown.svg";
     static constexpr auto FullScreen = "/home/adam/Desktop/sources/Evolution-IDE/icons/fullscreen.svg";
+    static constexpr auto Push = "/home/adam/Desktop/sources/Evolution-IDE/icons/git_push.png";
+    static constexpr auto Pull = "/home/adam/Desktop/sources/Evolution-IDE/icons/git_pull.png";
+    static constexpr auto Merge = "/home/adam/Desktop/sources/Evolution-IDE/icons/git_merge.png";
+    static constexpr auto Commit = "/home/adam/Desktop/sources/Evolution-IDE/icons/git_commit.png";
 
     static constexpr auto Undo = "/home/adam/Desktop/sources/Evolution-IDE/icons/undo.svg";
     static constexpr auto Redo = "/home/adam/Desktop/sources/Evolution-IDE/icons/redo.svg";

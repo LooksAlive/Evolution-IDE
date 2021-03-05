@@ -5,21 +5,33 @@
 /*
   * use Libgit2 API for that purposes, look it up
   * http://wiki.eclipse.org/Orion/Server_API/Git_API#git_clone
+  * main resource:  https://libgit2.org/docs/guides/101-samples/
 */
 
 #include <git2.h>
+#include <iostream>
+#include <string>
+#include <vector>
 
 class GitBridge {
 public:
     GitBridge();
     ~GitBridge() = default;
 
+    // libgit2 keeps some data in thread-local storage:
+    // this functions handles all errors that came out of function calls
+    // with appropriate description + appends git error state, message
+    void errorManager(const int& error, const char* desc);
+
+    // set free all resources used by git API to avoid memory leaks
+    // and terminates library from memory
+    void freeResources();
+
     void loadRepository();
+
     int commit(const char *comment);
+
     int push();
-    void add();
-    void getStatus();
-    int clone();
 
     struct describe_options {
         const char **commits;
@@ -30,6 +42,48 @@ public:
 
     void describe(describe_options *opts);
 
+    struct initOpts {
+        int no_options;
+        int quiet;
+        int bare;
+        int initial_commit;
+        uint32_t shared;
+        const char *Template;
+        const char *gitdir;
+        const char *dir;
+    };
+
+    int init(const char *RepoName);
+    void initialCommit();
+
+
+    struct index_options {
+        int dry_run;
+        int verbose;
+        git_repository *repo;
+        /*some enum*/int mode;
+        int add_update;
+    };
+
+    int add(const char *file);
+
+    int remove(const char *file);
+
+    typedef struct progress_data {
+        git_indexer_progress fetch_progress;
+        size_t completed_steps;
+        size_t total_steps;
+        const char *path;
+    } progress_data;
+
+    int clone();
+
+    // same as pull
+    int fetch();
+
+    int status();
+
+    const char* findRepo(const char* repo_name);
 
     git_repository *repo;
 };

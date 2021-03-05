@@ -24,10 +24,11 @@ void FileDirManager::getFilesRecursively(const QString &Project_RootDir) {
     source_files.clear();
     source_files_names.clear();
     other_files.clear();
+    QString tempRootDir = Project_RootDir;
 
     QSettings settings("Evolution");
-    settings.setValue("Evolution/Project_Root_Dir", Project_RootDir);
-    Project_Dir = Project_RootDir;
+    settings.setValue("Evolution/Project_Root_Dir", tempRootDir.remove(0, 2));
+    Project_Dir = tempRootDir.remove(0, 2);
 
     // FileExplorer_RootDir;
     QDirIterator directories(Project_RootDir, QDir::Files /*Dirs*/ | QDir::NoSymLinks | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
@@ -70,6 +71,7 @@ void FileDirManager::getFilesRecursively(const QString &Project_RootDir) {
             settings.setValue("Evolution/executable_name", executable_file_name);
             continue;
         }
+        // TODO: there might be more .git dirs in different repositories
         if (directories.fileInfo().isDir() && directories.fileInfo().dir().dirName() == ".git") {
             settings.setValue("Evolution/git_path", directories.filePath().remove(0, 2));
         }

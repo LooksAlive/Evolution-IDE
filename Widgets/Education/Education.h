@@ -117,6 +117,8 @@ private slots:
     void slotShowCppUsersSamples();
 
     void slotRemoveCppUsersSample();
+
+    void slotShowCppSampleInPreview(QListWidgetItem *item);
 };
 
 #endif //EVOLUTION_IDE_EDUCATION_H

@@ -411,6 +411,10 @@ void FindReplaceWidget::slotShowPreviewResult(QTreeWidgetItem *item, int column)
         const QString content = file_manager.read(filepath);
         preview->setPlainText(content);
         preview->setFilePath(filepath);
+        // Highlighter for preview
+        previewHighlighter->setExtension(QFileInfo(filepath).completeSuffix());
+        previewHighlighter->setDocument(preview->document());
+        previewHighlighter->highlightBlock(preview->toPlainText());
         // iterate filepath, find our results for active filepath row
         for (int i = 0; i < MultifileSearchResults.size(); i++) {
             if (SearchFilesPaths[i] == filepath) {
@@ -438,6 +442,10 @@ void FindReplaceWidget::slotShowPreviewResult(QTreeWidgetItem *item, int column)
     // TODO: solve this outside to open a new tab
     if (m_Edit->document()) {
         preview->setDocument(m_Edit->document());
+        // Highlighter for preview
+        previewHighlighter->setExtension(QFileInfo(preview->getFilePath()).completeSuffix());
+        previewHighlighter->setDocument(preview->document());
+        previewHighlighter->highlightBlock(preview->toPlainText());
     } else {
         FileDirManager file_manager;
         // preview is still the same

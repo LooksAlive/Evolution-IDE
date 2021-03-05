@@ -21,6 +21,7 @@
 #include "Widgets/PlainTextEdit/plaintextedit.h"
 #include "Widgets/Tab/tab.h"
 #include "filemanager.h"
+#include "highlighter.h"
 
 #include <QDebug>
 
@@ -32,6 +33,7 @@ public:
 
     // all files we will searching
     void setFiles(const QStringList &files) { AllFiles = files; }
+    void setPreviewHighlighter(Highlighter *highlighter) { previewHighlighter = highlighter; }
 
     QLineEdit *LineEditFind;
 
@@ -100,6 +102,8 @@ private:
     QString replace_text;
 
     QStringList AllFiles;
+
+    Highlighter *previewHighlighter;
 
     void searchEverywhere();
 

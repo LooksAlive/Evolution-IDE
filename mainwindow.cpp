@@ -17,6 +17,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     setWindowTitle("Evolution IDE");
     setContentsMargins(0, 0, 0, 0);
 
+    highlighter = new Highlighter(":/highlights/languages.xml", this);
+
     /* set all necessary widgets, features etc. */
     SetupTabWidget();
     SetupFileExplorer();
@@ -48,7 +50,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     // showInvitationScreen();
 
     //Tabs->currentWidget()->setFocus();
-    highlighter = new Highlighter(":/highlights/languages.xml", this);
     executor = new CommandLineExecutor(this);
 
     LoadRegisters();
@@ -347,6 +348,10 @@ void MainWindow::SetupToolBar() {
     topToolBar->addAction(QIcon(IconFactory::Build), "Build", this, SLOT(slotBuild()));
     topToolBar->addAction(QIcon(IconFactory::Run), "Run", this, SLOT(slotRun()));
     topToolBar->addAction(QIcon(IconFactory::Stop), "Stop Process", this, SLOT(slotStopProcess()));
+    // TODO: open git manager dock, to certain sections, update its data, status bar...
+    topToolBar->addAction(QIcon(IconFactory::Pull), "Pull", this, SLOT(slotPullRequest()));
+    topToolBar->addAction(QIcon(IconFactory::Push), "Commit", this, SLOT(slotCommitRequest()));
+    topToolBar->addAction(QIcon(IconFactory::Commit), "Push", this, SLOT(slotPushRequest()));
 }
 
 void MainWindow::slotShowFindReplaceDock() {
@@ -563,6 +568,7 @@ void MainWindow::SetupCodeInfoDock() {
     codeInfoDock = new CodeInfoDock(this);
 
     find_replace->setFiles(file_manager.source_files);
+    find_replace->setPreviewHighlighter(highlighter);
     addDockWidget(Qt::BottomDockWidgetArea, find_replace);
     tabifyDockWidget(console_dock, find_replace);
     tabifyDockWidget(codeInfoDock, find_replace);
@@ -662,6 +668,7 @@ void MainWindow::SetupConverter() {
 
 void MainWindow::SetupEducationDock() {
     education = new Education(this);
+    education->setPreviewHighlighter(highlighter);
     addDockWidget(Qt::RightDockWidgetArea, education);
     // has to be outside bc. i will use option to add a sample in editor so cannot import them cross
 
@@ -1209,6 +1216,22 @@ void MainWindow::slotClangCheck() {
 void MainWindow::slotValgrind() {
     console_dock->ConsoleOutput->append(QString::fromStdString(CommandLineExecutor::Valgrind(std::string())));
 }
+
+void MainWindow::slotPullRequest() {
+    gitDock->setVisible(true);
+    gitDock->Stack->setCurrentIndex(3);
+}
+
+void MainWindow::slotCommitRequest() {
+    gitDock->setVisible(true);
+    gitDock->Stack->setCurrentIndex(1);
+}
+
+void MainWindow::slotPushRequest() {
+    gitDock->setVisible(true);
+    gitDock->Stack->setCurrentIndex(2);
+}
+
 void MainWindow::slotClangDocGenerate() {
     // clang-doc
 }

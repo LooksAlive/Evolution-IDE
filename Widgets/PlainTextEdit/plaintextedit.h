@@ -151,7 +151,7 @@ public:
 
 protected:
     void keyReleaseEvent(QKeyEvent *event) override;
-    //void keyPressEvent(QKeyEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
     void mousePressEvent(QMouseEvent *e) override;
     void focusInEvent(QFocusEvent *e) override;
     void focusOutEvent(QFocusEvent *e) override;
@@ -175,7 +175,8 @@ private:
     QString indentText(QString text, int count) const;
     bool indentText(const bool &forward);
     // if we are in scope and return/enter pressed --> insert line with indent(code dependent)
-    void autoEnterTextIndentation();
+    // returns true if spaces, tabs were inserted to next block, also move cursor there
+    bool autoEnterTextIndentation();
     // when removing empty line(Backspace) with spaces, tabs in or not in scope
     void autoBlankLineDeletion();
     // move text around with ctrl+up/down

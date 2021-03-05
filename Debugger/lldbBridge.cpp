@@ -123,16 +123,10 @@ void ProcessHandler::HandleProcessStopped(SBEvent &event, SBProcess &process) {
 
         const size_t stop_reason_data_count = thread.GetStopReasonDataCount();
         switch (thread_stop_reason) {
-            case eStopReasonInvalid:
-            case eStopReasonNone:
-            case eStopReasonTrace:
-                break;
             case eStopReasonBreakpoint:
                 // The stop reason data contains the breakpoint and breakpoint location
                 // IDs that were hit. There might be more than one breakpoint that was
                 // hit by the same thread, so we will want to report all breakpoints that were hit
-                //DBridge->Dock->debug_output->appendPlainText("breakpoint was hit: ");
-                // DBridge->setFilePosition(thread.GetSelectedFrame());
                 emit breakPointHit();
                 for (size_t i = 0; i < stop_reason_data_count; i += 2) {
                     break_id_t bp_id = thread.GetStopReasonDataAtIndex(i);
@@ -144,12 +138,26 @@ void ProcessHandler::HandleProcessStopped(SBEvent &event, SBProcess &process) {
                 }
                 break;
             case eStopReasonWatchpoint:
+                emit watchPointHit();
+                break;
+            case eStopReasonInvalid:
+            case eStopReasonNone:
+            case eStopReasonTrace:
             case eStopReasonSignal:
             case eStopReasonException:
             case eStopReasonExec:
             case eStopReasonPlanComplete:
             case eStopReasonThreadExiting:
             case eStopReasonInstrumentation:
+                /*
+                SBStream strm;
+                SBValue stopValue = thread.GetStopReturnValue();
+                stopValue.GetDescription(strm);
+                emit addMessage(strm.GetData());
+
+                thread.GetStopReasonExtendedInfoAsJSON(strm);
+                emit addMessage(strm.GetData());
+                */
                 break;
         }
     }
@@ -573,6 +581,7 @@ void lldbBridge::start() {
     // clear all first
     Dock->debug_output->clear();
     Dock->ThreadBox->clear();
+    Dock->CallStack->clear();
     slotRemoveAllBreakPoints();
     //Dock->BreakPoint_List->remove all ??
     //WatchListView->clear();
@@ -721,7 +730,14 @@ void lldbBridge::compareWatchedValues() {
         for (int z = 0; z < WatchDock->VariableTreeValues->topLevelItemCount(); z++) {
             if (FrameVariablesList.GetValueAtIndex(i).GetName() == WatchDock->VariableTreeValues->topLevelItem(z)->text(0).toLatin1().data()) {
                 // matched variable names, update variables values
-                WatchDock->VariableTreeValues->topLevelItem(z)->child(0)->setText(0, FrameVariablesList.GetValueAtIndex(i).GetValue());
+                if(WatchDock->VariableTreeValues->topLevelItem(z)->child(0)/* || WatchDock->VariableTreeValues->topLevelItem(z)->childCount()*/) {
+                    WatchDock->VariableTreeValues->topLevelItem(z)->child(0)->setText(0, FrameVariablesList.GetValueAtIndex(i).GetValue());
+                }
+                else{
+                    QTreeWidgetItem *item = new QTreeWidgetItem();
+                    item->setText(0, FrameVariablesList.GetValueAtIndex(i).GetValue());
+                    WatchDock->VariableTreeValues->topLevelItem(z)->addChild(item);
+                }
                 allVariablesIndices.append(z);
             } else {
                 // no match ... out of scope

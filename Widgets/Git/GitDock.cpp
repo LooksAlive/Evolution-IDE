@@ -1,5 +1,6 @@
 #include "GitDock.h"
 #include <QSettings>
+#include <QFileInfo>
 
 GitDock::GitDock(QWidget *parent) : QDockWidget(parent) {
     setFeatures(AllDockWidgetFeatures);
@@ -13,6 +14,12 @@ GitDock::GitDock(QWidget *parent) : QDockWidget(parent) {
     createWindow();
 
     setConnections();
+
+    QList<QStringList>l;
+    l.append(QStringList() <<"elem.txt" << "elem2.cpp" << "elem3.h" << "elem4.py");
+
+    fillCommitWithFiles(QStringList() << "myrepo", l);
+    fillPushWithFiles(QStringList() << "myrepo", l);
 }
 
 void GitDock::createWindow() {
@@ -65,7 +72,7 @@ void GitDock::createCommitWindow() {
 void GitDock::createPushWindow() {
     PushLayout = new QVBoxLayout();
     PushWidget = new QWidget(this);
-    PushList = new QListWidget(this);
+    PushList = new QTreeWidget(this);
     push = new QPushButton("Push", this);
 
     PushLayout->addWidget(PushList);
@@ -84,8 +91,8 @@ void GitDock::createCloneWindow() {
 
     cloneUrl->setPlaceholderText("Repository Url");
 
-    QSettings settings("Evolution-IDE");
-    const QString dest = settings.value("Evolution-IDE/Project_Root_Dir").toString();
+    QSettings settings("Evolution");
+    const QString dest = settings.value("Evolution/Project_Root_Dir").toString();
     cloneDestination->setText(dest);
 
     CloneLayout->addRow("Url", cloneUrl);
@@ -104,8 +111,8 @@ void GitDock::createNewRepository() {
 
     newRepository->setPlaceholderText("Repository Name");
 
-    QSettings settings("Evolution-IDE");
-    const QString dest = settings.value("Evolution-IDE/Project_Root_Dir").toString();
+    QSettings settings("Evolution");
+    const QString dest = settings.value("Evolution/Project_Root_Dir").toString();
     newRepoDestination->setText(dest);
 
     NewRepoLayout->addRow("Repository Name: ", newRepository);
@@ -125,6 +132,52 @@ void GitDock::setConnections() {
     connect(push, &QAbstractButton::pressed, this, [=]() { Stack->setCurrentWidget(MainWidget); });
     connect(clone, &QAbstractButton::pressed, this, [=]() { Stack->setCurrentWidget(MainWidget); });
     connect(createRepository, &QAbstractButton::pressed, this, [=]() { Stack->setCurrentWidget(MainWidget); });
+}
+
+void GitDock::fillCommitWithFiles(const QStringList &repositoriesPaths, const QList<QStringList>& filePaths) {
+    QFileIconProvider provider;
+    for(int repoPath = 0; repoPath < repositoriesPaths.length(); repoPath++) {
+        QTreeWidgetItem *repoItem = new QTreeWidgetItem();
+        repoItem->setText(0 ,QFileInfo(repositoriesPaths[repoPath]).fileName());
+        // Qt::ItemIsAutoTristate will set all children checked, unchecked at once
+        // NOTICE! we are not storing state before !!!
+        repoItem->setFlags(Qt::ItemIsAutoTristate | Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
+        repoItem->setCheckState(0, Qt::Unchecked);
+        CommitList->addTopLevelItem(repoItem);
+        // add related files for repo
+        for(int filePath = 0; filePath < filePaths[repoPath].length(); filePath++) {
+            QTreeWidgetItem *item = new QTreeWidgetItem();
+            item->setText(0 ,QFileInfo(filePaths[repoPath][filePath]).fileName());
+            item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
+            item->setCheckState(0, Qt::Unchecked);
+            item->setBackground(0, QBrush(Qt::red));
+            item->setIcon(0, provider.icon(QFileInfo(filePaths[repoPath][filePath])));
+            repoItem->addChild(item);
+        }
+    }
+}
+
+void GitDock::fillPushWithFiles(const QStringList &repositoriesPaths, const QList<QStringList>& filePaths) {
+    QFileIconProvider provider;
+    for(int repoPath = 0; repoPath < repositoriesPaths.length(); repoPath++) {
+        QTreeWidgetItem *repoItem = new QTreeWidgetItem();
+        repoItem->setText(0 ,QFileInfo(repositoriesPaths[repoPath]).fileName());
+        // Qt::ItemIsAutoTristate will set all children checked, unchecked at once
+        // NOTICE! we are not storing state before !!!
+        repoItem->setFlags(Qt::ItemIsAutoTristate | Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
+        repoItem->setCheckState(0, Qt::Unchecked);
+        PushList->addTopLevelItem(repoItem);
+        // add related files for repo
+        for(int filePath = 0; filePath < filePaths[repoPath].length(); filePath++) {
+            QTreeWidgetItem *item = new QTreeWidgetItem();
+            item->setText(0 ,QFileInfo(filePaths[repoPath][filePath]).fileName());
+            item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
+            item->setCheckState(0, Qt::Unchecked);
+            item->setBackground(0, QBrush(Qt::red));
+            item->setIcon(0, provider.icon(QFileInfo(filePaths[repoPath][filePath])));
+            repoItem->addChild(item);
+        }
+    }
 }
 
 void GitDock::slotShowCommitWindow() {

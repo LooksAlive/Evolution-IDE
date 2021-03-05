@@ -276,6 +276,10 @@ private slots:
     void slotClangDocGenerate();
     void slotValgrind();
 
+    void slotPullRequest();
+    void slotCommitRequest();
+    void slotPushRequest();
+
 
     void slotGdbGui();
     void slotCut();
