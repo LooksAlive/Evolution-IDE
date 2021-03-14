@@ -4,19 +4,25 @@
 #include <stdio.h>
 
 GitBridge::GitBridge() {
-    //loadRepository();
+    loadRepository();
+}
+
+GitBridge::~GitBridge() {
+    freeResources();
 }
 
 void GitBridge::errorManager(const int &error, const char *desc) {
     if (error < 0) {
-      const git_error *e = git_error_last();
-      printf("Error %d/%d: %s    %s\n", error, e->klass, e->message, desc);
-      exit(error);
+        const git_error *e = git_error_last();
+        printf("Error %d/%d: %s    %s\n", error, e->klass, e->message, desc);
+        //exit(error);
     }
 }
 
 void GitBridge::freeResources() {
-    git_repository_free(repo);
+    //if(repo)
+    //    git_repository_free(repo);
+
     // unload from memory, also initiates clean-up
     git_libgit2_shutdown();
 }
@@ -82,10 +88,9 @@ void GitBridge::describe(describe_options *opts) {
     }
 }
 
-int GitBridge::push() {
+int GitBridge::push(char *refspec) {
     git_push_options options;
     git_remote *remote = NULL;
-    char *refspec = "refs/heads/master";
     const git_strarray refspecs = {
             &refspec,
             1};
@@ -98,8 +103,8 @@ int GitBridge::push() {
     return 0;
 }
 
-int GitBridge::init(const char *RepoName) {
-    initOpts Opts = { 1, 0, 0, 0, GIT_REPOSITORY_INIT_SHARED_UMASK, 0, 0, 0 };
+int GitBridge::init(const char *RepoName, const bool &initCommit) {
+    initOpts Opts = {1, 0, 0, 0, GIT_REPOSITORY_INIT_SHARED_UMASK, 0, 0, 0};
     Opts.shared = GIT_REPOSITORY_INIT_SHARED_ALL;
 
     git_repository_init_options opts = GIT_REPOSITORY_INIT_OPTIONS_INIT;
@@ -167,7 +172,7 @@ int GitBridge::init(const char *RepoName) {
      * mostly to demonstrate what it takes to do that, but also some
      * people like to have that empty base commit in their repo.
      */
-    if (Opts.initial_commit) {
+    if (initCommit) {
         initialCommit();
         printf("Created empty initial commit\n");
     }
@@ -267,38 +272,34 @@ int GitBridge::remove(const char *file) {
     errorManager(git_index_remove_bypath(index, file), "cannot remove file.");
 }
 
-int GitBridge::clone()
-{
+int GitBridge::clone(const char *dest, const char *url) {
     progress_data pd;
     git_repository *cloned_repo = NULL;
     git_clone_options clone_opts = GIT_CLONE_OPTIONS_INIT;
     git_checkout_options checkout_opts = GIT_CHECKOUT_OPTIONS_INIT;
-    const char *url;
-    const char *dest_path;
 
     /* Set up options */
     checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE;
-    //checkout_opts.progress_cb = checkout_progress;
-    checkout_opts.progress_payload = &pd;
     clone_opts.checkout_opts = checkout_opts;
+    //checkout_opts.progress_cb = checkout_progress;
+    //checkout_opts.progress_payload = &pd;
     //clone_opts.fetch_opts.callbacks.sideband_progress = sideband_progress;
     //clone_opts.fetch_opts.callbacks.transfer_progress = &fetch_progress;
     //clone_opts.fetch_opts.callbacks.credentials = cred_acquire_cb;
-    clone_opts.fetch_opts.callbacks.payload = &pd;
+    //clone_opts.fetch_opts.callbacks.payload = &pd;
 
     /* Do the clone */
-    errorManager(git_clone(&cloned_repo, url, dest_path, &clone_opts), "cannot clone repository.");
+    errorManager(git_clone(&cloned_repo, url, dest, &clone_opts), "cannot clone repository.");
     if (cloned_repo)
         git_repository_free(cloned_repo);
 
     return 0;
 }
 
-int GitBridge::fetch() {
+int GitBridge::fetch(const char *repo_name) {
     git_remote *remote = NULL;
     const git_indexer_progress *stats;
     git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
-    const char *repo_name;
 
     /* Figure out whether it's a named remote or a URL */
     printf("Fetching for repo \n");
@@ -338,19 +339,29 @@ int GitBridge::fetch() {
 
     return 0;
 
- on_error:
+    on_error:
     git_remote_free(remote);
     return -1;
+}
+
+
+const char *GitBridge::findRepo(const char *repo_name) {
+    char *buffer = nullptr;
+    git_buf root = {buffer, 0, 0};
+    errorManager(git_repository_discover(&root, repo_name, 0, NULL), "cannot find Repository");
+    const char *path = root.ptr;
+    git_buf_free(&root); // returned path data must be freed after use
+    return path;
 }
 
 int GitBridge::status() {
     git_status_list *status;
     git_status_options o = GIT_STATUS_OPTIONS_INIT;
 
-    o.show  = GIT_STATUS_SHOW_INDEX_AND_WORKDIR;
+    o.show = GIT_STATUS_SHOW_INDEX_AND_WORKDIR;
     o.flags = GIT_STATUS_OPT_INCLUDE_UNTRACKED |
-        GIT_STATUS_OPT_RENAMES_HEAD_TO_INDEX |
-        GIT_STATUS_OPT_SORT_CASE_SENSITIVELY;
+              GIT_STATUS_OPT_RENAMES_HEAD_TO_INDEX |
+              GIT_STATUS_OPT_SORT_CASE_SENSITIVELY;
 
     errorManager(git_repository_is_bare(repo), "cannot get info if repostitory is bare or not,");
 
@@ -360,12 +371,168 @@ int GitBridge::status() {
     return 0;
 }
 
-const char* GitBridge::findRepo(const char* repo_name) {
-    git_buf root = {0};
-    errorManager(git_repository_discover(&root, repo_name, 0, NULL), "cannot find Repository");
-    const char* path = root.ptr;
-    git_buf_free(&root); // returned path data must be freed after use
-    return path;
+const char *GitBridge::getBranch() {
+    const char *branch = NULL;
+    git_reference *head = NULL;
+
+    errorManager(git_repository_head(&head, repo), "failed to get current branch");
+    branch = git_reference_shorthand(head);
+    git_reference_free(head);
+
+    return branch;
 }
 
+/**
+ * This function print out an output similar to git's status command
+ * in long form, including the command-line hints.
+ */
+void GitBridge::getStatusData(git_status_list *status) {
+    size_t i, maxi = git_status_list_entrycount(status);
+    const git_status_entry *s;
+    int header = 0, changes_in_index = 0;
+    int changed_in_workdir = 0, rm_in_workdir = 0;
+    const char *old_path, *new_path;
+
+    /** Print index changes. */
+
+    for (i = 0; i < maxi; ++i) {
+        char *istatus = NULL;
+
+        s = git_status_byindex(status, i);
+
+        if (s->status == GIT_STATUS_CURRENT)
+            continue;
+
+        if (s->status & GIT_STATUS_WT_DELETED)
+            rm_in_workdir = 1;
+
+        if (s->status & GIT_STATUS_INDEX_NEW)
+            istatus = "new file: ";
+        if (s->status & GIT_STATUS_INDEX_MODIFIED)
+            istatus = "modified: ";
+        if (s->status & GIT_STATUS_INDEX_DELETED)
+            istatus = "deleted:  ";
+        if (s->status & GIT_STATUS_INDEX_RENAMED)
+            istatus = "renamed:  ";
+        if (s->status & GIT_STATUS_INDEX_TYPECHANGE)
+            istatus = "typechange:";
+
+        if (istatus == NULL)
+            continue;
+
+        if (!header) {
+            printf("# Changes to be committed:\n");
+            printf("#   (use \"git reset HEAD <file>...\" to unstage)\n");
+            printf("#\n");
+            header = 1;
+        }
+
+        old_path = s->head_to_index->old_file.path;
+        new_path = s->head_to_index->new_file.path;
+
+        if (old_path && new_path && strcmp(old_path, new_path))
+            printf("#\t%s  %s -> %s\n", istatus, old_path, new_path);
+        else
+            printf("#\t%s  %s\n", istatus, old_path ? old_path : new_path);
+    }
+
+    if (header) {
+        changes_in_index = 1;
+        printf("#\n");
+    }
+    header = 0;
+
+    /** Print workdir changes to tracked files. */
+
+    for (i = 0; i < maxi; ++i) {
+        char *wstatus = NULL;
+
+        s = git_status_byindex(status, i);
+
+        /**
+         * With `GIT_STATUS_OPT_INCLUDE_UNMODIFIED` (not used in this example)
+         * `index_to_workdir` may not be `NULL` even if there are
+         * no differences, in which case it will be a `GIT_DELTA_UNMODIFIED`.
+         */
+        if (s->status == GIT_STATUS_CURRENT || s->index_to_workdir == NULL)
+            continue;
+
+        /** Print out the output since we know the file has some changes */
+        if (s->status & GIT_STATUS_WT_MODIFIED)
+            wstatus = "modified: ";
+        if (s->status & GIT_STATUS_WT_DELETED)
+            wstatus = "deleted:  ";
+        if (s->status & GIT_STATUS_WT_RENAMED)
+            wstatus = "renamed:  ";
+        if (s->status & GIT_STATUS_WT_TYPECHANGE)
+            wstatus = "typechange:";
+
+        if (wstatus == NULL)
+            continue;
+
+        if (!header) {
+            printf("# Changes not staged for commit:\n");
+            printf("#   (use \"git add%s <file>...\" to update what will be committed)\n", rm_in_workdir ? "/rm" : "");
+            printf("#   (use \"git checkout -- <file>...\" to discard changes in working directory)\n");
+            printf("#\n");
+            header = 1;
+        }
+
+        old_path = s->index_to_workdir->old_file.path;
+        new_path = s->index_to_workdir->new_file.path;
+
+        if (old_path && new_path && strcmp(old_path, new_path))
+            printf("#\t%s  %s -> %s\n", wstatus, old_path, new_path);
+        else
+            printf("#\t%s  %s\n", wstatus, old_path ? old_path : new_path);
+    }
+
+    if (header) {
+        changed_in_workdir = 1;
+        printf("#\n");
+    }
+
+    /** Print untracked files. */
+
+    header = 0;
+
+    for (i = 0; i < maxi; ++i) {
+        s = git_status_byindex(status, i);
+
+        if (s->status == GIT_STATUS_WT_NEW) {
+
+            if (!header) {
+                printf("# Untracked files:\n");
+                printf("#   (use \"git add <file>...\" to include in what will be committed)\n");
+                printf("#\n");
+                header = 1;
+            }
+
+            printf("#\t%s\n", s->index_to_workdir->old_file.path);
+        }
+    }
+
+    header = 0;
+
+    /** Print ignored files. */
+
+    for (i = 0; i < maxi; ++i) {
+        s = git_status_byindex(status, i);
+
+        if (s->status == GIT_STATUS_IGNORED) {
+
+            if (!header) {
+                printf("# Ignored files:\n");
+                printf("#   (use \"git add -f <file>...\" to include in what will be committed)\n");
+                printf("#\n");
+                header = 1;
+            }
+
+            printf("#\t%s\n", s->index_to_workdir->old_file.path);
+        }
+    }
+
+    if (!changes_in_index && changed_in_workdir)
+        printf("no changes added to commit (use \"git add\" and/or \"git commit -a\")\n");
+}
 

@@ -1,3 +1,4 @@
+#include <QTabBar>
 #include "tab.h"
 
 Tab::Tab(QWidget *parent) : QTabWidget(parent)
@@ -12,9 +13,14 @@ Tab::Tab(QWidget *parent) : QTabWidget(parent)
     setTabShape(QTabWidget::Rounded);
     // setElideMode(Qt::ElideRight); // not enough space for tab name -> smth...
     setFocusPolicy(Qt::ClickFocus);
+    // tabBar()->setFixedHeight(15);
+    QFont tabFont;
+    tabFont.setItalic(true);
+    tabFont.setFamily("Ubuntu Mono");
+    tabBar()->setFont(tabFont);
 
     /* add + button to add a tab; connect with it */
     AddNewTabButton = new QToolButton(this);
-    Tab::setCornerWidget(AddNewTabButton, Qt::TopRightCorner);/* button position */
+    setCornerWidget(AddNewTabButton, Qt::TopRightCorner);/* button position */
     AddNewTabButton->setText("+");
 }

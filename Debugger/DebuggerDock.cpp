@@ -1,5 +1,6 @@
+#include <QFileInfo>
+#include "icons/IconFactory.h"
 #include "DebuggerDock.h"
-#include <icons/IconFactory.h>
 
 BreakPointListWindow::BreakPointListWindow(QWidget *parent) : QWidget(parent) {
     createWindow();
@@ -10,15 +11,15 @@ void BreakPointListWindow::createWindow() {
     BpList = new QTreeWidget(this);
     BpBar = new QToolBar(this);
 
-    setMaximumWidth(700);
-    BpList->setMinimumWidth(350);
+    setMaximumWidth(300);
+    BpList->setMinimumWidth(220);
     BpList->setColumnCount(3);
     BpList->setHeaderLabels(QStringList() << "ID"
                                           << "File"
                                           << "Line");
-    BpList->setColumnWidth(0, 50); // ID
-    BpList->setColumnWidth(1, 250);// filename
-    BpList->setColumnWidth(2, 50); // line
+    BpList->setColumnWidth(0, 40); // ID
+    BpList->setColumnWidth(1, 150);// filename
+    BpList->setColumnWidth(2, 30); // line
 
     BpBar->setOrientation(Qt::Vertical);
     BpBar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
@@ -51,11 +52,13 @@ void BreakPointListWindow::createWindow() {
 
     setLayout(MainLayout);
 }
-void BreakPointListWindow::insertBreakPoint(const uint32_t &ID, const char *filename, const int &line) const {
+
+void BreakPointListWindow::insertBreakPoint(const uint32_t &ID, const char *filepath, const int &line) const {
     auto *item = new QTreeWidgetItem(ID);            // any type
     item->setIcon(0, QIcon(IconFactory::BreakPoint));// BP. icon
     item->setText(0, QString::number(ID));
-    item->setText(1, filename);
+    item->setText(1, QFileInfo(filepath).fileName());
+    item->setToolTip(1, filepath);
     item->setText(2, QString::number(line));
     BpList->addTopLevelItem(item);
 }
@@ -157,11 +160,11 @@ void DebuggerDock::createToolBar() {
 void DebuggerDock::createControlTitleBar() {
     TitleControlBar = new QToolBar(this);
     TitleControlBar->setOrientation(Qt::Horizontal);
-    TitleControlBar->setFixedHeight(35);
+    TitleControlBar->setFixedHeight(30);
 
     // call stack width + toolbar width
     auto *spacer = new QWidget(this);
-    spacer->setFixedWidth(200 + 35);
+    spacer->setFixedWidth(200 + 30);
     TitleControlBar->addWidget(spacer);
 
     btn_StepOver = new QToolButton(this);

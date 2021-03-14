@@ -68,10 +68,22 @@ public:
 
     // if there will be more that 1 content element
     const std::vector<sample> cpp_code_samples = {
-            sample{{CodeSamples::Introduction_CPP_01}, {"Introduction.cpp"}},
-            sample{{CodeSamples::Main_CPP_02}, {"Main.cpp"}},
-            sample{{CodeSamples::Variables_CPP_03}, {"Variables.cpp"}},
-            sample{{CodeSamples::For_Loop_CPP_04}, {"For_Loop.cpp"}},
+            sample{{CodeSamples::Introduction_CPP_01},
+                   {"Introduction.cpp"}},
+            sample{{CodeSamples::Main_CPP_02},
+                   {"Main.cpp"}},
+            sample{{CodeSamples::Variables_CPP_03},
+                   {"Variables.cpp"}},
+            sample{{CodeSamples::Operators_CPP_04},
+                   {"Operators.cpp"}},
+            sample{{CodeSamples::IF_ELSE_CPP_05},
+                   {"If_Else.cpp"}},
+            sample{{CodeSamples::SWITCH_CPP_06},
+                   {"Switch.cpp"}},
+            sample{{CodeSamples::For_Loop_CPP_07},
+                   {"For_Loop.cpp"}},
+            sample{{CodeSamples::WHILE_DO_WHILE_CPP_08},
+                   {"While_Do_While.cpp"}},
     };
 
     // contents
@@ -82,7 +94,6 @@ public:
     // TODO: for if there will be also preview, have to inherit brain new widget with preview and list layout
     // TODO: 2 objects from this class, and they will be in stack
     // only readable, copyable
-    void setPreviewHighlighter(Highlighter *highlighter) { previewHighlighter = highlighter; }
 
     QString WorkingContent;
 

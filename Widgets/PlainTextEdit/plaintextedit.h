@@ -20,14 +20,16 @@
 #include <QTimer>
 
 #include <QFileSystemModel>
-#include <QTableView>
+#include <QTableWidget>
 #include <QListView>
+#include <QTreeWidget>
 
 #include <iostream>
 #include <vector>
 
 #include "Widgets/CodeInfoDock/CodeInfoDock.h"
 #include "Widgets/Education/Education.h"
+#include "completer.h"
 
 class LineNumberArea;
 class BreakPointArea;
@@ -50,8 +52,12 @@ public:
     Education *education;
     NewSampleWindow *newSampleWindow;
 
+    Completer *completer;
+
     void setCodeInfo(CodeInfoDock *code_info_widget) { code_info = code_info_widget; }
+
     void setClang(ClangBridge *clang_bridge) { clang = clang_bridge; }
+
     void setEducation(Education *edu) { education = edu; }
 
     // tab width
@@ -100,7 +106,10 @@ public:
     QString getLineContent(const int &row, const bool &setCursor = true);
     void selectWordUnderCursor();
     QString getWordUnderCursor();
+
     void deleteLine();
+
+    void deleteLine(QTextCursor &cursor);
 
     // other
     void setFileExtension(const QString &extension = "cpp");
@@ -167,7 +176,6 @@ private:
     QMenu *viewMenu;
 
     void createMenu();
-    QCompleter *completer;
 
     void SetupCompleter();
 

@@ -23,9 +23,8 @@ void DebugWatchDock::createDock() {
 
     // not editable yet, later possible to change values
     VariableTreeValues->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    VariableTreeValues->setColumnCount(2);
-    VariableTreeValues->setHeaderLabels(QStringList() << "Name"
-                                                      << "Value");
+    VariableTreeValues->setColumnCount(1);
+    VariableTreeValues->setHeaderLabels(QStringList() << "Variable Name");
 
     MainLayout->setContentsMargins(0, 0, 0, 0);
     MainLayout->setSpacing(0);

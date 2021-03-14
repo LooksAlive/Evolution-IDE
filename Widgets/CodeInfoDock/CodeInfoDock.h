@@ -38,23 +38,27 @@
 #include "LinterDock.h"
 #include "RefactoringDock.h"
 
-class ClangBridge;
-class PlainTextEdit;
+#include "Protocol.h"   // clangd::Position
 
+class ClangBridge;
+
+class PlainTextEdit;
 
 // FIXME: will this event work ? do i have to create separate objects for every thread ???
 
 class ClangHandler : public QObject {
-    Q_OBJECT
+Q_OBJECT
 
 public:
     explicit ClangHandler(ClangBridge *bridge, QObject *parent = nullptr);
+
     ~ClangHandler() = default;
 
-    // nothing is required to be constantly updated, when the result appears, take them by signals, no hurry :)
+    std::string currentFile;
+    clang::clangd::Position position;
+    std::string *content = nullptr;     // content for partial formation
 
-    // what symbol should we try to find signature for
-    std::string RequestedSymbol;
+    // nothing is required to be constantly updated, when the result appears, take them by signals, no hurry :)
 
     std::string Signature;
     std::string Documentation;
@@ -66,8 +70,15 @@ public:
     // file format -> pointer to QTextDocument
     QTextDocument *document;
 
+    // completion data
+    std::vector<std::string> CompletionData;
+
     // checks and tidy + fix it;  they would need to have connection here, since we operate with clang
     // and its related tools
+    // when we switch file we would want to display current file checks, or update preamble and also show checks
+
+    bool forcePreambleUpdate = false;
+    bool updateChecks = false;
     struct LinterLocation {
         std::string filepath;
         int row;
@@ -88,8 +99,8 @@ public:
     // references
     struct ReferencesLocation {
         std::string filepath;
-        int row;
-        int col;
+        int x;
+        int y;
     };
 
     std::vector<ReferencesLocation> referencesLocation;
@@ -100,24 +111,19 @@ private:
 public slots:
     void slotGetSignature();
     void slotCodeComplete();
+
     void slotRename();
-    void slotCodeCheck();
-    void slotClangTidyCheck();
+
+    void slotUpdatePreamble();
+
     void slotFindReferences();
     void slotFormatFile();
     void slotGoToDefinition();
+
     void slotGenerate();
 
-signals:
-    void addSignature();
-    void addCodeComplete();
-    void renameFinished();
-    void codeCheckFinished();
-    void clangTidyFinished();
-    void addReferences();
-    void formatFileFinished();
-    void goToDefinitionFinished();
-    void generateFinished();
+    void slotGetHighlights();
+
 };
 
 class FindReplaceWidget;
@@ -134,24 +140,37 @@ public:
 
     // outside in MainWindow because it suppose to be a dock
     void setEditor(PlainTextEdit *editor) { edit = editor; }
+
     void setClang(ClangBridge *clang_bridge) { clang = clang_bridge; }
+
     // for references using same dock as for search with a couple of changes
     void setSearch(FindReplaceWidget *ref) { References = ref; }
+
     void setLinter(LinterDock *linter) { Linter = linter; }
+
     void setRefactor(RefactoringDock *refactor) { Refactor = refactor; }
 
     ClangHandler *Handler;
+    ClangHandler *signatureWorker;
+    ClangHandler *definitionWorker;
+    ClangHandler *codeCompleteWorker;
+    ClangHandler *renameWorker;
+    ClangHandler *preambleUpdateWorker;
+    ClangHandler *findReferencesWorker;
+    ClangHandler *formatFileWorker;
+    ClangHandler *generateWorker;
+    ClangHandler *highlightWorker;
 
     enum Action {
         GetSignature = 0,
         CodeComplete,
         Rename,
         CodeCheck,
-        ClangTidyCheck,
         FindReferences,
         FormatFile,
         GoToDefinition,
-        Generate// what could be generated will appear in widget list
+        Generate, // what could be generated will appear in widget list
+        Highlights
     };
 
     void runAction(const Action &action);
@@ -175,9 +194,9 @@ public:
     RefactoringDock *Refactor;
 
 private:
-    QToolBar *ToolBar;
     QWidget *MainWidget;
     QToolBar *TitleBar;
+    QToolBar *ToolBar;
 
     QLabel *classSignature;
     QLabel *functionSignature;
@@ -185,6 +204,7 @@ private:
     //QLabel *PolymorphicSignatures;
     //QLabel *classHierarchy;
     //QLabel *includeHierarchy;
+    //QLabel *typeHierarchy;
 
     QHBoxLayout *MainLayout;
     QVBoxLayout *SignatureActionLayout;
@@ -198,12 +218,12 @@ private:
     QThread *signatureThread;
     QThread *codeCompleteThread;
     QThread *renameThread;
-    QThread *codeCheckThread;
-    QThread *clangTidyCheckThread;
+    QThread *updatePreambleThread;
     QThread *findReferencesThread;
     QThread *formatFileThread;
     QThread *goToDefinitionThread;
     QThread *generateThread;
+    QThread *highlightsThread;
 
 
     void connectThreads();
@@ -212,25 +232,32 @@ private:
     // these will update widgets
 private slots:
 
+    // when user want to find references, dock will be displayed and filled with them.
     void slotShowReferencesDock();
+
     void slotShowRefactorDock();
     void slotShowLinterDock();
 
-    void slotOpenFileReference(const QModelIndex &);
-
     // action ended related slots, gather data, update GUI + proper actions
     void slotGetSignature();
+
     void slotCodeComplete();// in editor completer + kinda ours
     // necessary data would be grabbed from dock widgets or set directly into Handler
     void slotRename();
+
     // TODO: this two might directly set selection(warnings, errors)
-    void slotCodeCheck();
-    void slotClangTidyCheck();
+    void slotUpdatePreamble();
+
     // this shall fill only dock
     void slotFindReferences();
+
     void slotFormatFile();
+
     void slotGoToDefinition();
+
     void slotGenerate();
+
+    void slotGetHighlights();
 };
 
 

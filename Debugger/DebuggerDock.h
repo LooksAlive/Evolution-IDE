@@ -33,7 +33,7 @@ public:
     QToolButton *mute;
     QToolButton *muteAll;
 
-    void insertBreakPoint(const uint32_t &ID, const char *filename, const int &line) const;
+    void insertBreakPoint(const uint32_t &ID, const char *filepath, const int &line) const;
     // remove not here, only clear whole list, bc. there can be situation:
     // ID:  1,2,3,4 --> remove 3  --> 1,2,4  -> will require more stuffs to do
 

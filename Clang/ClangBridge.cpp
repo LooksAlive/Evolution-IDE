@@ -53,22 +53,48 @@
 
 #include "ClangBridge.h"
 
+
 ClangBridge::ClangBridge() {
 
+    //addDocument("", "", "");
+    //const PreambleBounds Bounds = ComputePreambleBounds(LangOpts, MainFileBuffer, MaxLines);
+    //llvm::ErrorOr<PrecompiledPreamble> precompiledPreamble = PrecompiledPreamble::Build(Invocation, MainFileBuffer, Bounds, *Diagnostics, VFS, PCHContainerOps, true, Callbacks);
+    //PreambleData preambleData {Inputs, precompiledPreamble, Diags, Includes, Macros, StatCache, CanonIncludes};
+    /*
+    //PreambleData *preambleData;
+    PreambleParsedCallback PreambleCallback;    // not setting up no idea how exactly :)
+    preambleData = buildPreamble("FileName", CI,
+                           Inputs, true,
+                           PreambleCallback);
+    //const PreambleData *preamble = preambleData.get();
+    CompilerInvocation::CreateFromArgs(CI, "jkkasfh", *Diagnostics);
+    parsedAST = ParsedAST::build("FileName", Inputs, std::make_unique<CompilerInvocation>(CI), llvm::ArrayRef<Diag>(), preambleData);
+    */
 }
-
+/*
 void ClangBridge::setCompilationArguments(const std::string &args) {
     // CDBDatabase CDB;
     // auto cmd = CDB.getCompileCommand(args);
-    /*
+
     DirectoryBasedGlobalCompilationDatabase CDB(std::string("jskdfh"));
-    auto cmd = CDB.getCompileCommand(args);
-    cmd.getValue().CommandLine;
-    */
+    Inputs.CompileCommand = CDB.getCompileCommand(args).getValue(); // fileName
+    //cmd.getValue().CommandLine;
+
 }
 
 void ClangBridge::addDocument(PathRef File, StringRef Contents, llvm::StringRef Version, WantDiagnostics WD,
                               bool ForceRebuild) {
+    parseOpts.ClangTidyOpts = tidy::ClangTidyOptions::getDefaults();
+
+    Inputs.TFS = &TFS;
+    Inputs.Contents = std::string(Contents);
+    Inputs.Version = Version.str();
+    Inputs.ForceRebuild = ForceRebuild;
+    Inputs.Opts = std::move(parseOpts);
+    //Inputs.Index = Index;
+    // 2 more
+
+
 }
 
 void ClangBridge::removeDocument(PathRef File) {
@@ -76,13 +102,83 @@ void ClangBridge::removeDocument(PathRef File) {
 }
 
 void ClangBridge::signatureHelp(PathRef File, Position Pos) {
-
-}
-
-void ClangBridge::locateSymbolAt(PathRef File, Position Pos) {
-
+    signatureHelpResults = clangd::signatureHelp(File, Pos, *preambleData.get(), Inputs);
 }
 
 void ClangBridge::codeComplete(PathRef File, Position Pos, const clangd::CodeCompleteOptions &Opts) {
+    codeCompleteResults = clangd::codeComplete(File, Pos, PData, Inputs, Opts);
+}
+
+void ClangBridge::locateSymbolAt(PathRef File, Position Pos) {
+    locatedDefDecl = clangd::locateSymbolAt(parsedAST.getValue(), Pos, Inputs.Index); // add index
+}
+
+void ClangBridge::formatCode(PathRef File, llvm::StringRef Code, ArrayRef<tooling::Range> Ranges) {
+
+    format::FormatStyle Style = getFormatStyleForFile(File, Code, TFS);
+    // for whole file
+    // {tooling::Range(0, Code.size())}
+    tooling::Replacements IncludeReplaces =
+        format::sortIncludes(Style, Code, Ranges, File);
+    auto Changed = tooling::applyAllReplacements(Code, IncludeReplaces);
+    if (!Changed)
+        std::cout << "formation of file failed";
+      //std::cout << Changed.takeError();
+
+    format::reformat(
+            Style, *Changed,
+            tooling::calculateRangesAfterReplacements(IncludeReplaces, Ranges),
+                File);
 
 }
+
+void ClangBridge::findHover(PathRef File, Position Pos) {
+    format::FormatStyle Style = getFormatStyleForFile(
+        File, Inputs.Contents, *Inputs.TFS);
+    hoverInfo = clangd::getHover(parsedAST.getValue(), Pos, std::move(Style), Inputs.Index);
+}
+
+void ClangBridge::typeHierarchy(PathRef File, Position Pos, int Resolve, TypeHierarchyDirection Direction) {
+    // TypeHierarchyDirection::Parents;
+    TypeHierarchy = clangd::getTypeHierarchy(parsedAST.getValue(), Pos, Resolve, Direction, Inputs.Index,
+                                             File);
+}
+
+void ClangBridge::resolveTypeHierarchy(TypeHierarchyItem Item, int Resolve, TypeHierarchyDirection Direction) {
+    clangd::resolveTypeHierarchy(Item, Resolve, Direction, Inputs.Index);
+}
+
+void ClangBridge::foldingRanges(StringRef File) {
+    foldRanges = clangd::getFoldingRanges(parsedAST.getValue()).get();
+}
+
+void ClangBridge::findReferences(PathRef File, Position Pos, uint32_t Limit) {
+    refResults = clangd::findReferences(parsedAST.getValue(), Pos, Limit, Inputs.Index);
+}
+
+void ClangBridge::semanticHighlights(PathRef File) {
+    highlightingTokens = clangd::getSemanticHighlightings(parsedAST.getValue());
+}
+
+void ClangBridge::rename(PathRef File, Position Pos, llvm::StringRef NewName, const RenameOptions &Opts) {
+    auto Edits = clangd::rename(
+        {Pos, NewName, parsedAST.getValue(), File, Inputs.Index, Opts, nullptr});
+    if (!Edits)
+      std::cout << "cannot rename !";
+
+    if (Opts.WantFormat) {
+      auto Style = getFormatStyleForFile(File, Inputs.Contents,
+                                         *Inputs.TFS);
+      llvm::Error Err = llvm::Error::success();
+      for (auto &E : *Edits)
+        Err =
+            llvm::joinErrors(reformatEdit(E.getValue(), Style), std::move(Err));
+
+    //if (Err)
+    //    return CB(std::move(Err));
+    }
+    //RenameFiles.record(Edits->size());
+
+}
+
+*/

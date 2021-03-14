@@ -8,8 +8,9 @@ set(CMAKE_CXX_COMPILER clang++-10)
 set(BASE_FLAGS "-O0 -g -Wall") # -O3
 
 # required flags for clang, llvm, lldb
+# -frtti for SMTP # -fno-rtti
 set(CXX_FLAGS
-        " ${BASE_FLAGS} -fno-exceptions -fno-rtti -D_GNU_SOURCE -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS")
+        " ${BASE_FLAGS} -frtti -fno-exceptions -D_GNU_SOURCE -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS")
 set(CMAKE_CXX_FLAGS ${CXX_FLAGS})
 
 #set(CMAKE_CXX_FLAGS "-O0 -g -std=c++17 -fsanitize=address -fno-omit-frame-pointer")
@@ -23,6 +24,7 @@ include_directories(
         /usr/local/include/clang-tidy
         /usr/local/include/clangd  # clangd -> indexer, completer, parser etc.
         /usr/local/include/clangd/support
+        Widgets/Notifier/simple-mail/src        # SMTP
         #clangd
         #clangd/support
 )
@@ -139,6 +141,43 @@ set(TASK_VIEW
         TaskWidget/readprocessstrategy.cpp
         )
 
+set(SMTP_MAIL
+        Widgets/Notifier/simple-mail/src/emailaddress.h
+        Widgets/Notifier/simple-mail/src/emailaddress.cpp
+        Widgets/Notifier/simple-mail/src/mimeattachment.cpp
+        Widgets/Notifier/simple-mail/src/mimeattachment.h
+        Widgets/Notifier/simple-mail/src/mimecontentformatter.cpp
+        Widgets/Notifier/simple-mail/src/mimecontentformatter.h
+        Widgets/Notifier/simple-mail/src/mimefile.cpp
+        Widgets/Notifier/simple-mail/src/mimefile.h
+        Widgets/Notifier/simple-mail/src/mimehtml.h
+        Widgets/Notifier/simple-mail/src/mimehtml.cpp
+        Widgets/Notifier/simple-mail/src/mimeinlinefile.cpp
+        Widgets/Notifier/simple-mail/src/mimeinlinefile.h
+        Widgets/Notifier/simple-mail/src/emailaddress.cpp
+        Widgets/Notifier/simple-mail/src/emailaddress.h
+        Widgets/Notifier/simple-mail/src/mimeattachment.h
+        Widgets/Notifier/simple-mail/src/mimeattachment.cpp
+        Widgets/Notifier/simple-mail/src/mimemessage.cpp
+        Widgets/Notifier/simple-mail/src/mimemessage.h
+        Widgets/Notifier/simple-mail/src/mimemultipart.cpp
+        Widgets/Notifier/simple-mail/src/mimemultipart.h
+        Widgets/Notifier/simple-mail/src/mimepart.cpp
+        Widgets/Notifier/simple-mail/src/mimepart.h
+        Widgets/Notifier/simple-mail/src/mimetext.cpp
+        Widgets/Notifier/simple-mail/src/mimetext.h
+        Widgets/Notifier/simple-mail/src/quotedprintable.cpp
+        Widgets/Notifier/simple-mail/src/quotedprintable.h
+        Widgets/Notifier/simple-mail/src/sender.cpp
+        Widgets/Notifier/simple-mail/src/sender.h
+        Widgets/Notifier/simple-mail/src/server.h
+        Widgets/Notifier/simple-mail/src/server.cpp
+        Widgets/Notifier/simple-mail/src/serverreply.cpp
+        Widgets/Notifier/simple-mail/src/serverreply.h
+        Widgets/Notifier/simple-mail/src/smtpexports.h
+        #Widgets/Notifier/simple-mail/src/SimpleMail     # main file
+        )
+
 set(HEX_VIEW
         Widgets/HexView/QHexView/document/buffer/qfilebuffer.cpp
         Widgets/HexView/QHexView/document/buffer/qfilebuffer.h
@@ -205,6 +244,7 @@ set(SOURCE_FILES
         qconsole.h
         ${HEX_VIEW}
         #${CLANGD_SOURCES} # in the future will be more accurate, now only takes much storage and time
+        ${SMTP_MAIL}
         ${TASK_VIEW}
         Widgets/HexView/hexview.cpp
         Widgets/HexView/hexview.h
@@ -262,7 +302,23 @@ set(SOURCE_FILES
         Debugger/DebuggerDock.cpp
         Debugger/DebuggerDock.h
         Debugger/DebugWatchDock.cpp
-        Debugger/DebugWatchDock.h Widgets/SearchBox/SearchBox.cpp Widgets/SearchBox/SearchBox.h Delegate.cpp Delegate.h Widgets/CodeInfoDock/RefactoringDock.cpp Widgets/CodeInfoDock/RefactoringDock.h Widgets/CodeInfoDock/LinterDock.cpp Widgets/CodeInfoDock/LinterDock.h Widgets/PlainTextEdit/InvitationScreen.cpp Widgets/PlainTextEdit/InvitationScreen.h Widgets/Git/GitDock.cpp Widgets/Git/GitDock.h)
+        Debugger/DebugWatchDock.h
+        Widgets/SearchBox/SearchBox.cpp
+        Widgets/SearchBox/SearchBox.h
+        Delegate.cpp Delegate.h
+        Widgets/CodeInfoDock/RefactoringDock.cpp
+        Widgets/CodeInfoDock/RefactoringDock.h
+        Widgets/CodeInfoDock/LinterDock.cpp
+        Widgets/CodeInfoDock/LinterDock.h
+        Widgets/PlainTextEdit/InvitationScreen.cpp
+        Widgets/PlainTextEdit/InvitationScreen.h
+        Widgets/Git/GitDock.cpp
+        Widgets/Git/GitDock.h
+        Widgets/Education/CodeSamples.cpp
+        Widgets/Notifier/SmtpMailNotifier.cpp
+        Widgets/Notifier/SmtpMailNotifier.h
+        Widgets/Notifier/ContactDeveloper.cpp
+        Widgets/Notifier/ContactDeveloper.h Widgets/PlainTextEdit/HoverInfo.cpp Widgets/PlainTextEdit/HoverInfo.h)
 
 
 
@@ -386,6 +442,7 @@ find_package( Qt5 REQUIRED
         Gui
         Xml
         PrintSupport
+        Network
         )
 #find_package( Qt5Widgets REQUIRED )
 #find_package( Qt5Gui REQUIRED )
@@ -396,5 +453,5 @@ find_package( Qt5 REQUIRED
 
 set_target_properties(Qt5::Core PROPERTIES MAP_IMPORTED_CONFIG_COVERAGE "DEBUG")
 
-target_link_libraries(editor -Wl,--start-group Qt5::Widgets Qt5::Gui Qt5::Core Qt5::Xml Qt5::PrintSupport
+target_link_libraries(editor -Wl,--start-group Qt5::Widgets Qt5::Gui Qt5::Core Qt5::Network Qt5::Xml Qt5::PrintSupport
         ${SYSTEM_LIBS} ${LLVM_LIBS} ${CLANG_LIBS} ${LLDB_LIBS_SHARED} ${GIT_LIBS} -Wl,--end-group)

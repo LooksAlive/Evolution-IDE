@@ -10,17 +10,22 @@
 #include <QPushButton>
 #include <QStackedWidget>
 #include <QTreeWidget>
+#include <QListWidget>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <QToolBar>
+#include <QPlainTextEdit>
+#include <QCheckBox>
 
 #include <QStatusBar>
 #include <QFileIconProvider>
 
+#include "icons/IconFactory.h"
 #include "gitbridge.h"
 
 
 class GitDock : public QDockWidget {
-    Q_OBJECT
+Q_OBJECT
 public:
     explicit GitDock(QWidget *parent = nullptr);
     ~GitDock() = default;
@@ -31,7 +36,7 @@ public:
 
 private:
     QStatusBar *statusBar;
-
+    QToolBar *TitleBar;
 
     void createWindow();
 
@@ -41,6 +46,7 @@ private:
     QPushButton *pushTo;
     QPushButton *cloneTo;
     QPushButton *createRepositoryTo;
+    QPushButton *lookUpRepository;
 
     QLabel *Branch;
     QLabel *Url;
@@ -52,6 +58,7 @@ private:
     QPushButton *commit;
     // list of not commited, not contained(add) files, directories
     QTreeWidget *CommitList;
+    QPlainTextEdit *Comment;
 
 
     void createPushWindow();
@@ -68,31 +75,64 @@ private:
     QLineEdit *cloneDestination;
 
     void createNewRepository();
+
     QFormLayout *NewRepoLayout;
     QWidget *NewRepoWidget;
     QLineEdit *newRepository;
-    QPushButton *createRepository;
     QLineEdit *newRepoDestination;
+    QCheckBox *InitialCommit;
+    QPushButton *createRepository;
+
+    void createLookUpWindow();
+
+    QVBoxLayout *LookUpLayout;
+    QWidget *LookUpWidget;
+    QPushButton *lookUp;
+    QLineEdit *lookUpName;
+    QListWidget *LookUpList;
 
     // TODO: PullWidget  --- only updates current directory from github
 
+    // make all connections in dock
     void setConnections();
 
     // not added files in project, checked will be added and commited on request
     // there might be more repos in ours...
-    void fillCommitWithFiles(const QStringList &repositoriesPaths, const QList<QStringList>& filePaths);
+    // TODO: disable removed file paths elements, highlight not added
+    void fillCommitWithFiles(const QStringList &repositoriesPaths, const QList<QStringList> &filePaths);
 
     // commited files, which user want to push
     // there might be more repos in ours...
-    void fillPushWithFiles(const QStringList &repositoriesPaths, const QList<QStringList>& filePaths);
+    // TODO: disable removed file paths elements, highlight not added
+    void fillPushWithFiles(const QStringList &repositoriesPaths, const QList<QStringList> &filePaths);
+
+    // returns list of all filepaths user chosen to commit, push
+    // this is enough to prefrorm git operations
+    const QStringList getCheckedFromCommitTree();
+
+    const QStringList getCheckedFromPushTree();
 
     GitBridge gitBridge;
 
 private slots:
+
     void slotShowCommitWindow();
+
     void slotShowPushWindow();
+
     void slotShowCloneWindow();
+
     void slotShowNewRepoWindow();
+
+    void slotCommit();
+
+    void slotPush();
+
+    void slotClone();
+
+    void slotNewRepo();
+
+    void slotLookUpRepo();
 };
 
 

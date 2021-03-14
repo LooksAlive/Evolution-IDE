@@ -7,17 +7,33 @@
 #include <string>
 #include <vector>
 
+#include <QListWidget>
+//#include <QComboBox>
 
-class Completer : public QCompleter
-{
-    Q_OBJECT
+#include "Delegate.h"
+
+class CompleterItemDelegate : public QStyledItemDelegate {
+    void initStyleOption(QStyleOptionViewItem *option, const QModelIndex &index) const override {
+        option->backgroundBrush.setColor(QColor(Qt::red));
+        option->palette.setBrush(QPalette::Text, QColor(Qt::blue));
+        option->palette.setBrush(QPalette::HighlightedText, QColor(Qt::red));
+        //option->displayAlignment = Qt::AlignCenter;
+        QStyledItemDelegate::initStyleOption(option, index);
+    }
+};
+
+class Completer : public QCompleter {
+Q_OBJECT
 public:
     Completer(QObject *parent = nullptr);
+
     ~Completer() = default;
 
-    void setItems(const std::vector<std::string> &data);
+    // TODO: add icon and type
+    void addItem(const std::string &name, const std::string &returnType, const QIcon &icon = QIcon());
 
-
+private:
+    QListWidget *Popup;
 
 };
 

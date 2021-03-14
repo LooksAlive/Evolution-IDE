@@ -178,7 +178,8 @@ void lldbBridge::fillCallStack() {
 
 void lldbBridge::slotGoToBreakPointFile(QTreeWidgetItem *item, int column) {
     Q_UNUSED(column);
-    const char *filepath = Dock->BreakPoint_List->BpList->currentItem()->text(1).toLatin1().data();
+    // path is in toolTip, text inly only fileName
+    const char *filepath = Dock->BreakPoint_List->BpList->currentItem()->toolTip(1).toLatin1().data();
     const int line = Dock->BreakPoint_List->BpList->currentItem()->text(2).toInt();
     emit filePathUpdate(filepath, line, 1);
 }
@@ -212,7 +213,7 @@ void lldbBridge::slotRemoveAllBreakPoints() {
 
 void lldbBridge::slotEnableAllBreakPoints() {
     Target.DisableAllBreakpoints();
-    for (int i = 0; i < Dock->BreakPoint_List->BpList->topLevelItemCount(); ++i) {
+    for (int i = 0; i < Dock->BreakPoint_List->BpList->topLevelItemCount(); i++) {
         QTreeWidgetItem *item = Dock->BreakPoint_List->BpList->topLevelItem(i);
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
     }
@@ -220,7 +221,7 @@ void lldbBridge::slotEnableAllBreakPoints() {
 
 void lldbBridge::slotDisableAllBreakPoints() {
     Target.DisableAllBreakpoints();
-    for (int i = 0; i < Dock->BreakPoint_List->BpList->topLevelItemCount(); ++i) {
+    for (int i = 0; i < Dock->BreakPoint_List->BpList->topLevelItemCount(); i++) {
         QTreeWidgetItem *item = Dock->BreakPoint_List->BpList->topLevelItem(i);
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsUserCheckable /* | Qt::ItemIsEnabled */);
     }
@@ -228,7 +229,7 @@ void lldbBridge::slotDisableAllBreakPoints() {
 
 void lldbBridge::slotEnableAllWatchPoints() {
     Target.EnableAllWatchpoints();
-    for (int i = 0; i < WatchDock->VariableTreeValues->topLevelItemCount(); ++i) {
+    for (int i = 0; i < WatchDock->VariableTreeValues->topLevelItemCount(); i++) {
         QTreeWidgetItem *item = WatchDock->VariableTreeValues->topLevelItem(i);
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
     }
@@ -305,11 +306,12 @@ void lldbBridge::showBreakPointsList() {
     DialogBreakPoint_List = new BreakPointListWindow();
     DialogBreakPoint_List->setWindowFlags(Qt::Dialog);
     DialogBreakPoint_List->setMinimumWidth(400);
-    for (const auto &i : BreakPointList) {
-        DialogBreakPoint_List->insertBreakPoint(i.break_id, i.filepath, i.line);
+    for (const auto &BP : BreakPointList) {
+        DialogBreakPoint_List->insertBreakPoint(BP.break_id, BP.filepath, BP.line);
     }
     // connect tool buttons + some new slots
-    connect(DialogBreakPoint_List->BpList, SIGNAL(itemDoubleClicked(QListWidgetItem *, int column)), this, SLOT(slotGoToBreakPointFile(QListWidgetItem *, int column)));
+    connect(DialogBreakPoint_List->BpList, SIGNAL(itemDoubleClicked(QListWidgetItem * , int column)), this,
+            SLOT(slotGoToBreakPointFile(QListWidgetItem * , int column)));
     connect(DialogBreakPoint_List->remove, SIGNAL(clicked()), this, SLOT(slotRemoveBreakPoint()));
     connect(DialogBreakPoint_List->removeAll, SIGNAL(clicked()), this, SLOT(slotRemoveAllBreakPoints()));
 
@@ -320,6 +322,7 @@ void lldbBridge::slotOpenCallStackFile(QListWidgetItem *item) {
     QString filepath = item->text();
     //item->listWidget()->currentItem()->text();
     // TODO: get line associated with stack + might wanna get assembly in function
+    // set to WorkingContent
     emit filePathUpdate(filepath, 1, 1);
 }
 
@@ -340,7 +343,7 @@ void lldbBridge::showSetManualBreakPoint(const QString &filepath) {
 }
 
 void lldbBridge::slotSetBreakPointByManualLine() {
-    int line = line_input->text().toInt();
+    const int line = line_input->text().toInt();
     manual_BpWindow->close();
     if (line != 0) {
         createBreakpoint(file_path, line);
@@ -400,7 +403,8 @@ void lldbBridge::slotRemoveWatchPoint() {
     // index -> watch_id; only 1 col, hope IDs are changing according to they sum :)
     Target.DeleteWatchpoint(index.row());
 
-    if (WatchDock->VariableTreeValues->topLevelItemCount() != 0) {
+    // TODO: remove this, ... if index is not valid this never gets executed !
+    if (WatchDock->VariableTreeValues->topLevelItemCount() == 0) {
         WatchDock->removeWatch->setEnabled(false);
         WatchDock->modifyWatch->setEnabled(false);
     }
@@ -450,7 +454,8 @@ void lldbBridge::connectDockWidgets() {
 
 
     // call stack, backtrace
-    connect(Dock->CallStack, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotOpenCallStackFile(QListWidgetItem *)));
+    connect(Dock->CallStack, SIGNAL(itemDoubleClicked(QListWidgetItem * )), this,
+            SLOT(slotOpenCallStackFile(QListWidgetItem * )));
 
     // VariablesView
     connect(Dock->btn_addWatch, SIGNAL(clicked()), this, SLOT(slotAddWatchPoint()));
@@ -459,6 +464,8 @@ void lldbBridge::connectDockWidgets() {
     // addWatch is in dock title bar
     connect(WatchDock->removeWatch, SIGNAL(clicked()), this, SLOT(slotRemoveWatchPoint()));
     connect(WatchDock->modifyWatch, SIGNAL(clicked()), this, SLOT(slotModifyWatchPoint()));
+    // TODO: match value in list and connect to changed value in tree
+
     connect(WatchDock->removeAll, SIGNAL(clicked()), this, SLOT(slotRemoveAllWatchPoint()));
     connect(WatchDock->enableAll, SIGNAL(clicked()), this, SLOT(slotEnableAllWatchPoints()));
     connect(WatchDock->disableAll, SIGNAL(clicked()), this, SLOT(slotDisableAllWatchPoints()));
@@ -692,6 +699,7 @@ void lldbBridge::collectFrameData(SBFrame frame) {
 
     for (uint32_t i = 0; i < FrameVariablesList.GetSize(); i++) {
         auto value = FrameVariablesList.GetValueAtIndex(i);
+        // value.GetData().GetString(error, value.GetByteSize());
         // value.GetDeclaration()
         auto *row = new QTreeWidgetItem();
         // first iteration
@@ -817,8 +825,8 @@ std::string lldbBridge::frameGetLocation(const SBFrame &frame) {
 
 void lldbBridge::setFilePosition(const SBFrame &frame) {
     const char *filename = frame.GetLineEntry().GetFileSpec().GetFilename();
-    SBFunction function = frame.GetFunction();
-    uint32_t line = frame.GetLineEntry().GetLine();
+    const SBFunction function = frame.GetFunction();
+    const uint32_t line = frame.GetLineEntry().GetLine();
     //const char* func_name = function.GetDisplayName();
 
     std::cout << filename;

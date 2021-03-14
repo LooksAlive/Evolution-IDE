@@ -33,7 +33,6 @@ public:
 
     // all files we will searching
     void setFiles(const QStringList &files) { AllFiles = files; }
-    void setPreviewHighlighter(Highlighter *highlighter) { previewHighlighter = highlighter; }
 
     QLineEdit *LineEditFind;
 

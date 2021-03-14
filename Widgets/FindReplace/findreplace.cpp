@@ -12,6 +12,7 @@
 FindReplaceWidget::FindReplaceWidget(Tab *tab, QWidget *parent)
     : QDockWidget(parent), m_Tab(tab)
 {
+    previewHighlighter = new Highlighter(":/highlights/languages.xml", this);
     createWindow();
 
     setVisible(false);
@@ -206,7 +207,7 @@ void FindReplaceWidget::searchEverywhere() {
     // search all files, help with PlainTextEdit methods by changing preview
     for (int i = 0; i < AllFiles.length(); i++) {
         const QString content = file_manager.read(AllFiles[i]);
-        qDebug() << content;
+        //qDebug() << content;
         if (!preview) {
             qDebug() << "!preview----------";
         }
@@ -235,8 +236,9 @@ void FindReplaceWidget::searchEverywhere() {
             QString row_col = QString::number(elem.y()) + ":" + QString::number(elem.x());
             QString line_content = preview->getLineContent(elem.y(), false);
             // append html (highlight background for searched text)
-            const QString start = line_content.mid(0, elem.x());
-            const QString end = line_content.mid(elem.x(), line_content.length());
+            // Playing with positions :)
+            const QString start = line_content.mid(0, elem.x() - 2);
+            const QString end = line_content.mid(elem.x() - 1); // till end
 
             line_content = start + Stag + Style + Mtag + search_text + Etag + end;
             auto *pos = new QTreeWidgetItem();
@@ -296,12 +298,16 @@ void FindReplaceWidget::slotNext() {
     file->setToolTip(0, m_Edit->getFilePath());
     for (const auto &elem : m_Edit->search_results) {
         QString row_col = QString::number(elem.y()) + ":" + QString::number(elem.x());
-        QString line_content = preview->getLineContent(elem.y(), false);
+        QString line_content = m_Edit->getLineContent(elem.y(), false);
         // append html (highlight background for searched text)
-        const QString start = line_content.mid(0, elem.x());
-        const QString end = line_content.mid(elem.x(), line_content.length());
+        // Playing with positions :)
+        const QString start = line_content.mid(0, elem.x() - 2);
+        const QString end = line_content.mid(elem.x() - 1); // till end
 
         line_content = start + Stag + Style + Mtag + search_text + Etag + end;
+        qDebug() << start + "\n";
+        qDebug() << end + "\n";
+        qDebug() << line_content;
         auto *pos = new QTreeWidgetItem();
         pos->setText(0, line_content + " &nbsp;&nbsp; " + row_col);
         file->addChild(pos);
@@ -364,6 +370,7 @@ void FindReplaceWidget::slotVisible(bool visible) {
         }
         m_Edit->extra_selections_search_results.clear();
         m_Edit->updateExtraSelections();
+        setVisible(false);
     }
 }
 

@@ -2,9 +2,8 @@
 
 #include <QDebug>
 
-Highlighter::Highlighter(const QString _filename, QObject *parent) : QSyntaxHighlighter(parent) {
-    xml_filename=_filename;
-    QFile file(xml_filename);
+Highlighter::Highlighter(const QString &filename, QObject *parent) : QSyntaxHighlighter(parent) {
+    QFile file(filename);
     QStringList keywords;
     if (file.open(QIODevice::ReadOnly)) {
         HighlightFormat my_format;

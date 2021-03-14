@@ -18,17 +18,16 @@ ConsoleDock::ConsoleDock(QWidget *parent) : QDockWidget(parent)
     setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
 
     // escape shortcut  -> will close the window
-    connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [=] {this->setVisible(false);});
+    connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [=] { this->setVisible(false); });
 
     BuildConsole();
     setTitleBarWidget(title_bar);
+    Links.reserve(3);   // :)
 
     auto *window = new QWidget(this);
     window->setLayout(MainLayout);
-    window->setContentsMargins(0, 0, 0, 0);
 
     setWidget(window);
-
 }
 
 // change to QListWidget most probably, bc. of specific widget shows its own data and do not know
@@ -71,7 +70,8 @@ void ConsoleDock::BuildConsole() {
     tool_bar->setAcceptDrops(false);
     //tool_bar->setIconSize(QSize(35, 25));
     tool_bar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
-    tool_bar->setContentsMargins(0, 0, 0, 0);
+    tool_bar->layout()->setContentsMargins(0, 0, 0, 0);
+    tool_bar->layout()->setSpacing(0);
 
     title_bar->setMovable(false);
     title_bar->setFixedHeight(30);
@@ -84,6 +84,8 @@ void ConsoleDock::BuildConsole() {
     title_bar->addWidget(spacer);
     title_bar->addAction(QIcon(IconFactory::Remove), "Close", this, SLOT(close()));
 
+    title_bar->layout()->setContentsMargins(0, 0, 0, 0);
+    title_bar->layout()->setSpacing(0);
 
     MainLayout->addWidget(tool_bar);
     MainLayout->addWidget(ConsoleOutput);
@@ -93,8 +95,8 @@ void ConsoleDock::BuildConsole() {
 
     //ConsoleOutput->setHtml("<a href = http://google.com > moj text </a>");
     //ConsoleOutput->append("<a href = http://google.com > moj text </a>");
-    processText("Warning /home/adam/Desktop/Qt5_forum kjskldafjhk kjsadfhkjsdlhakjf gfdsgakhfg");
-    processText("Error /home/adam/Desktop/GITHUB sjkdfh b");
+    processText("warning /home/adam/Desktop/Qt5_forum:5:5 kjskldafjhk kjsadfhkjsdlhakjf gfdsgakhfg");
+    processText("error /home/adam/Desktop/GITHUB sjkdfh b");
     processText("kkwjrlwhetjhlew jkew /home/adam/Desktop/GITHUB lahfjakslhdj ");
     //processText("kkwjrlwhetjhlew    /home/adam/Desktop/GITHUB");
     //ConsoleOutput->append("<a style=color:red; href = /home/adam/Desktop/Qt5_forum > /home/adam/Desktop/Qt5_forum </a>");                             // works well
@@ -103,7 +105,7 @@ void ConsoleDock::BuildConsole() {
 }
 
 
-void ConsoleDock::processText(const QString &text) const {
+void ConsoleDock::processText(const QString &text) {
     if (text.isEmpty()) {
         return;
     }
@@ -120,14 +122,17 @@ void ConsoleDock::processText(const QString &text) const {
 
     QString ProcessedText;
     QString link;
+    int row; // y
+    int col; // x
 
     bool Warning = false;
     bool Error = false;
 
-    if (text.contains("Warning")) {
+    // these words might be after filename, pos
+    if (text.contains("warning")) {
         Warning = true;
     }
-    if (text.contains("Error")) {
+    if (text.contains("error")) {
         Error = true;
     }
 
@@ -140,9 +145,30 @@ void ConsoleDock::processText(const QString &text) const {
             // take whole path, find space from index i
             const int pos = text.indexOf(" ", i);
             link = text.mid(i, pos - i);
+            qDebug() << "link first:" + link;
+            // often after links follows position in format row:col ; or line: xx ; or line xx
+            // with clang there is no space for ex.: error_file.cpp:25:45 or in cmake only row
+            if (link.contains(":")) {
+                // we have a position too, this will be the first occurence so go only forward
+                const int endOfLink = link.indexOf(":");
+                const QString position = link.mid(endOfLink + 1);   // till end
+                const int secondPos = position.indexOf(":");
+                link = link.mid(0, endOfLink);  // real, final link
+                qDebug() << "link position:" + position;
+                qDebug() << "link after:" + link;
+
+
+                row = QString(position.mid(0, secondPos)).toInt();
+                qDebug() << "row: " + QString::number(row);
+                // col is the rest
+                col = QString(position.mid(secondPos + 1)).toInt();
+                qDebug() << "col: " + QString::number(col);
+            }
 
             if (QFileInfo(link).exists() && !QFileInfo(link).isDir()) {
-                i = pos;// jump over link
+                i = pos; // jump over link, also position
+                Links.push_back(Link{link, ConsoleOutput->textCursor().blockNumber() + 1,
+                                     QPoint(col + 1, row + 1)}); // starts from 0
             } else {
                 link.clear();
             }
@@ -167,10 +193,7 @@ void ConsoleDock::processText(const QString &text) const {
             ProcessedText.append(link);
             link.clear();
             tagText.clear();
-        }
-        // often after links follows position in format row:col ; or line: xx ; or line xx
-
-        else {
+        } else {
             ProcessedText.append(text[i]);
         }
     }
@@ -178,18 +201,28 @@ void ConsoleDock::processText(const QString &text) const {
     ConsoleOutput->append(ProcessedText);
 }
 
+ConsoleDock::Link ConsoleDock::findLink(const QString filepath, const Direction &direction) {
+    for (auto it = Links.begin(); it != Links.end(); it++) {
+        if (it->filePath == filepath) {
+            if (direction == Direction::Current)
+                return *it;
+            if (direction == Direction::Next)
+                return *it++;
+            if (direction == Direction::Previous)
+                return *it--;
+        }
+    }
+    return Link{};
+}
+
 void ConsoleDock::clearConsole() const {
     ConsoleOutput->clear();
 }
 
 void ConsoleDock::slotScrollUp() const {
-    for (int i = 0; i <= 5; i++) {
-        ConsoleOutput->verticalScrollBar()->triggerAction(QAbstractSlider::SliderSingleStepSub);
-    }
+    ConsoleOutput->verticalScrollBar()->triggerAction(QAbstractSlider::SliderPageStepSub);
 }
 
 void ConsoleDock::slotScrollDown() const {
-    for (int i = 0; i <= 5; i++) {
-        ConsoleOutput->verticalScrollBar()->triggerAction(QAbstractSlider::SliderSingleStepAdd);
-    }
+    ConsoleOutput->verticalScrollBar()->triggerAction(QAbstractSlider::SliderPageStepAdd);
 }

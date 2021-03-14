@@ -13,6 +13,8 @@ Education::Education(QWidget *parent) : QDockWidget(parent) {
     setWindowTitle("Samples");
     //setWindowFlags(Qt::FramelessWindowHint);
 
+    previewHighlighter = new Highlighter(":/highlights/languages.xml", this);
+
     createWindow();
     loadUsersSamples();
 
@@ -30,9 +32,10 @@ void Education::createWindow() {
     CppCodeSamples->addItem("Introduction");
     CppCodeSamples->addItem("Main");
     CppCodeSamples->addItem("Variables");
-    CppCodeSamples->addItem("Data types");
-    CppCodeSamples->addItem("For loop");
-    CppCodeSamples->addItem("While loop");
+    CppCodeSamples->addItem("Operators");
+    CppCodeSamples->addItem("If Else");
+    CppCodeSamples->addItem("Switch");
+    CppCodeSamples->addItem("For Loop");
     CppCodeSamples->addItem("Do While loop");
     CppCodeSamples->addItem("Foreach loop");
     CppCodeSamples->addItem("Functions");
@@ -89,13 +92,17 @@ void Education::createWindow() {
     titleBar->addWidget(removeSample);
     titleBar->addWidget(spacer);
     titleBar->addAction(QIcon(IconFactory::Remove), "Close", this, SLOT(close()));
+    titleBar->layout()->setContentsMargins(0, 0, 0, 0);
+    titleBar->layout()->setSpacing(0);
 
     setTitleBarWidget(titleBar);
     stack->setCurrentWidget(CppCodeSamples);// starting widget list
-    QWidget *MainWidget = new QWidget(this);
-    QVBoxLayout *MainLayout = new QVBoxLayout();
+    auto *MainWidget = new QWidget(this);
+    auto *MainLayout = new QVBoxLayout();
     MainLayout->addWidget(stack);
     MainLayout->addWidget(preview);
+    MainLayout->setContentsMargins(0, 0, 0, 0);
+    MainLayout->setSpacing(0);
     MainWidget->setLayout(MainLayout);
     setWidget(MainWidget);
 }

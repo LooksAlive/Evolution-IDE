@@ -25,6 +25,9 @@ int main(int argc, char *argv[]) {
     QApplication::setEffectEnabled(Qt::UI_AnimateToolBox, true);
     QApplication::setEffectEnabled(Qt::UI_AnimateTooltip, true);
     QApplication::setEffectEnabled(Qt::UI_FadeTooltip, true);
+    // this is really noisy !
+    //QApplication::setEffectEnabled(Qt::UI_General, true);
+    //QApplication::setEffectEnabled(Qt::UI_AnimateMenu, true);
 
     // /home/adam/Desktop/sources/Evolution-IDE/stylesheets/Combinear.qss
     QFile file("/home/adam/Desktop/sources/Evolution-IDE/stylesheet.qss");
@@ -44,6 +47,7 @@ int main(int argc, char *argv[]) {
     theme = "Dark";
     if(theme == "Dark") {
         app.setStyleSheet(darktheme);
+
         //DarkStyle *style = new DarkStyle();
         //app.setStyle(style);
     }

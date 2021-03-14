@@ -8,8 +8,8 @@ LinterDock::LinterDock(QWidget *parent) : QDockWidget(parent) {
     setVisible(false);
     createWindow();
 
-    addItem("some item", Warning);
-    addItem("another item", Error);
+    addItem("some item", "filepath", clang::DiagnosticsEngine::Level::Warning);
+    addItem("another item", "filepath", clang::DiagnosticsEngine::Level::Error);
 }
 
 void LinterDock::createWindow() {
@@ -32,21 +32,28 @@ void LinterDock::createWindow() {
     setWidget(Items);
 }
 
-void LinterDock::addItem(const QString &content, const LinterDock::Background &background) const {
+void LinterDock::addItem(const QString &content, const QString &filePath,
+                         const clang::DiagnosticsEngine::Level &level) const {
     auto *item = new QListWidgetItem();
-    switch (background) {
-        case Warning:
+    //item->listWidget()->setAutoFillBackground(true);
+    switch (level) {
+        case clang::DiagnosticsEngine::Level::Warning:
             item->setBackground(QColor(Qt::yellow));
             item->setText(content);
+            item->setToolTip(filePath);
             Items->addItem(item);
             break;
-        case Error:
-            item->setBackground(QColor(Qt::red));
+        case clang::DiagnosticsEngine::Level::Error:
+            item->setForeground(QColor(Qt::red));
             item->setText(content);
+            item->setToolTip(filePath);
             Items->addItem(item);
             break;
-
+            // TODO: add others
         default:
+            item->setText(content);
+            item->setToolTip(filePath);
+            Items->addItem(item);
             break;
     }
 }

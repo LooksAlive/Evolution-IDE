@@ -16,7 +16,8 @@
 class GitBridge {
 public:
     GitBridge();
-    ~GitBridge() = default;
+
+    ~GitBridge();
 
     // libgit2 keeps some data in thread-local storage:
     // this functions handles all errors that came out of function calls
@@ -31,7 +32,7 @@ public:
 
     int commit(const char *comment);
 
-    int push();
+    int push(char *refspec = "refs/heads/master");
 
     struct describe_options {
         const char **commits;
@@ -53,7 +54,8 @@ public:
         const char *dir;
     };
 
-    int init(const char *RepoName);
+    int init(const char *RepoName, const bool &initCommit);
+
     void initialCommit();
 
 
@@ -76,16 +78,23 @@ public:
         const char *path;
     } progress_data;
 
-    int clone();
+    int clone(const char *dest, const char *url);
 
     // same as pull
-    int fetch();
+    int fetch(const char *repo_name);
 
     int status();
 
-    const char* findRepo(const char* repo_name);
+    const char *findRepo(const char *repo_name);
 
     git_repository *repo;
+
+    const char *getBranch();
+
+    void getStatusData(git_status_list *status);
+
+private:
+
 };
 
 #endif // GITBRIDGE_H

@@ -6,6 +6,7 @@ RefactoringDock::RefactoringDock(QWidget *parent) : QDockWidget(parent) {
     setWindowTitle("Refactor");
     setFeatures(AllDockWidgetFeatures);
     setVisible(false);
+    //setFixedWidth(600);
 
     createWindow();
 
@@ -24,6 +25,7 @@ void RefactoringDock::createWindow() {
     Refactor = new QPushButton("Refactor", this);
 
     Original->setFixedWidth(250);
+    Original->setReadOnly(true);
     Replacement->setFixedWidth(250);
 
     connect(Refactor, SIGNAL(clicked()), this, SLOT(slotReport()));

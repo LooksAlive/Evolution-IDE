@@ -1,9 +1,9 @@
 #include <QToolBar>
+#include <QLayout>  // layout management
 #include "icons/IconFactory.h"
 #include "filedock.h"
 
-FileDock::FileDock(QWidget *parent) : QDockWidget(parent)
-{
+FileDock::FileDock(QWidget *parent) : QDockWidget(parent) {
     DockerFileList = new QListWidget(this);
 
     /* QDockWidget inherited functions */
@@ -12,16 +12,20 @@ FileDock::FileDock(QWidget *parent) : QDockWidget(parent)
     setFeatures(AllDockWidgetFeatures);
     // DockerFileList->setViewMode(QListView::IconMode);
 
+    layout()->setContentsMargins(0, 0, 0, 0);
+    layout()->setSpacing(0);
+
     setWidget(DockerFileList);
 
-    auto *t_bar = new QToolBar(this);
+    auto *TitleBar = new QToolBar(this);
     auto *spacer = new QWidget(this);   // align to right with blank widget
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    t_bar->addWidget(spacer);
-    t_bar->addAction(QIcon(IconFactory::Remove), "Close", this, SLOT(close()));
-    t_bar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
-    t_bar->setFixedHeight(35);
-    t_bar->setIconSize(QSize(25, 35));
-    setTitleBarWidget(t_bar);
+    TitleBar->addWidget(spacer);
+    TitleBar->addAction(QIcon(IconFactory::Remove), "Close", this, SLOT(close()));
+    TitleBar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
+    TitleBar->setFixedHeight(30);
+    TitleBar->layout()->setContentsMargins(0, 0, 0, 0);
+    TitleBar->layout()->setSpacing(0);
+    setTitleBarWidget(TitleBar);
 }
 

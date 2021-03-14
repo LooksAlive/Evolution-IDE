@@ -242,8 +242,9 @@ void FileExplorer::slotBack() const {
         QString new_dir_path = info.dir().absolutePath();
         // -1, +1  ->   / in path
         new_dir_path.remove(info.dir().absolutePath().length() - dirname.length() - 1, dirname.length() + 1);
+        qDebug() << "returning to dir: " + new_dir_path;
         //FileModel->rootDirectory().cdUp();
-        setRootDirectory(new_dir_path);
+        FileView->setRootIndex(FileModel->setRootPath(new_dir_path));
     }
 }
 
@@ -251,7 +252,8 @@ void FileExplorer::slotSetDefaultDir() const {
     QFileInfo info(FileModel->fileInfo(touched_index));
     if (info.isDir()) {
         // FileModel->index(info.dir().absolutePath())
-        setRootDirectory(info.dir().absolutePath());
+        qDebug() << "setting up dir: " + info.dir().absolutePath();
+        FileView->setRootIndex(FileModel->setRootPath(info.dir().absolutePath()));
     }
 }
 

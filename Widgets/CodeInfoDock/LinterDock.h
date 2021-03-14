@@ -9,10 +9,13 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "Diagnostics.h"    // diagnostic level for item highlight
+
 class LinterDock : public QDockWidget {
-    Q_OBJECT
+Q_OBJECT
 public:
     explicit LinterDock(QWidget *parent = nullptr);
+
     ~LinterDock() = default;
 
     QToolBar *TitleBar;
@@ -21,12 +24,7 @@ public:
     // DoubleClick open location connected outside
     QListWidget *Items;
 
-    enum Background {
-        Warning = 0,
-        Error
-    };
-
-    void addItem(const QString &content, const Background &background) const;
+    void addItem(const QString &content, const QString &filePath, const clang::DiagnosticsEngine::Level &level) const;
 
 private:
     void createWindow();

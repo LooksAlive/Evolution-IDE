@@ -1,16 +1,16 @@
 <?xml version="1.0"?>
 <languages>
-	<language extentions="(cpp|h|hpp)">
-		<single_comment expression = "//[^\n]*"></single_comment>
-		<multiline_comment begin = "/\*" end = "\*/"></multiline_comment>
-		<keywords>
-			<keyword>char</keyword>
-			<keyword>class</keyword>
-			<keyword>const</keyword>
-			<keyword>double</keyword>
-			<keyword>enum</keyword>
-			<keyword>explicit</keyword>
-			<keyword>friend</keyword>
+        <language extentions="(cpp|h|hpp|c|cxx)">
+            <single_comment expression="//[^\n]*"></single_comment>
+            <multiline_comment begin="/\*" end="\*/"></multiline_comment>
+            <keywords>
+                <keyword>char</keyword>
+                <keyword>class</keyword>
+                <keyword>const</keyword>
+                <keyword>double</keyword>
+                <keyword>enum</keyword>
+                <keyword>explicit</keyword>
+                <keyword>friend</keyword>
 			<keyword>inline</keyword>
 			<keyword>int</keyword>
 			<keyword>long</keyword>

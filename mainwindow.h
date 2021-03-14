@@ -67,6 +67,7 @@
 #include "Widgets/Converter/converter.h"
 #include "Widgets/ProgressBar/ProgressBar.h"
 #include "Widgets/Settings/CmakeGenerator/cmakegenerator.h"
+#include "Widgets/Notifier/ContactDeveloper.h"
 #include "commandlineexecutor.h"
 #include "filemanager.h"
 #include "highlighter.h"
@@ -84,6 +85,7 @@
 #include "Debugger/DebuggerDock.h"
 
 #include <QDebug>
+#include <QAction>
 
 #include <iostream>
 #include <string>
@@ -159,10 +161,10 @@ private:
     SettingsWindow *Settings;
 
     /* Tab widget stuffs */
-    Tab* Tabs;
+    Tab *Tabs;
     // tracking current Tab widget for many other actions on it
     // connected when new file is created and tab changed, disconnected when deleted
-    PlainTextEdit *currentWidget;
+    PlainTextEdit *currentWidget = nullptr;
     InvitationScreen *invitation_screen;
     // file manager, get recursive files from dir only if dir is opened, provided
     FileDirManager file_manager;
@@ -184,6 +186,7 @@ private:
 
     /* Converter - small widget */
     Converter *converter;
+    ContactDeveloper *contactDeveloper;
 
     Education *education;
 
@@ -217,8 +220,10 @@ private:
     void SetupDockWidgetsLayering();
 
     void HideAllDockWidgets();
+
     bool explorer_visible = false, docker_visible = false, console_dock_visible = false,
-         find_replace_visible = false, code_info_dock_visible = false;
+            find_replace_visible = false, code_info_dock_visible = false;
+
     void ShowHiddenDockWidgets();
 
     void LoadRegisters();
@@ -226,6 +231,16 @@ private:
     // indicates wheather in file open actions ignore filepath ad insert own content, TODO: make not save able, editable
     bool SampleLoading = false;
     bool AssemblyLoading = false;
+
+    QToolButton *editorViewButton;
+    QToolButton *nodeViewButton;
+    QToolButton *hexViewButton;
+    QToolButton *debuggerViewButton;
+    QToolButton *binaryViewButton;
+
+    // when switching view, since its based on QToolButtuns, we cant uncheck the one we came from,
+    // because it would be mess here.
+    void uncheckAllVerticalTabButtons();
 
 private slots:
 
@@ -235,6 +250,7 @@ private slots:
     void UpdateParameter();
 
     void CreateFile();
+
     void OpenFile();
     void OpenFile(const QString &filepath, const bool &readAndSetDocument = true);
     void OpenFile(const QModelIndex &);

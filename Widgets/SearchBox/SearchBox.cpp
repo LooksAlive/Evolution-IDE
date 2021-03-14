@@ -54,7 +54,6 @@ void SearchBox::createWindow() {
 
     MainLayout->addWidget(find_options_menu_button);
     MainLayout->addWidget(lineEdit);
-    MainLayout->addStretch(5);
     MainLayout->addWidget(labelOccurences);
     MainLayout->addWidget(next);
     MainLayout->addWidget(previous);
@@ -62,6 +61,7 @@ void SearchBox::createWindow() {
 
     MainLayout->setContentsMargins(0, 0, 0, 0);
     MainLayout->setSpacing(0);
+    MainLayout->addStretch(0);
 
     setLayout(MainLayout);
 }
@@ -79,6 +79,12 @@ void SearchBox::getOptionsAndTexts() {
         find_options |= QTextDocument::FindWholeWords;
     }
 
+    // no tab for current file search, otherwise we do not need m_Edit
+    if (m_Tab->count() == 0) {
+        m_Edit = nullptr;
+        return;
+    }
+
     /* same_file == ""  --> means that file has no filepath yet (blank) */
     if (same_file != m_Tab->tabToolTip(m_Tab->currentIndex()) || same_file == "") {
         m_Edit = qobject_cast<PlainTextEdit *>(m_Tab->currentWidget());
@@ -87,12 +93,18 @@ void SearchBox::getOptionsAndTexts() {
 }
 
 void SearchBox::slotPrevious() {
+    if (!m_Edit) {
+        return;
+    }
     getOptionsAndTexts();
     find_options |= QTextDocument::FindBackward;// flag for previous search
     m_Edit->findNext(search_text, find_options);
 }
 
 void SearchBox::slotNext() {
+    if (!m_Edit) {
+        return;
+    }
     getOptionsAndTexts();
     if (search_text != temp_search_text) {
         m_Edit->findStoreAndSelectAll(search_text, find_options);

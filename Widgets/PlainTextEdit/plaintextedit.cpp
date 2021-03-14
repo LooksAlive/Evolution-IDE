@@ -220,27 +220,35 @@ void PlainTextEdit::completerInsertText(const QString &text) {
     if (completer->widget() != this)
         return;
     QTextCursor tc = textCursor();
-    int extra = text.length() - completer->completionPrefix().length();
+    const int extra = text.length() - completer->completionPrefix().length();
     tc.movePosition(QTextCursor::Left);
     tc.movePosition(QTextCursor::EndOfWord);
     tc.insertText(text.right(extra));
     setTextCursor(tc);
 }
 
-void PlainTextEdit::deleteLine(){
+void PlainTextEdit::deleteLine() {
     selectLineUnderCursor();
     QTextCursor cur = textCursor();
-    if(cur.selectedText() != ""){
+    if (cur.selectedText() != "") {
         cur.removeSelectedText();
     }
     setTextCursor(cur);
 }
 
-void PlainTextEdit::toggleComment(){
+void PlainTextEdit::deleteLine(QTextCursor &cursor) {
+    selectLineUnderCursor(cursor);
+    if (cursor.selectedText() != "") {
+        cursor.removeSelectedText();
+    }
+    setTextCursor(cursor);
+}
+
+void PlainTextEdit::toggleComment() {
 
     //QString file_extension;  // default is cpp
     QTextCursor cur = textCursor();
-    if (!cur.hasSelection()){
+    if (!cur.hasSelection()) {
         selectLineUnderCursor();
     }
 
@@ -758,7 +766,8 @@ void PlainTextEdit::createMenu() {
     viewMenu->addAction(QIcon(IconFactory::Expand), "Expand", this, SLOT(slotExpand()));
     viewMenu->addSeparator();
     viewMenu->addAction("Create Sample", this, SLOT(slotShowNewSampleWindow()));
-    viewMenu->addAction(QIcon(IconFactory::Comment), "Comment Code", this, SLOT(toggleComment()), Qt::CTRL + Qt::SHIFT + Qt::Key_C);
+    viewMenu->addAction(QIcon(IconFactory::Comment), "Comment Region", this, SLOT(toggleComment()),
+                        Qt::CTRL + Qt::SHIFT + Qt::Key_C);
     viewMenu->addSeparator();
     viewMenu->addAction("Toggle BreakPoint", this, SLOT(slotToggleBreakPoint()));// , Qt::Key_F9
     viewMenu->addAction("Generate...", this, SLOT(slotGenerate()), Qt::CTRL + Qt::SHIFT + Qt::Key_G);
@@ -788,29 +797,52 @@ void PlainTextEdit::SetupCompleter() {
           << "switch"
           << "case"
           << "for"
-          << "while";
+          << "while"
+          << "explicit";
     //completer->setModel(new QStringListModel(words, completer));
 
-    completer = new QCompleter(words, this);
-    completer->setCaseSensitivity(Qt::CaseInsensitive);
-    completer->setMaxVisibleItems(8);
-    completer->setCompletionMode(QCompleter::PopupCompletion);
-    completer->setWrapAround(false);
-    completer->setFilterMode(Qt::MatchStartsWith);// MatchContains
+    completer = new Completer(this);
+    /*
+    auto *view = new QTableWidget(this);
+    view->setColumnCount(2);
+    view->setRowCount(5);
+    view->setMinimumWidth(200);
+    view->setMinimumHeight(200);
+    QTableWidgetItem *item = new QTableWidgetItem();
+    item->setText("myitem");
+    item->setIcon(QIcon(IconFactory::Build));
+    item->setStatusTip("statustip");
+    item->setToolTip("tooltip");
 
+    QTableWidgetItem *item2 = new QTableWidgetItem();
+    item2->setText("myitem");
+
+    view->setItem(0, 0, item);
+    view->setItem(1, 1, item2);
+    view->setItem(1, 1, new QTableWidgetItem("mmmmmmm"));
+    view->setHorizontalHeaderItem(0, new QTableWidgetItem("name"));
+    view->setHorizontalHeaderItem(1, new QTableWidgetItem("type"));
+    //view->setHorizontalHeaderLabels(QStringList() << "HeaderLabel");
+    view->hide();
+    */
+    completer->setWidget(this);
+    completer->setModel(new QStringListModel(words, completer));
     /*
     auto *view = new QListView(this);
     view->setViewMode(QListView::ListMode);
     view->setLayoutMode(QListView::Batched);
     completer->setPopup(view);
     */
-    completer->popup()->setMouseTracking(true);
-    completer->popup()->setTabletTracking(true);
+    //completer->popup()->setMouseTracking(true);
+    //completer->popup()->setTabletTracking(true);
     //auto *model = new QFileSystemModel(this);
     //model->setRootPath(QDir::homePath());
     //completer->popup()->setMinimumSize(200, 100);
 
     connect(completer, SIGNAL(activated(const QString &)), this, SLOT(completerInsertText(const QString &)));
+
+    completer->addItem("function", "void");
+    completer->addItem("variable", "int");
 }
 
 void PlainTextEdit::setCompletionData(const std::vector<std::string> &data) {
@@ -1130,20 +1162,20 @@ void PlainTextEdit::dropEvent(QDropEvent *e){
     QPlainTextEdit::dropEvent(e);
 }
 
-void PlainTextEdit::mousePressEvent(QMouseEvent *e){
-
-    // mouse click find all --> selections, add some timer with timeout
-    if(e->type() == QEvent::MouseButtonPress && e->button() == Qt::LeftButton) {
-        // when we are still on the same word ... search it
+void PlainTextEdit::mousePressEvent(QMouseEvent *e) {
+    if (e->type() == QEvent::MouseButtonPress && e->button() == Qt::LeftButton &&
+        e->modifiers() == Qt::ControlModifier) {
+        // go to definition declaration request
         //qDebug() << "activated with " + wordUnderCursor;
         //searchByMouseTouch();
+        // code_info->runAction(CodeInfoDock::GoToDefinition);
     }
 
     QPlainTextEdit::mousePressEvent(e);
 }
 
-void PlainTextEdit::wheelEvent(QWheelEvent *event)
-{
+// increasing, decreasing text point size
+void PlainTextEdit::wheelEvent(QWheelEvent *event) {
     if (event->modifiers() & Qt::ControlModifier) {
         const int delta = event->delta();
         if (delta > 0) {
@@ -1214,21 +1246,25 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
     }
     */
 
-    // select and copy whole line
+    // select and copy whole line if selection empty
     if (event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_C && cursor.selectedText().isEmpty()) {
         selectLineUnderCursor();
         copy();
+    }
+    // remove whole line if selection empty
+    if (event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_X && cursor.selectedText().isEmpty()) {
+        deleteLine(cursor);
     }
 
     switch (event->key()) {
         case Qt::Key_Backtab:
         case Qt::Key_Tab: {
-            bool forward = !QApplication::keyboardModifiers().testFlag(Qt::ShiftModifier);
+            const bool forward = !QApplication::keyboardModifiers().testFlag(Qt::ShiftModifier);
             if (indentText(forward)) {
                 event->accept();
                 return;
             } else if (forward) {
-                QString text = TABS_TO_SPACES ? QString(TAB_STOP_WIDTH, ' ') : QChar('\t');
+                const QString text = TABS_TO_SPACES ? QString(TAB_STOP_WIDTH, ' ') : QChar('\t');
                 //QTextCursor cursor = textCursor();
                 cursor.insertText(text);
                 setTextCursor(cursor);
@@ -1319,29 +1355,48 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
 
 void PlainTextEdit::keyPressEvent(QKeyEvent *event) {
 
-    QString completionPrefix = getWordUnderCursor();
+    if (completer->popup()->isVisible()) {
+        switch (event->key()) {
+            case Qt::Key_Enter:
+            case Qt::Key_Return:
+            case Qt::Key_Escape:
+            case Qt::Key_Tab:
+            case Qt::Key_Backtab:
+                event->ignore();
+                return;
+            default:
+                break;
+        }
+    }
 
-    if (event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Space &&
-        completionPrefix != completer->completionPrefix()) {
+    const bool isShortcut = ((event->modifiers() & Qt::ControlModifier) && event->key() == Qt::Key_Space);
+    if (!isShortcut)
+        QPlainTextEdit::keyPressEvent(event);
+
+    static const QString endOfWordCharacters("~!@#$%^&*()_+{}|:\"<>?,./;'[]\\-=");
+    const bool hasModifier = (event->modifiers() != Qt::NoModifier);
+
+    const QString completionPrefix = getWordUnderCursor();
+
+    if (!isShortcut && (hasModifier || event->text().isEmpty() || completionPrefix.length() < 3 ||
+                        endOfWordCharacters.contains(event->text().right(1)))) {
+        completer->popup()->hide();
+        return;     // FIXME: this cause other things to ignore
+    }
+
+    if (completionPrefix != completer->completionPrefix()) {
         completer->setCompletionPrefix(completionPrefix);
         completer->popup()->setCurrentIndex(completer->completionModel()->index(0, 0));
 
         QRect cr = cursorRect();
-        cr.setWidth(/*completer->popup()->sizeHintForColumn(0)
-                    + completer->popup()->verticalScrollBar()->sizeHint().width()*/
-                    200);
-        completer->complete(cr);// popup it up!
-    }
-
-    if ((completer && completer->popup()->isActiveWindow()) || completer->popup()->isVisible()) {
-        // The following keys are forwarded by the completer to the widget
-        if (event->key() == Qt::Key_Enter || event->key() == Qt::Key_Tab) {
-            completerInsertText(completionPrefix);
-            qDebug() << "visible--------------";
-            completer->popup()->hide();// complete done, hide popup and continue
-        } else {
-            //event->ignore();
-        }
+        cr.setWidth(
+                completer->popup()->sizeHintForColumn(0) + completer->popup()->verticalScrollBar()->sizeHint().width());
+        // set completion data by running action which will set them after all
+        //code_info->runAction(CodeInfoDock::CodeComplete);
+        // this is async action so completer will be filled with new data after thread ends, clear it now
+        //completer->setItems(std::vector<std::string>());
+        // FIXME: when clear cliked, wont show up.
+        completer->complete(cr);
     }
 
     switch (event->key()){
@@ -1358,17 +1413,20 @@ void PlainTextEdit::keyPressEvent(QKeyEvent *event) {
             break;
     }
 
-    QPlainTextEdit::keyPressEvent(event);
+    // QPlainTextEdit::keyPressEvent(event);
 }
 
 
 void PlainTextEdit::focusInEvent(QFocusEvent *e) {
-
+    /*
     if (completer) {
         completer->setWidget(this);
         completer->popup()->setFocus();
         completer->popup()->installEventFilter(this);
     }
+    */
+
+    completer->setWidget(this);
 
     QPlainTextEdit::focusInEvent(e);
 

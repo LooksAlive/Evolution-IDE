@@ -154,15 +154,52 @@ void MainWindow::SetupVerticalBar() {
 
     vertical_stack->setCurrentIndex(0);// start with editor
 
-    vertical_bar->addAction(QIcon(IconFactory::EditorView), "Editor", this, SLOT(showEditorView()));
+    // FIXME: show as text or tooltip ????
+
+    editorViewButton = new QToolButton(vertical_bar);
+    editorViewButton->setCheckable(true);
+    editorViewButton->setChecked(false);
+    editorViewButton->setIcon(QIcon(IconFactory::EditorView));
+    editorViewButton->setText("Editor");
+    connect(editorViewButton, SIGNAL(clicked()), this, SLOT(showEditorView()));
+
+    nodeViewButton = new QToolButton(vertical_bar);
+    nodeViewButton->setCheckable(true);
+    nodeViewButton->setChecked(false);
+    nodeViewButton->setIcon(QIcon(IconFactory::NodeView));
+    nodeViewButton->setText("Node View");
+    connect(nodeViewButton, SIGNAL(clicked()), this, SLOT(showNodeView()));
+
+    hexViewButton = new QToolButton(vertical_bar);
+    hexViewButton->setCheckable(true);
+    hexViewButton->setChecked(false);
+    hexViewButton->setIcon(QIcon(IconFactory::HexView));
+    hexViewButton->setText("Hex Editor");
+    connect(hexViewButton, SIGNAL(clicked()), this, SLOT(showHexView()));
+
+    debuggerViewButton = new QToolButton(vertical_bar);
+    debuggerViewButton->setCheckable(true);
+    debuggerViewButton->setChecked(false);
+    debuggerViewButton->setIcon(QIcon(IconFactory::DebuggerView));
+    debuggerViewButton->setText("Debugger");
+    connect(debuggerViewButton, SIGNAL(clicked()), this, SLOT(showDebuggerView()));
+
+    binaryViewButton = new QToolButton(vertical_bar);
+    binaryViewButton->setCheckable(true);
+    binaryViewButton->setChecked(false);
+    binaryViewButton->setIcon(QIcon(IconFactory::BinaryView));
+    binaryViewButton->setText("Binary View");
+    connect(binaryViewButton, SIGNAL(clicked()), this, SLOT(showBinaryView()));
+
+    vertical_bar->addWidget(editorViewButton);
     vertical_bar->addSeparator();
-    vertical_bar->addAction(QIcon(IconFactory::NodeView), "Node View", this, SLOT(showNodeView()));
+    vertical_bar->addWidget(nodeViewButton);
     vertical_bar->addSeparator();
-    vertical_bar->addAction(QIcon(IconFactory::HexView), "Hex Editor", this, SLOT(showHexView()));
+    vertical_bar->addWidget(hexViewButton);
     vertical_bar->addSeparator();
-    vertical_bar->addAction(QIcon(IconFactory::DebuggerView), "Debugger", this, SLOT(showDebuggerView()));
+    vertical_bar->addWidget(debuggerViewButton);
     vertical_bar->addSeparator();
-    vertical_bar->addAction(QIcon(IconFactory::BinaryView), "Binary View", this, SLOT(showBinaryView()));
+    vertical_bar->addWidget(binaryViewButton);
     vertical_bar->addSeparator();
     // decompiler ... later :)
     //vertical_bar->addAction(QIcon("/home/adam/Desktop/sources/Evolution-IDE/icons/hex.png"), "Decompiler View",  this, SLOT(showBinaryView()));
@@ -305,6 +342,8 @@ void MainWindow::SetupMenuBar() {
     EducationMenu->addAction(education->toggleViewAction());
 
     HelpMenu->addAction("About Evolution", this, SLOT(slotAbout()));
+    contactDeveloper = new ContactDeveloper(this);
+    HelpMenu->addAction("Contact Developer", this, [=]() { contactDeveloper->show(); });
 
     menuBar->addMenu(fileMenu);
     menuBar->addMenu(editMenu);
@@ -374,6 +413,9 @@ void MainWindow::SetupDockWidgetsLayering() {
 
 // switching views
 void MainWindow::showEditorView() {
+    uncheckAllVerticalTabButtons();
+    editorViewButton->setChecked(true);
+
     // empty tab has count -1 probably :)  --> also show only invitation, not empty tab !
     if (Tabs->count() <= 0) {
         // invitation screen is still ON, or we could move from somewhere else, to be sure
@@ -392,17 +434,26 @@ void MainWindow::showEditorView() {
 }
 
 void MainWindow::showNodeView() {
+    uncheckAllVerticalTabButtons();
+    nodeViewButton->setChecked(true);
+
     // Will there be some dock visible ???
     HideAllDockWidgets();
     vertical_stack->setCurrentWidget(nodeview);
 }
 
 void MainWindow::showBinaryView() {
+    uncheckAllVerticalTabButtons();
+    binaryViewButton->setChecked(true);
+
     HideAllDockWidgets();
     vertical_stack->setCurrentWidget(binaryView);
 }
 
 void MainWindow::showDebuggerView() {
+    uncheckAllVerticalTabButtons();
+    debuggerViewButton->setChecked(true);
+
     HideAllDockWidgets();
     debuggerDock->setVisible(true);
     debuggerWatchDock->setVisible(true);
@@ -418,6 +469,9 @@ void MainWindow::showDebuggerView() {
 }
 
 void MainWindow::showHexView() {
+    uncheckAllVerticalTabButtons();
+    hexViewButton->setChecked(true);
+
     if (Tabs->count() == 0) {
         // invitation screen is still ON, create some file first
         return;
@@ -440,6 +494,14 @@ void MainWindow::showHexView() {
 void MainWindow::showInvitationScreen() {
     // HideAllDockWidgets();
     vertical_stack->setCurrentWidget(invitation_screen);
+}
+
+void MainWindow::uncheckAllVerticalTabButtons() {
+    editorViewButton->setChecked(false);
+    nodeViewButton->setChecked(false);
+    hexViewButton->setChecked(false);
+    debuggerViewButton->setChecked(false);
+    binaryViewButton->setChecked(false);
 }
 
 void MainWindow::HideAllDockWidgets() {
@@ -540,11 +602,22 @@ void MainWindow::SetupCompileDock() {
 
 void MainWindow::slotOpenUrl(const QUrl &url) {
     const QString filepath = url.url(QUrl::RemoveScheme);
+    const ConsoleDock::Link link = console_dock->findLink(filepath);
+
+    // at the end we return Links{}  -> check it for any element
+    if (link.filePath.isEmpty()) {
+        return;
+    }
+
     OpenFile(filepath);
+    currentWidget->setCursorPosition(link.position.x(), link.position.y());
     // How to get position  ???
 }
 
 void MainWindow::slotFind() {
+    if (!currentWidget) {
+        return;
+    }
     searchBox->lineEdit->setFocus();
     QString text = currentWidget->textCursor().selectedText();
     // find selected text
@@ -552,12 +625,17 @@ void MainWindow::slotFind() {
         searchBox->lineEdit->setText(text);
         searchBox->slotNext();
     }
-    // find word under cursor, if no text is selected
+        // find word under cursor, if no text is selected
     else {
         text = currentWidget->getWordUnderCursor();
         searchBox->lineEdit->setText(text);
         searchBox->slotNext();
     }
+    /*
+    searchBox->move(vertical_bar->width(), menuBar->height() + topToolBar->height() + Tabs->height());
+    searchBox->setStyleSheet("QWidget{border: 2px solid; background-color: grey;}");
+    searchBox->setVisible(true);
+    */
 }
 
 void MainWindow::SetupCodeInfoDock() {
@@ -568,7 +646,6 @@ void MainWindow::SetupCodeInfoDock() {
     codeInfoDock = new CodeInfoDock(this);
 
     find_replace->setFiles(file_manager.source_files);
-    find_replace->setPreviewHighlighter(highlighter);
     addDockWidget(Qt::BottomDockWidgetArea, find_replace);
     tabifyDockWidget(console_dock, find_replace);
     tabifyDockWidget(codeInfoDock, find_replace);
@@ -599,9 +676,12 @@ void MainWindow::SetupCodeInfoDock() {
 void MainWindow::slotOpenLinterFile(QListWidgetItem *item) {
     const QString filepath = item->toolTip();// this should be file path, but we also want position
     // ->text holds position, linter text, etc.
-    OpenFile(filepath);
     // match position, by file
-    currentWidget->setCursorPosition(codeInfoDock->Handler->linterLocations[0].row, codeInfoDock->Handler->linterLocations[0].col);
+    const int row = item->listWidget()->currentIndex().row();
+    // const QString filepath = QString::fromStdString(clangBridge->PData->Diags[0].AbsFile.getValue());
+    OpenFile(filepath);
+    currentWidget->setCursorPosition(codeInfoDock->Handler->linterLocations[0].row,
+                                     codeInfoDock->Handler->linterLocations[0].col);
 }
 
 void MainWindow::slotOpenReferenceFile(QTreeWidgetItem *item, int column) {
@@ -671,7 +751,6 @@ void MainWindow::SetupConverter() {
 
 void MainWindow::SetupEducationDock() {
     education = new Education(this);
-    education->setPreviewHighlighter(highlighter);
     addDockWidget(Qt::RightDockWidgetArea, education);
     // has to be outside bc. i will use option to add a sample in editor so cannot import them cross
 
@@ -833,7 +912,7 @@ void MainWindow::OpenFile(const QString &filepath, const bool &readAndSetDocumen
 end:;
 
     new_text_edit->setFilePath(filepath);
-    new_text_edit->setFileExtension(file_manager.getFileExtension(QFileInfo(filepath).fileName()));
+    new_text_edit->setFileExtension(file_manager.getFileExtension(filepath));
 
     // check for duplicate file-opening and prevents it by opening identical tab twice
     for (int i = 0; i < Tabs->count(); ++i)
@@ -865,11 +944,12 @@ end:;
     auto *new_item = new QListWidgetItem();
     new_item->setText(Tabs->tabText(index));
     new_item->setToolTip(Tabs->tabToolTip(index));
+    new_item->setIcon(provider.icon(QFileInfo(filepath)));
     // new_item->setIcon(QIcon(IconFactory::Remove));
     Docker->DockerFileList->addItem(new_item);
 
     // setting up highlight
-    if (highlighter->setExtension(file_manager.getFileExtension(QFileInfo(filepath).fileName()))) {
+    if (highlighter->setExtension(file_manager.getFileExtension(filepath))) {
         highlighter->setDocument(new_text_edit->document());
         highlighter->highlightBlock(new_text_edit->toPlainText());
     }
@@ -883,6 +963,10 @@ end:;
 
 
 void MainWindow::SaveFile() {
+    // nothing to save
+    if (!Tabs->count()) {
+        return;
+    }
     // new file created, but not saved yet
     if (Tabs->tabToolTip(Tabs->currentIndex()) == "") {
         // empty file, saving as
@@ -900,6 +984,10 @@ void MainWindow::SaveFile() {
 }
 
 void MainWindow::SaveFileAs() {
+    // nothing to save
+    if (!Tabs->count()) {
+        return;
+    }
 
     CHANGES_IN_PROJECT = true;
 
@@ -1112,6 +1200,7 @@ void MainWindow::UpdateCurrentIndex(int new_selection_index) {
 
 void MainWindow::slotBuild() {
 
+    console_dock->show();
     // clear terminal window
     console_dock->ConsoleOutput->clear();
     // deactivate action build
@@ -1168,6 +1257,7 @@ void MainWindow::slotBuild() {
 
 void MainWindow::slotRun() {
 
+    console_dock->show();
     // clear terminal window
     console_dock->ConsoleOutput->clear();
 
@@ -1335,16 +1425,20 @@ void MainWindow::slotFullScreen() {
 }
 
 void MainWindow::slotAbout() {
-    const QString about = "Evolution IDE is an Integrated Development Environment mainly aimed for C & C++ . \n"
-                          "It is Open source. If you Want to use It, you can read Readme.md file with all features \n"
-                          "\n"
-                          "Newly contain Educational system, which could provide convenient code samples with brief \n"
-                          "comments. There are also provided many stuffs i personally always want to know quicker. \n"
-                          "If you are interested, you can provide your own sample. \n"
-                          "Web:  \n"
-                          "Github: https://github.com/adamko222/Evolution-IDE. \n";
+    const QString about = "Evolution IDE is an Integrated Development Environment mainly aimed for C & C++ . <br>"
+                          "It is Open source. If you Want to use It, you can read Readme.md file with all features <br>"
+                          "<br>"
+                          "Newly contain Educational system, which could provide convenient code samples with brief <br>"
+                          "comments. There are also provided many stuffs i personally always want to know quicker. <br>"
+                          "If you are interested, you can provide your own sample. <br>"
+                          "Web:  <br>"
+                          "Github: <a style=color:gray; href = https://github.com/adamko222/Evolution-IDE>https://github.com/adamko222/Evolution-IDE </a>";
 
-    QMessageBox::information(this, "About Evolution", about, QMessageBox::Close);
+    QMessageBox *msg = new QMessageBox(this);
+    msg->setTextFormat(Qt::RichText);
+    msg->setText(about);
+    msg->show();
+    //QMessageBox::information(this, "About Evolution", about, QMessageBox::Close);
 }
 
 void MainWindow::slotStopProcess() {

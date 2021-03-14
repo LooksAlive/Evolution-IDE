@@ -33,23 +33,44 @@ QDockWidget::title{
   margin: 0px;
 }
 
-QSplitter::handle{
-}
-QSplitter::handle:horizontal {
-  width: 0px;
-}
-QSplitter::handle:vertical {
-  height: 0px;
+QSplitter::handle {
 }
 
-QTreeWidget{
-  border: 1px solid rgb(40, 40, 40);
-  background-color: rgb(61, 58, 58);
+QSplitter::handle:horizontal {
+    width: 0px;
 }
-QTreeWidget::item{
-  border: none;
-  padding: 0px;
-  margin: 0px;
+
+QSplitter::handle:vertical {
+    height: 0px;
+}
+
+QCompleter::item {
+    padding-top: 2px;
+    padding-bottom: 2px;
+    border-radius: 15px;
+}
+
+QCompleter::item:hover {
+    background-color: lightGrey;
+}
+
+QToolTip {
+    border: 1px solid rgb(40, 40, 40);
+    margin: 0px;
+    padding: 0px;
+    color: rgb(186, 186, 186);
+    background-color: rgb(68, 68, 68);
+}
+
+QTreeWidget {
+    border: 1px solid rgb(40, 40, 40);
+    background-color: rgb(61, 58, 58);
+}
+
+QTreeWidget::item {
+    border: none;
+    padding: 0px;
+    margin: 0px;
 }
 
 QTreeView{
@@ -117,6 +138,7 @@ QMenu::separator {
 
 QToolBar{
   border: 1px solid rgb(40, 40, 40);
+    /*background-color: rgb(50, 50, 50);*/
   padding: 1px;
   margin: 0px;
 }
@@ -172,10 +194,10 @@ QPushButton:checked{
 QTabWidget::pane{
   border: none;
 }
-QTabBar::tab{
-  border: 1px rgb(40, 40, 40);
-  padding: 5px;
-  margin: 0px;
+QTabBar::tab {
+    border: 1px solid rgb(40, 40, 40);
+    padding: 4px;
+    margin: 0px;
 }
 QTabBar::tab:selected {
   background-color: rgb(85, 85, 85);
