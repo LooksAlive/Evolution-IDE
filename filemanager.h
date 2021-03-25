@@ -52,8 +52,8 @@ public:
     QString clang_tidy_path;
     bool project_cmake_file_exists = false;
 
-    QStringList other_files;       // filled with absolute paths
-    QStringList source_files;      // whole path
+    QStringList other_files;       // absolute paths
+    QStringList source_files;      // absolute path
     QStringList source_files_names;// only file name
 
 private:

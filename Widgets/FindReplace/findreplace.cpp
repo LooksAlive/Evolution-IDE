@@ -221,6 +221,7 @@ void FindReplaceWidget::searchEverywhere() {
         MultifileSearchResults.push_back(preview->search_results);
         SearchFilesPaths.push_back(AllFiles[i]);
         selections.push_back(preview->extra_selections_search_results);
+
         // spaces are critical here, we do not want to add some " "
         const QString Stag = "<span ";
         const QString Style = "style=color:orange;";
@@ -245,6 +246,7 @@ void FindReplaceWidget::searchEverywhere() {
             pos->setText(0, line_content + " &nbsp;&nbsp; " + row_col);
             file->addChild(pos);
         }
+
     }
     preview->clear();
     results->collapseAll();

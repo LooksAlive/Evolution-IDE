@@ -2,11 +2,11 @@ QWidget{
   border: none;
   padding: 0px;
   margin: 0px;
-  
+
   selection-background-color: rgb(120, 120, 120);
   /*selection-color: rgb(120, 120, 120);*/
-  
-  color: rgb(186, 186, 186);
+
+    color: rgb(186, 186, 186);
   /*color: rgb(243, 243, 243);*/
   /*background-color: rgb(61, 58, 58);*/
   background-color: rgb(68, 68, 68); /*#444444*/
@@ -57,7 +57,7 @@ QCompleter::item:hover {
 QToolTip {
     border: 1px solid rgb(40, 40, 40);
     margin: 0px;
-    padding: 0px;
+    padding: 1px;
     color: rgb(186, 186, 186);
     background-color: rgb(68, 68, 68);
 }

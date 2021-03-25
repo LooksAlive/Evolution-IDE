@@ -9,15 +9,23 @@
 
 // have to be there, parsing error with some .inc files
 #include "Clang/ClangBridge.h"
-
-#include "icons/IconFactory.h"
+#include "Widgets/CodeInfoDock/CodeInfoDock.h"
+#include "Widgets/NodeView/NodeView.h"
 #include "plaintextedit.h"
 
 PlainTextEdit::PlainTextEdit(QWidget *parent)
-    : QPlainTextEdit(parent)
-{
-    LineArea = new LineNumberArea(this);
-    BreakpointArea = new BreakPointArea(this);
+        : QPlainTextEdit(parent) {
+    SetupAdditionalWidgets();
+
+    // queue is critical for geometry
+    breakPointArea = new BreakPointArea(this);
+    codeNotifyArea = new CodeNotifyArea(this);
+    lineNumberArea = new LineNumberArea(this);
+    arrowArea = new ArrowArea(this);
+    scrollBar = new ScrollBar(this);
+
+    setVerticalScrollBar(scrollBar);
+    // setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 
     QSettings settings;
     QFont font;
@@ -43,11 +51,13 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
     setFrameStyle(QFrame::NoFrame);
     setFont(font);
     setTabChangesFocus(false);
-    setWordWrapMode(QTextOption::WordWrap);
+    setWordWrapMode(QTextOption::NoWrap);
     setReadOnly(false);
     setMouseTracking(true);
     setEnabled(true);
-    setCenterOnScroll(true);// ??? what does this ?
+    setCenterOnScroll(false);// when scrolling cursor is visible in the smallest view
+    setTextInteractionFlags(Qt::TextBrowserInteraction | Qt::TextEditorInteraction);    // links
+
     /*
     touchTimer = new QTimer(this);
     connect(touchTimer, &QTimer::timeout, this, [=](){ searchByMouseTouch(); });
@@ -82,8 +92,11 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
     });
 
     createMenu();
-    SetupCompleter();
     ensureCursorVisible();
+    appendHtml("<a style=text-decoration:none;color:gray; href=content>hrejfForContent</a><br>");
+    arrowArea->expanded.push_back(1);   // first line
+    arrowArea->expanded.push_back(2);   // first line
+    arrowArea->expanded.push_back(3);   // first line
 }
 
 QRectF PlainTextEdit::blockBoundingGeometryProxy(const QTextBlock &block) const {
@@ -225,6 +238,22 @@ void PlainTextEdit::completerInsertText(const QString &text) {
     tc.movePosition(QTextCursor::EndOfWord);
     tc.insertText(text.right(extra));
     setTextCursor(tc);
+}
+
+void PlainTextEdit::slotInsertSuggestion(QListWidgetItem *item) {
+    const QString newWord = item->text();
+    QTextCursor cursor = textCursor();
+    cursor.select(QTextCursor::WordUnderCursor);
+    cursor.removeSelectedText();
+    cursor.insertText(newWord);
+    setTextCursor(cursor);
+}
+
+void PlainTextEdit::slotInsertTagComment(QListWidgetItem *item) {
+    const QString newWord = item->text();
+    QTextCursor cursor = textCursor();
+    cursor.insertText("// " + newWord);
+    setTextCursor(cursor);
 }
 
 void PlainTextEdit::deleteLine() {
@@ -514,6 +543,64 @@ void PlainTextEdit::autoBlankLineDeletion() {
     setTextCursor(cursor);
 }
 
+bool PlainTextEdit::autoTextSurrounding(QTextCursor &cursor, const QString &pair) {
+    const QString selectedText = cursor.selectedText();
+    if (selectedText.isEmpty()) {
+        return false;
+    }
+    // it is easier to remove it and insert formated text
+    if (pair == "{") {
+        const QString newText = "{" + selectedText + "}";
+        cursor.removeSelectedText();
+        cursor.insertText(newText);
+        cursor.movePosition(QTextCursor::EndOfWord);
+        setTextCursor(cursor);
+        return true;
+    }
+    if (pair == "[") {
+        const QString newText = "[" + selectedText + "]";
+        cursor.removeSelectedText();
+        cursor.insertText(newText);
+        cursor.movePosition(QTextCursor::EndOfWord);
+        setTextCursor(cursor);
+        return true;
+    }
+    if (pair == "(") {
+        const QString newText = "(" + selectedText + ")";
+        cursor.removeSelectedText();
+        cursor.insertText(newText);
+        cursor.movePosition(QTextCursor::EndOfWord);
+        setTextCursor(cursor);
+        return true;
+    }
+    if (pair == "\'") {
+        const QString newText = "'" + selectedText + "'";
+        cursor.removeSelectedText();
+        cursor.insertText(newText);
+        cursor.movePosition(QTextCursor::EndOfWord);
+        setTextCursor(cursor);
+        return true;
+    }
+    if (pair == "\"") {
+        const QString newText = "\"" + selectedText + "\"";
+        cursor.removeSelectedText();
+        cursor.insertText(newText);
+        cursor.movePosition(QTextCursor::EndOfWord);
+        setTextCursor(cursor);
+        return true;
+    }
+    if (pair == "<") {
+        const QString newText = "<" + selectedText + ">";
+        cursor.removeSelectedText();
+        cursor.insertText(newText);
+        cursor.movePosition(QTextCursor::EndOfWord);
+        setTextCursor(cursor);
+        return true;
+    }
+    // never reach
+    return false;
+}
+
 void PlainTextEdit::moveCursor(const bool &end) {
     QTextCursor cursor = textCursor();
     int length = cursor.block().text().length();
@@ -671,8 +758,7 @@ void PlainTextEdit::findStoreAndSelectAll(const QString &search, const QTextDocu
     updateExtraSelections();
 }
 
-bool PlainTextEdit::find(const QString &search, const QTextDocument::FindFlags &find_options)
-{
+bool PlainTextEdit::find(const QString &search, const QTextDocument::FindFlags &find_options) {
     doNotSetSelections = true;
     QTextCursor cursor = textCursor();
     cursor = document()->find(search, cursor, find_options);
@@ -775,11 +861,19 @@ void PlainTextEdit::createMenu() {
     viewMenu->addAction("Go to Definition", this, SLOT(slotGoToDefinition()), Qt::CTRL + Qt::SHIFT + Qt::Key_D);
     viewMenu->addAction("Find References", this, SLOT(slotFindReferences()), Qt::CTRL + Qt::SHIFT + Qt::Key_F);
 
+    viewMenu->addAction("Add comment tag", this, SLOT(slotAddCommentTags()),
+                        Qt::CTRL + Qt::SHIFT + Qt::Key_T + Qt::Key_T);
+    viewMenu->addAction("Comment tags", this, SLOT(slotShowCommentTags()), Qt::CTRL + Qt::SHIFT + Qt::Key_T);
+
+    viewMenu->addAction("Show in nodes", this, SLOT(slotShowInNodeView()));
+
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(slotShowMenu(const QPoint&)));
 }
 
-void PlainTextEdit::SetupCompleter() {
+void PlainTextEdit::SetupAdditionalWidgets() {
+    hoverInfo = new HoverInfoWidget(this);
+
     QStringList words;
     words << "void"
           << "bool"
@@ -802,37 +896,8 @@ void PlainTextEdit::SetupCompleter() {
     //completer->setModel(new QStringListModel(words, completer));
 
     completer = new Completer(this);
-    /*
-    auto *view = new QTableWidget(this);
-    view->setColumnCount(2);
-    view->setRowCount(5);
-    view->setMinimumWidth(200);
-    view->setMinimumHeight(200);
-    QTableWidgetItem *item = new QTableWidgetItem();
-    item->setText("myitem");
-    item->setIcon(QIcon(IconFactory::Build));
-    item->setStatusTip("statustip");
-    item->setToolTip("tooltip");
-
-    QTableWidgetItem *item2 = new QTableWidgetItem();
-    item2->setText("myitem");
-
-    view->setItem(0, 0, item);
-    view->setItem(1, 1, item2);
-    view->setItem(1, 1, new QTableWidgetItem("mmmmmmm"));
-    view->setHorizontalHeaderItem(0, new QTableWidgetItem("name"));
-    view->setHorizontalHeaderItem(1, new QTableWidgetItem("type"));
-    //view->setHorizontalHeaderLabels(QStringList() << "HeaderLabel");
-    view->hide();
-    */
     completer->setWidget(this);
-    completer->setModel(new QStringListModel(words, completer));
-    /*
-    auto *view = new QListView(this);
-    view->setViewMode(QListView::ListMode);
-    view->setLayoutMode(QListView::Batched);
-    completer->setPopup(view);
-    */
+    // completer->setModel(new QStringListModel(words, completer));
     //completer->popup()->setMouseTracking(true);
     //completer->popup()->setTabletTracking(true);
     //auto *model = new QFileSystemModel(this);
@@ -841,32 +906,59 @@ void PlainTextEdit::SetupCompleter() {
 
     connect(completer, SIGNAL(activated(const QString &)), this, SLOT(completerInsertText(const QString &)));
 
-    completer->addItem("function", "void");
-    completer->addItem("variable", "int");
+    //completer->addItems("function", "void");
+    //completer->addItems("variable", "int");
+
+    completer->addItems(words);
+
+    spellCheckPopup = new SpellCheckList(this);
+    connect(spellCheckPopup, SIGNAL(itemClicked(QListWidgetItem * )), this,
+            SLOT(slotInsertSuggestion(QListWidgetItem * )));
+
+    tagListPopup = new CommentTagList(this);
+    connect(tagListPopup, SIGNAL(itemClicked(QListWidgetItem * )), this,
+            SLOT(slotInsertTagComment(QListWidgetItem * )));
+
+    infoMessage = new InformativeMessage(this);
+
+    smallEdit = new SmallRoundedEdit(this, this);
+    smallEdit->verticalScrollBar()->setVisible(false);
 }
 
-void PlainTextEdit::setCompletionData(const std::vector<std::string> &data) {
-    QStringList buffer;
-    for (const auto &i : data) {
-        buffer.push_back(QString::fromStdString(i));
-    }
-    completer->setModel(new QStringListModel(buffer, completer));
+void PlainTextEdit::showMessage(const QString &message) {
+    infoMessage->setGeometry(cursorRect());
+    infoMessage->setMessage(message);
+    infoMessage->show();
+    QTimer::singleShot(3000, this, [=]() { infoMessage->hide(); });
 }
 
-void PlainTextEdit::setFileExtension(const QString &extension){
+void PlainTextEdit::setFileExtension(const QString &extension) {
     file_extension = extension;
+    // TODO: move this where this function is called, extension set...
+    if (file_extension == "cpp" || file_extension == "h") {
+        completer->defaultCompletionData = C_CPP_Statements + C_CPP_Types;
+        // update data
+        completer->addItems(QStringList());
+    }
+    if (file_extension == "py") {
+        completer->defaultCompletionData = pythonTypes;
+        completer->addItems(QStringList());
+    }
 }
 
 void PlainTextEdit::setFilePath(const QString &file_path) {
     filepath = file_path;
+    if (QFileInfo(filepath).fileName() == "CmakeLists.txt") {
+        completer->defaultCompletionData = cmakeCommands;
+    }
 }
 
-QString PlainTextEdit::getFilePath(){
+QString PlainTextEdit::getFilePath() const {
     return filepath;
 }
 
 bool PlainTextEdit::toggleBreakPoint(const int& line) const {
-    if (BreakpointArea->containBlock(line - 1)) {
+    if (breakPointArea->containBlock(line - 1)) {
         return false;
     }
     return true;
@@ -950,7 +1042,7 @@ void PlainTextEdit::searchPairsSelections(QTextCursor &cursor, const QString &fi
     */
 }
 
-void PlainTextEdit::setLineSelection(const int &line, const PlainTextEdit::lineSelection& type, const bool& removeAll) {
+void PlainTextEdit::setLineSelection(const int &line, const PlainTextEdit::selectionType &type, const bool &removeAll) {
     QTextEdit::ExtraSelection selection;
     QTextCursor cursor = textCursor();
     setCursorPosition(cursor, 1, line);
@@ -962,39 +1054,95 @@ void PlainTextEdit::setLineSelection(const int &line, const PlainTextEdit::lineS
     switch (type) {
         case Warning:
             if (removeAll) {
-                extra_selections_warning_line.clear();
+                extra_selections_line.clear();
                 return;
             }
             color.setRgb(0, 0, 255);
-            extra_selections_warning_line.append(selection);
+            extra_selections_line.append(selection);
             selection.cursor.clearSelection();
             break;
         case Error:
             if (removeAll) {
-                extra_selections_error_line.clear();
+                extra_selections_line.clear();
                 return;
             }
             color.setRgb(255, 0, 0);
-            extra_selections_error_line.append(selection);
+            extra_selections_line.append(selection);
             selection.cursor.clearSelection();
             break;
         case BreakPoint:
             if (removeAll) {
-                extra_selections_error_line.clear();
+                extra_selections_line.clear();
                 return;
             }
             color.setRgb(255, 0, 150);
-            extra_selections_error_line.append(selection);
+            extra_selections_line.append(selection);
+            selection.cursor.clearSelection();
+            break;
+        case SpellCheck:
+            color.setRgb(0, 255, 0);
+            extra_selections_line.append(selection);
             selection.cursor.clearSelection();
             break;
     }
     updateExtraSelections();
 }
 
+void PlainTextEdit::setUnderLineSelection(const QPoint &start, const QPoint &end, const selectionType &type) {
+    QTextEdit::ExtraSelection selection;
+    QTextCursor cursor = textCursor();
+    setCursorPosition(cursor, start.x(), start.y());
+    // compute how many character we should move from start.x()
+    const int pos = document()->findBlockByNumber(end.y() - 1).position() + end.x();
+    //cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, end.x());
+    cursor.setPosition(pos, QTextCursor::KeepAnchor);
+    selection.cursor = cursor;
+
+    switch (type) {
+        case Warning:
+            selection.format.setUnderlineColor(QColor(0, 0, 255));
+            selection.format.setUnderlineStyle(QTextCharFormat::WaveUnderline);
+            extra_selections_underline.append(selection);
+            selection.cursor.clearSelection();
+            break;
+        case Error:
+            selection.format.setUnderlineColor(QColor(255, 0, 0));
+            selection.format.setUnderlineStyle(QTextCharFormat::WaveUnderline);
+            extra_selections_underline.append(selection);
+            selection.cursor.clearSelection();
+            break;
+        case BreakPoint:
+            selection.format.setUnderlineColor(QColor(255, 0, 150));
+            selection.format.setUnderlineStyle(QTextCharFormat::SingleUnderline);
+            extra_selections_underline.append(selection);
+            selection.cursor.clearSelection();
+            break;
+        case SpellCheck:
+            selection.format.setUnderlineColor(QColor(0, 255, 0));
+            selection.format.setUnderlineStyle(QTextCharFormat::SpellCheckUnderline);
+            extra_selections_underline.append(selection);
+            selection.cursor.clearSelection();
+            break;
+    }
+    updateExtraSelections();
+}
+
+void PlainTextEdit::setCollapsableText(const QPoint &start, const QPoint &end) {
+    QTextCursor cursor = textCursor();
+    setCursorPosition(cursor, start.x(), start.y());
+    const int pos = document()->findBlockByNumber(end.y() - 1).position() + end.x();
+    cursor.setPosition(pos, QTextCursor::KeepAnchor);
+    const QString originalText = cursor.selectedText();
+    cursor.removeSelectedText();
+    cursor.insertHtml(
+            "<a style=text-decoration:none;color:gray; href= " + originalText + ">..." + "</a>");  // or insertHtml()
+    setTextCursor(cursor);
+}
+
 void PlainTextEdit::updateExtraSelections() {
     setExtraSelections(extra_selections_current_line + extra_selections_search_results +
-                               extra_selections_search_touched_results + extra_selections_warning_line +
-                               extra_selections_error_line);
+                       extra_selections_search_touched_results +
+                       extra_selections_line + extra_selections_underline);
 }
 
 
@@ -1014,13 +1162,14 @@ void PlainTextEdit::slotCreateSample() {
     const QString content = textCursor().selectedText();
     const QString sampleName = newSampleWindow->newSampleName;
     if (content.isEmpty() || sampleName.isEmpty()) {
+        showMessage("Empty sammple");
         return;
     }
     education->addUserSample(content, sampleName);
 }
 
 void PlainTextEdit::slotToggleBreakPoint() {
-    BreakpointArea->containBlock(getCursorPosition().y() - 1);
+    breakPointArea->containBlock(getCursorPosition().y() - 1);
 }
 
 void PlainTextEdit::formatFile() const {
@@ -1039,20 +1188,55 @@ void PlainTextEdit::slotFindReferences() const {
     code_info->runAction(CodeInfoDock::FindReferences);
 }
 
-void PlainTextEdit::slotExpand(){
+void PlainTextEdit::slotShowCommentTags() const {
+    tagReminder->fillView(filepath);
+    tagReminder->show();
+}
+
+void PlainTextEdit::slotShowInNodeView() {
+    nodeView->showNodeFromBlock(getCursorPosition());
+    // CHECK: this should set also to right node
+}
+
+void PlainTextEdit::slotAddCommentTags() {
+    QTextCursor cursor = textCursor();
+    cursor.select(QTextCursor::LineUnderCursor);
+    const QString text = cursor.selectedText();
+    /*
+    for(const auto& c : text) {
+        if(c != " " || c != "\t") {
+            showMessage("Line under cursor contains text");
+            return;
+        }
+    }
+    */
+    if (!text.simplified().isEmpty()) {
+        showMessage("Line under cursor contains text");
+        return;
+    }
+    // const QPoint pos = this->cursor().pos();
+    tagListPopup->setGeometry(cursorRect());
+    tagListPopup->show();
+    tagListPopup->setFocus();
+}
+
+void PlainTextEdit::slotExpand() {
     indentText(true);
 }
 
-void PlainTextEdit::slotCollapse(){
+void PlainTextEdit::slotCollapse() {
     indentText(false);
 }
 
 // increase size when number are 10, 100, 1000, ...
-void PlainTextEdit::slotBlockCountChanged(const int count)
-{
+void PlainTextEdit::slotBlockCountChanged(const int &count) {
     Q_UNUSED(count)
-    // + BreakpointArea->sizeHint().width()
-    setViewportMargins(LineArea->sizeHint().width(), 0, 0, 0);
+    // BreakpointArea->sizeHint().width() + codeNotifiArea->sizeHint().width() +
+    // lineNumberArea->sizeHint().width() + arrowArea->sizeHint().width()
+
+    // expanding to right
+    setViewportMargins(breakPointArea->sizeHint().width() + codeNotifyArea->sizeHint().width() +
+                       lineNumberArea->sizeHint().width() + arrowArea->sizeHint().width(), 0, 0, 0);
 }
 
 void PlainTextEdit::slotHighlightCurrentLine()
@@ -1088,16 +1272,20 @@ void PlainTextEdit::slotHighlightCurrentLine()
 }
 
 // update automatically whole view -> all widgets contained
-void PlainTextEdit::slotUpdateRequest(const QRect &rect, const int column)
-{
+void PlainTextEdit::slotUpdateRequest(const QRect &rect, const int column) {
     if (column) {
-        LineArea->scroll(0, column);
-        BreakpointArea->scroll(0, column);
+        lineNumberArea->scroll(0, column);
+        breakPointArea->scroll(0, column);
+        arrowArea->scroll(0, column);
+        codeNotifyArea->scroll(0, column);
     }
     //LineArea->update(0, rect.y(), LineArea->width(), rect.height());
     //BreakpointArea->update(0, rect.y(), BreakpointArea->width(), rect.height());
-    LineArea->update();
-    BreakpointArea->update();
+    lineNumberArea->update();
+    breakPointArea->update();
+    arrowArea->update();
+    codeNotifyArea->update();
+
     if (rect.contains(viewport()->rect())) {
         slotBlockCountChanged(0);
     }
@@ -1162,16 +1350,54 @@ void PlainTextEdit::dropEvent(QDropEvent *e){
     QPlainTextEdit::dropEvent(e);
 }
 
-void PlainTextEdit::mousePressEvent(QMouseEvent *e) {
-    if (e->type() == QEvent::MouseButtonPress && e->button() == Qt::LeftButton &&
-        e->modifiers() == Qt::ControlModifier) {
+void PlainTextEdit::mousePressEvent(QMouseEvent *event) {
+    anchor = anchorAt(event->pos());
+    if (!anchor.isEmpty())
+        QApplication::setOverrideCursor(Qt::PointingHandCursor);
+
+    if (/*event->type() == QEvent::MouseButtonPress && event->button() == Qt::LeftButton &&*/
+            event->modifiers() == Qt::ControlModifier) {
+        // QApplication::setOverrideCursor(Qt::PointingHandCursor);
         // go to definition declaration request
         //qDebug() << "activated with " + wordUnderCursor;
         //searchByMouseTouch();
         // code_info->runAction(CodeInfoDock::GoToDefinition);
     }
+    QPlainTextEdit::mousePressEvent(event);
+}
 
-    QPlainTextEdit::mousePressEvent(e);
+void PlainTextEdit::mouseReleaseEvent(QMouseEvent *event) {
+    if (!anchor.isEmpty()) {
+        // this is for web
+        //QDesktopServices::openUrl(QUrl(anchor));
+        // collapsed text
+        QTextCursor cursor = textCursor();
+        cursor.select(QTextCursor::WordUnderCursor);
+        cursor.removeSelectedText();
+        cursor.insertText(anchor);
+
+        QApplication::setOverrideCursor(Qt::ArrowCursor);
+        anchor.clear();
+        // handle arrowArea to paint propertly
+        arrowArea->expanded.erase(
+                std::find(arrowArea->expanded.begin(), arrowArea->expanded.end(), cursor.blockNumber()));
+        setTextCursor(cursor);
+    }
+    QPlainTextEdit::mouseReleaseEvent(event);
+}
+
+void PlainTextEdit::mouseMoveEvent(QMouseEvent *event) {
+
+    // TODO: check rect position if we are not in hoverInfoWidget if later
+    // TODO: we will want to add some more functionalities or for now add
+    // TODO: some ms before hiding.
+    if (hoverInfo->isVisible()) {
+        hoverInfo->hide();
+        spellCheckPopup->hide();
+        smallEdit->hide();
+        tagListPopup->hide();
+    }
+    QPlainTextEdit::mouseMoveEvent(event);
 }
 
 // increasing, decreasing text point size
@@ -1188,8 +1414,7 @@ void PlainTextEdit::wheelEvent(QWheelEvent *event) {
     }
 }
 
-void PlainTextEdit::paintEvent(QPaintEvent *event)
-{
+void PlainTextEdit::paintEvent(QPaintEvent *event) {
     QPainter line(viewport());
     // symbolic line that represents width of 1 row --> 80 characters
     const int offset = static_cast<int>((fontMetrics().width('8') * 80)
@@ -1206,15 +1431,24 @@ void PlainTextEdit::paintEvent(QPaintEvent *event)
     QPlainTextEdit::paintEvent(event);
 }
 
-void PlainTextEdit::resizeEvent(QResizeEvent *event)
-{
+void PlainTextEdit::resizeEvent(QResizeEvent *event) {
     // whole text edit rect
     const QRect rect = contentsRect();
     // LineArea->setGeometry(QRect(rect.left(), rect.top(), LineArea->sizeHint().width(), rect.height()));
-    LineArea->resize(LineArea->sizeHint().width(), rect.height());
     //BreakpointArea->setGeometry(QRect(rect.left(), rect.top(), BreakpointArea->sizeHint().width(), rect.height()));
     // BreakPoint width is fixed, since it is an image --> but still i can change for another BreakPoint
-    BreakpointArea->resize(BreakpointArea->sizeHint().width(), rect.height());
+    breakPointArea->resize(breakPointArea->sizeHint().width(), rect.height());
+    codeNotifyArea->resize(codeNotifyArea->sizeHint().width(), rect.height());
+
+    // lines are changing width so we need to update geometry for right widgets
+    const int linexWidth = breakPointArea->sizeHint().width() + codeNotifyArea->sizeHint().width();
+    lineNumberArea->setGeometry(linexWidth, 0, lineNumberArea->sizeHint().width(), height());
+    lineNumberArea->resize(lineNumberArea->sizeHint().width(), rect.height());
+
+    const int arrowxWidth = breakPointArea->sizeHint().width() + codeNotifyArea->sizeHint().width() +
+                            lineNumberArea->sizeHint().width();
+    arrowArea->setGeometry(arrowxWidth, 0, arrowArea->sizeHint().width(), height());
+    arrowArea->resize(arrowArea->sizeHint().width(), rect.height());
 
     QPlainTextEdit::resizeEvent(event);
 }
@@ -1222,11 +1456,11 @@ void PlainTextEdit::resizeEvent(QResizeEvent *event)
 void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
     QTextCursor cursor = textCursor();
 
+    /*
     if (event->modifiers() == Qt::ControlModifier) {
         this->cursor().setShape(Qt::PointingHandCursor);
     }
 
-    /*
     const bool ctrlOrShift = event->modifiers() && (Qt::ControlModifier | Qt::ShiftModifier);
     if (!completer || (ctrlOrShift && event->text().isEmpty())) {
         return;
@@ -1311,38 +1545,50 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
             break;
             // automatic type braces
         case Qt::Key_BracketLeft:
+            if (autoTextSurrounding(cursor, "[")) {
+                return;
+            }
             cursor.insertText("]");
             cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
             setTextCursor(cursor);
             break;
         case Qt::Key_BraceLeft:
+            if (autoTextSurrounding(cursor, "{")) {
+                return;
+            }
             cursor.insertText("}");
             cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
             setTextCursor(cursor);
             break;
         case Qt::Key_ParenLeft:
+            if (autoTextSurrounding(cursor, "(")) {
+                return;
+            }
             cursor.insertText(")");
             cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
             setTextCursor(cursor);
             break;
         case Qt::Key_Less:
-            cursor.insertText("> ");
+            if (autoTextSurrounding(cursor, "<")) {
+                return;
+            }
+            cursor.insertText(">");
             cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
             setTextCursor(cursor);
             break;
-        case Qt::Key_Slash:     // kind a stupid idea.
-            cursor.insertText("/");
-            cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
-            setTextCursor(cursor);
-            break;
-        case Qt::Key_Backslash:     // kind a stupid idea.
-            cursor.insertText("\\");
+        case Qt::Key_QuoteLeft:
+            if (autoTextSurrounding(cursor, "'")) {
+                return;
+            }
+            cursor.insertText("'");
             cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
             setTextCursor(cursor);
             break;
         case Qt::Key_QuoteDbl:
-        case Qt::Key_QuoteLeft:
-            cursor.insertText("'");
+            if (autoTextSurrounding(cursor, "\"")) {
+                return;
+            }
+            cursor.insertText("\"");
             cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
             setTextCursor(cursor);
             break;
@@ -1354,6 +1600,9 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
 }
 
 void PlainTextEdit::keyPressEvent(QKeyEvent *event) {
+
+    // setToolTip(getWordUnderCursor());
+    const QString completionPrefix = getWordUnderCursor();
 
     if (completer->popup()->isVisible()) {
         switch (event->key()) {
@@ -1367,6 +1616,16 @@ void PlainTextEdit::keyPressEvent(QKeyEvent *event) {
             default:
                 break;
         }
+        if (!completionPrefix.isEmpty()) {
+            // update completer data when typing
+            completer->setCompletionPrefix(completionPrefix);
+            // also elements count changes --> resize
+            //QRect cr = cursorRect();
+            //cr.setWidth(
+            //        50 + completer->popup()->sizeHintForColumn(0) + completer->popup()->verticalScrollBar()->sizeHint().width());
+            // completer->complete(cr);
+            //completer->popup()->setGeometry(cr);
+        }
     }
 
     const bool isShortcut = ((event->modifiers() & Qt::ControlModifier) && event->key() == Qt::Key_Space);
@@ -1376,21 +1635,21 @@ void PlainTextEdit::keyPressEvent(QKeyEvent *event) {
     static const QString endOfWordCharacters("~!@#$%^&*()_+{}|:\"<>?,./;'[]\\-=");
     const bool hasModifier = (event->modifiers() != Qt::NoModifier);
 
-    const QString completionPrefix = getWordUnderCursor();
 
-    if (!isShortcut && (hasModifier || event->text().isEmpty() || completionPrefix.length() < 3 ||
+    if (!isShortcut && (hasModifier || event->text().isEmpty() /*|| completionPrefix.length() < 3*/ ||
                         endOfWordCharacters.contains(event->text().right(1)))) {
         completer->popup()->hide();
-        return;     // FIXME: this cause other things to ignore
+        //return;     // FIXME: this cause other things to ignore
     }
 
-    if (completionPrefix != completer->completionPrefix()) {
+    if (completionPrefix != completer->completionPrefix() && isShortcut) {
         completer->setCompletionPrefix(completionPrefix);
         completer->popup()->setCurrentIndex(completer->completionModel()->index(0, 0));
 
         QRect cr = cursorRect();
         cr.setWidth(
-                completer->popup()->sizeHintForColumn(0) + completer->popup()->verticalScrollBar()->sizeHint().width());
+                50 + completer->popup()->sizeHintForColumn(0) +
+                completer->popup()->verticalScrollBar()->sizeHint().width());
         // set completion data by running action which will set them after all
         //code_info->runAction(CodeInfoDock::CodeComplete);
         // this is async action so completer will be filled with new data after thread ends, clear it now
@@ -1402,11 +1661,10 @@ void PlainTextEdit::keyPressEvent(QKeyEvent *event) {
     switch (event->key()){
         case Qt::Key_Enter:
         case Qt::Key_Return:
-            /*
             if(autoEnterTextIndentation()){
                 return;
             }
-            */
+
             break;
         case Qt::Key_Backspace:
             autoBlankLineDeletion();
@@ -1429,13 +1687,12 @@ void PlainTextEdit::focusInEvent(QFocusEvent *e) {
     completer->setWidget(this);
 
     QPlainTextEdit::focusInEvent(e);
-
 }
 
 // cursor continues to be shown when menu pop up
 // or simply when it pop up this->setFocus() to menu
-void PlainTextEdit::focusOutEvent(QFocusEvent *e){
-    Qt::FocusReason r = e->reason();
+void PlainTextEdit::focusOutEvent(QFocusEvent *e) {
+    const Qt::FocusReason r = e->reason();
     if ((r == Qt::PopupFocusReason) ||
         (r == Qt::MenuBarFocusReason)) {
     } else {
@@ -1443,12 +1700,87 @@ void PlainTextEdit::focusOutEvent(QFocusEvent *e){
     }
 }
 
+// Hover Information label
+bool PlainTextEdit::event(QEvent *event) {
+    // TODO: for this purpose try to get all data for text positions
+    // TODO: and if we will going to show, can avoid action thread run (run it just once for all file)
+    if (event->type() == QEvent::ToolTip) {
+        setToolTip(QString()); // clear
+        const auto *helpEvent = static_cast<QHelpEvent *>(event);
+        QTextCursor cursor = cursorForPosition(helpEvent->pos());
+
+        // collapsed text set as default QToolTip
+        const QString collapsedText = anchorAt(helpEvent->pos()) + "\n ksalhdfjkhdsajlkhf \n jksahdf j\nsjladfkh";
+        if (!collapsedText.isEmpty()) {
+            // smallEdit shows collapsed scope
+            smallEdit->setPlainText(collapsedText);
+            smallEdit->setGeometry(cursorRect());
+            // TODO: height: set sext, get num lines compute height ... numlines*lineheight
+            smallEdit->setMinimumSize(fontMetrics().boundingRect(collapsedText).width(), 125);
+            smallEdit->show();
+            // setToolTip(collapsedText);
+            goto end;
+        }
+
+        // preformance: match only line
+        const int line = cursor.blockNumber();
+        for (const auto &suggestion : code_info->spellCheckWorker->suggestions) {
+            if (suggestion.startPosition.y() == line) {
+                spellCheckPopup->setItemList(suggestion.suggestions);
+                spellCheckPopup->setGeometry(cursorRect());
+                spellCheckPopup->show();
+                spellCheckPopup->setFocus();
+                goto end;
+                //break;
+            }
+        }
+
+        // QCursor cur = this->cursor();
+        cursor.select(QTextCursor::WordUnderCursor);
+        if (!cursor.selectedText().isEmpty()) {
+            const QString label =
+                    "<a style=text-decoration:none;color:lightblue; href=/home/adam/Desktop/Header_Calls_Profiler/options.cpp:3:3 >" +
+                    cursor.selectedText() + "</a>";
+            hoverInfo->setLabelText(label);
+            //hoverInfo->setMinimumSize(fontMetrics().boundingRect(cursor.selectedText()).width() + 15, fontMetrics().boundingRect(cursor.selectedText()).height() + 15);
+            hoverInfo->setGeometry(cursorRect());
+            // rect()   -> top left corner
+            hoverInfo->show();
+            // FIXME: this is done async. set also rectangle to track if we still want to show it
+            // code_info->runAction(CodeInfoDock::HoverInfo);
+            // QWhatsThis::showText(QPoint(cursorRect().x(), cursorRect().y()), "mytext", hoverInfo);
+            // QToolTip::showText(helpEvent->globalPos(), cursor.selectedText(), hoverInfo);
+            // TODO: implement this as postition we are in ... function, altough we have codeInfoDock for that
+            // QWhatsThis::add(sourceLineEdit, ....
+            // ------------- good but very bad ----------------------
+            // QWhatsThis::showText(helpEvent->globalPos(), cursor.selectedText(), hoverInfo);
+            // QStatusTipEvent(cursor.selectedText());
+            setStatusTip(cursor.selectedText());
+        }
+        //else
+        //QToolTip::hideText();
+        //return true;
+    }
+    /*
+    if(event->type() == QEvent::Leave) {
+        qDebug() << "mouse leave";
+        hoverInfo->hide();
+    }
+    */
+    end:
+    return QPlainTextEdit::event(event);
+}
+
 
 /* LineNumberArea widget
 ------------------------------------------------------------------------- */
 
-LineNumberArea::LineNumberArea(PlainTextEdit *edit) : QWidget(edit), m_Edit(edit) {
+LineNumberArea::LineNumberArea(PlainTextEdit *edit, QWidget *parent) : QWidget(edit), m_Edit(edit) {
     setStyleSheet("background-color: rgb(47, 47, 47)");
+    setUpdatesEnabled(true);
+
+    const int xWidth = m_Edit->breakPointArea->sizeHint().width() + m_Edit->codeNotifyArea->sizeHint().width();
+    setGeometry(xWidth, 0, sizeHint().width(), m_Edit->height());
 }
 
 void LineNumberArea::leaveEvent(QEvent *e)
@@ -1475,7 +1807,7 @@ void LineNumberArea::paintEvent(QPaintEvent *e)
             font.setFamily(m_Edit->font().family());
             font.setPointSize(m_Edit->font().pointSize());
             if (m_Edit->textCursor().blockNumber() == i) {
-                painter.fillRect(box, palette().color(QPalette::Highlight));
+                // painter.fillRect(box, palette().color(QPalette::Highlight));
                 painter.setPen(palette().color(QPalette::HighlightedText));
                 font.setWeight(QFont::Bold);
             } else {
@@ -1483,15 +1815,17 @@ void LineNumberArea::paintEvent(QPaintEvent *e)
                 painter.setPen(palette().color(QPalette::Text));
             }
             painter.setFont(font);
-            painter.drawText(box.left(), box.top(), box.width(), box.height(), Qt::AlignRight, QString::number(i + 1).append(' '));
-            painter.setPen(palette().color(QPalette::Highlight));
-            painter.drawLine(full.topRight(), full.bottomRight());
+            painter.drawText(box.left(), box.top(), box.width(), box.height(), Qt::AlignCenter,
+                             QString::number(i + 1).append(' '));
+            // painter.setPen(palette().color(QPalette::Highlight));
+            // painter.drawLine(full.topRight(), full.bottomRight());
         }
         block = block.next();
         top = bottom;
         bottom = (top + static_cast<int>(m_Edit->blockBoundingRectProxy(block).height()));
         ++i;
     }
+    QWidget::paintEvent(e);
 }
 
 
@@ -1523,40 +1857,37 @@ void LineNumberArea::mouseReleaseEvent(QMouseEvent *event)
     mouseEvent(event);
 }
 
-QSize LineNumberArea::sizeHint() const
-{
+QSize LineNumberArea::sizeHint() const {
     int digits = 1;
     int blocks = qMax(1, m_Edit->blockCount());
     while (blocks >= 10) {
         blocks /= 10;
         digits++;
     }
-    digits++;
-    digits++;
-    return QSize((3 + (m_Edit->fontMetrics().width('8') * digits)), 0);
+    return QSize(((m_Edit->fontMetrics().width('8') * digits) + 4), 0);  // shrink to fit only number
 }
 
-void LineNumberArea::wheelEvent(QWheelEvent *e)
-{
+void LineNumberArea::wheelEvent(QWheelEvent *e) {
     QApplication::sendEvent(m_Edit->viewport(), e);
 }
 
 /* BreakPointArea widget
 ------------------------------------------------------------------------- */
 
-BreakPointArea::BreakPointArea(PlainTextEdit *edit) : QWidget(edit), m_Edit(edit){
-    setStyleSheet("background-color: rgb(43, 41, 41);");
+BreakPointArea::BreakPointArea(PlainTextEdit *edit, QWidget *parent) : QWidget(edit), m_Edit(edit) {
+    setUpdatesEnabled(true);
     breakpoint.load(IconFactory::BreakPoint);
-    setFixedWidth(breakpoint.width());
+    // setFixedWidth(breakpoint.width());
     B_blocks.reserve(5);
+    setGeometry(0, 0, sizeHint().width(), m_Edit->height());
 }
 
 bool BreakPointArea::containBlock(const int& line) {
     //qDebug() << "added";
     //qDebug() << line;
-    for(int i = 0; i < B_blocks.size(); i++){
+    for (unsigned int i = 0; i < B_blocks.size(); i++) {
         // already contained -> remove   -> will not be painted
-        if(B_blocks[i] == line){
+        if (B_blocks[i] == line) {
             //qDebug() << "erasing";
             //qDebug() << line;
             B_blocks.erase(B_blocks.begin() + i);  // only block does not work
@@ -1584,23 +1915,38 @@ QSize BreakPointArea::sizeHint() const {
     return QSize((breakpoint.width()), 0);
 }
 
-void BreakPointArea::mouseEvent(QMouseEvent *event) {
-    QTextCursor cursor = m_Edit->cursorForPosition(QPoint(0, event->pos().y()));
-    const QTextBlock touched_block = cursor.block();
-    cursor.setVisualNavigation(true);
+bool BreakPointArea::event(QEvent *event) {
+    if (event->type() == QEvent::ToolTip) {
+        const auto *helpEvent = static_cast<QHelpEvent *>(event);
+        QTextCursor cursor = m_Edit->cursorForPosition(helpEvent->pos());
+        const int line = cursor.blockNumber();
+        for (const auto &BP : B_blocks) {
+            if (line == BP) {
+                setToolTip(m_Edit->getFilePath() + "\n" +
+                           "line: " + QString::number(BP + 1) + "\n" +
+                           "active");
+                goto end;
+            }
+        }
+        setToolTip(QString());
+    }
+    end:;
+    return QWidget::event(event);
+}
+
+void BreakPointArea::mousePressEvent(QMouseEvent *event) {
     if ((event->type() == QEvent::MouseButtonPress) && (event->button() == Qt::LeftButton)) {
+        QTextCursor cursor = m_Edit->cursorForPosition(QPoint(0, event->pos().y()));
+        const QTextBlock touched_block = cursor.block();
+        // cursor.setVisualNavigation(true);
         // can be called only here, before push
         containBlock(touched_block.blockNumber());
-
         m_Edit->setTextCursor(cursor);
         //emit breakPointCreated();
         //qDebug() << touched_block.blockNumber();
         //qDebug() << blocks;
     }
-}
-
-void BreakPointArea::mousePressEvent(QMouseEvent *event) {
-    mouseEvent(event);
+    QWidget::mouseReleaseEvent(event);
 }
 
 void BreakPointArea::paintEvent(QPaintEvent *event) {
@@ -1618,7 +1964,7 @@ void BreakPointArea::paintEvent(QPaintEvent *event) {
             // TODO: first x is problem, since line numbers are also like that painted
             if(canCreateBreakPoint(block)){
                 // was 0
-                QRect box(0, top, width(), m_Edit->fontMetrics().height());
+                const QRect box(0, top, width(), m_Edit->fontMetrics().height());
                 painter.drawPixmap(box, breakpoint);
             }
         }
@@ -1629,3 +1975,403 @@ void BreakPointArea::paintEvent(QPaintEvent *event) {
     QWidget::paintEvent(event);
 }
 
+
+ArrowArea::ArrowArea(PlainTextEdit *edit, QWidget *parent) : QWidget(edit), m_Edit(edit) {
+    setUpdatesEnabled(true);
+    arrowCollapse.load(IconFactory::ScrollUp);
+    arrowExpand.load(IconFactory::ScrollDown);
+    setFixedWidth(arrowCollapse.width());
+    setToolTip("arrow area");
+
+    const int xWidth = m_Edit->breakPointArea->sizeHint().width() + m_Edit->codeNotifyArea->sizeHint().width() +
+                       m_Edit->lineNumberArea->sizeHint().width();
+    setGeometry(xWidth, 0, sizeHint().width(), m_Edit->height());
+}
+
+void ArrowArea::collapseOrExpand(const int &line) {
+    if (isExpanded(line)) {
+        // collapse it
+        expanded.erase(std::find(expanded.begin(), expanded.end(), line));
+        // match line and get point
+        // m_Edit->code_info->collapsableBoundariesRanges...
+        const QPoint start(0, 0);
+        const QPoint end(0, 0);
+        m_Edit->setCollapsableText(start, end);
+    } else {
+        // expand it
+        expanded.push_back(line);
+        QTextCursor cursor = m_Edit->textCursor();
+        cursor.movePosition(QTextCursor::EndOfLine);
+        cursor.select(QTextCursor::WordUnderCursor);
+        // will this be a html ?
+        const QString html = cursor.selectedText();
+        const QString replacement = html.mid(html.indexOf("href="), html.indexOf(">"));
+        cursor.insertText(replacement);
+        m_Edit->setTextCursor(cursor);
+    }
+}
+
+bool ArrowArea::isExpanded(const int &line) {
+    for (const int &l : expanded) {
+        if (l == line) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ArrowArea::isMarked(const int &line) {
+    for (const int &a : arrows) {
+        if (a == line) {
+            return true;
+        }
+    }
+    return false;
+}
+
+QSize ArrowArea::sizeHint() const {
+    // both are same size
+    return QSize((arrowCollapse.width()), 0);
+}
+
+void ArrowArea::mousePressEvent(QMouseEvent *event) {
+    if ((event->type() == QEvent::MouseButtonPress) && (event->button() == Qt::LeftButton)) {
+        QTextCursor cursor = m_Edit->cursorForPosition(QPoint(0, event->pos().y()));
+        const int line = cursor.blockNumber();
+        // can be called only here, before push
+        if (isMarked(line)) {
+            collapseOrExpand(line);
+        }
+        // m_Edit->setTextCursor(cursor);
+    }
+    QWidget::mousePressEvent(event);
+}
+
+void ArrowArea::paintEvent(QPaintEvent *event) {
+    QPainter painter(this);
+    QTextBlock block = m_Edit->firstVisibleBlockProxy();
+    // y1, y2 coordinates of rectangle we are going to paint in: top, top + height of 1 line(block)
+    int top = static_cast<int>(m_Edit->blockBoundingGeometryProxy(block).translated(
+            m_Edit->contentOffsetProxy()).top());
+    int bottom = top + static_cast<int>(m_Edit->blockBoundingRectProxy(block).height());
+    // widget area rectangle
+    const QRect area_rect = event->rect();
+    // while not all lines are painted, at the end increasing, checking if valid
+    while (block.isValid() && (top <= area_rect.bottom())) {
+        if (block.isVisible() && (bottom >= area_rect.top())) {
+            // width is fixed in constructor, height -> i want to fill by font size, since it can increase
+            // TODO: first x is problem, since line numbers are also like that painted
+            const bool expand = isExpanded(block.blockNumber());
+            const bool marked = isMarked(block.blockNumber());
+            if (expand) {
+                // was 0
+                const QRect box(0, top, width(), m_Edit->fontMetrics().height());
+                painter.drawPixmap(box, arrowExpand);
+            }
+            if (!expand && marked) {
+                const QRect box(0, top, width(), m_Edit->fontMetrics().height());
+                painter.drawPixmap(box, arrowCollapse);
+            }
+            // else draw nothing
+        }
+        block = block.next();
+        top = bottom;
+        bottom = (top + static_cast<int>(m_Edit->blockBoundingRectProxy(block).height()));
+    }
+    QWidget::paintEvent(event);
+}
+
+
+CodeNotifyArea::CodeNotifyArea(PlainTextEdit *edit, QWidget *parent) : QWidget(edit), m_Edit(edit) {
+    WH.setX(m_Edit->fontMetrics().horizontalAdvance("88"));
+    WH.setY(m_Edit->fontMetrics().height());
+
+    // next to breakpoints
+    setGeometry(m_Edit->breakPointArea->sizeHint().width(), 0, WH.x(), m_Edit->height());  // instead of paint event
+
+    error.load(IconFactory::Error);
+    warning.load(IconFactory::Warning);
+    // TODO: change this, find proper icons
+    fixit.load(IconFactory::Warning);
+    color.load(IconFactory::Color);
+
+    setUpdatesEnabled(true);
+
+    addNotification("notify widget", 1, Error);
+    addNotification("notify widget 2", 2, Warning);
+    addNotification("notify widget 3", 3, Fixit);
+    addNotification("notify widget 4", 4, Color);
+}
+
+void
+CodeNotifyArea::addNotification(const QString &toolTip, const int &line, const CodeNotifyArea::Notification &type) {
+    notifier notify;
+    notify.line = line;
+    notify.tooltip = toolTip;
+    notify.notify = type;
+    switch (type) {
+        case Error:
+            notify.image = error;
+            break;
+        case Warning:
+            notify.image = warning;
+            break;
+        case Fixit:
+            notify.image = fixit;
+            break;
+        case Color:
+            notify.image = color;
+            break;
+    }
+    notifiers.push_back(notify);
+}
+
+void CodeNotifyArea::removeNotification(const int &line) {
+    for (unsigned int i = 0; i < notifiers.size(); i++) {
+        if (notifiers[i].line == line) {
+            notifiers.erase(notifiers.begin() + i);
+        }
+    }
+}
+
+bool CodeNotifyArea::canDrawImage(const int &line) {
+    if (notifiers.empty()) {
+        return false;
+    }
+    for (const auto &li : notifiers) {
+        if (li.line == line) {
+            return true;
+        }
+    }
+    return false;
+}
+
+QPixmap CodeNotifyArea::whatToDraw(const int &line) {
+    for (const auto &im : notifiers) {
+        if (im.line == line) {
+            return im.image;
+        }
+    }
+    // never reached
+    return QPixmap();
+}
+
+QSize CodeNotifyArea::sizeHint() const {
+    return QSize(WH.x(), 0);
+}
+
+void CodeNotifyArea::paintEvent(QPaintEvent *event) {
+    QPainter painter(this);
+    QTextBlock block = m_Edit->firstVisibleBlockProxy();
+    // y1, y2 coordinates of rectangle we are going to paint in: top, top + height of 1 line(block)
+    int top = static_cast<int>(m_Edit->blockBoundingGeometryProxy(block).translated(
+            m_Edit->contentOffsetProxy()).top());
+    int bottom = top + static_cast<int>(m_Edit->blockBoundingRectProxy(block).height());
+    // widget area rectangle
+    const QRect area_rect = event->rect();
+    // while not all lines are painted, at the end increasing, checking if valid
+    while (block.isValid() && (top <= area_rect.bottom())) {
+        if (block.isVisible() && (bottom >= area_rect.top())) {
+            // width is fixed in constructor, height -> i want to fill by font size, since it can increase
+            // TODO: first x is problem, since line numbers are also like that painted
+            if (canDrawImage(block.blockNumber())) {
+                const QRect box(0, top, width(), m_Edit->fontMetrics().height());
+                painter.drawPixmap(box, whatToDraw(block.blockNumber()));
+            }
+        }
+        block = block.next();
+        top = bottom;
+        bottom = (top + static_cast<int>(m_Edit->blockBoundingRectProxy(block).height()));
+    }
+    QWidget::paintEvent(event);
+}
+
+bool CodeNotifyArea::event(QEvent *event) {
+    if (event->type() == QEvent::ToolTip) {
+        const auto *helpEvent = static_cast<QHelpEvent *>(event);
+        QTextCursor cursor = m_Edit->cursorForPosition(helpEvent->pos());
+        const int line = cursor.blockNumber();
+        for (const auto &tip : notifiers) {
+            if (tip.line == line) {
+                setToolTip(tip.tooltip);
+                qDebug() << "shown";
+                goto end;
+            }
+        }
+        setToolTip(QString());
+    }
+    end:;
+    return QWidget::event(event);
+}
+
+void CodeNotifyArea::mousePressEvent(QMouseEvent *event) {
+    QWidget::mousePressEvent(event);
+}
+
+
+// https://stackoverflow.com/questions/22606122/draw-text-on-scrollbar
+ScrollBar::ScrollBar(PlainTextEdit *edit, QWidget *parent) : QScrollBar(edit), m_Edit(edit) {
+    setOrientation(Qt::Vertical);
+    setMouseTracking(true);
+    smallEdit = new SmallRoundedEdit(m_Edit, m_Edit);
+    QFont f;
+    f.setPixelSize(15);
+    smallEdit->setFont(f);
+    smallEdit->setDocument(m_Edit->document());
+    smallEdit->verticalScrollBar()->setVisible(false);
+}
+
+void ScrollBar::paintEvent(QPaintEvent *event) {
+    // let paint slider as default and later draw on it what we want.
+    QScrollBar::paintEvent(event);
+
+    QPainter painter(this);
+
+    // painting line width calculated for line
+    const int widthPerLine = height() / m_Edit->blockCount();
+
+    // this->height();
+    QPen pen;
+    pen.setWidth(widthPerLine);
+    pen.setColor(Qt::red);
+    painter.setPen(pen);
+
+    // painting all of them
+    for (const auto &spellList : m_Edit->code_info->spellCheckWorker->suggestions) {
+        const float H = computeHeightForLine(spellList.startPosition.y());
+        pen.setColor(Qt::green);
+        const QLineF LINE(QPointF(0, H), QPointF(width(), H));
+        painter.drawLine(LINE);
+    }
+    // search results
+    for (const auto &search : m_Edit->search_results) {
+        const float H = computeHeightForLine(search.y());
+        pen.setColor(Qt::darkBlue);
+        const QLineF LINE(QPointF(0, H), QPointF(width(), H));
+        painter.drawLine(LINE);
+    }
+    // comment tags
+    /*
+    for(int i = 0; i < m_Edit->tagReminder->tagData.size(); i++) {
+        if(m_Edit->tagReminder->sources[i] == m_Edit->getFilePath()) {
+            for(const auto& elem : m_Edit->tagReminder->tagData[i]) {
+                const int H = computeHeightForLine(elem.line);
+                pen.setColor(Qt::darkYellow);
+                const QLineF LINE(QPointF(0, H), QPointF(width(), H));
+                painter.drawLine(LINE);
+            }
+        }
+    }
+
+    // clang diagnostics, warnings, errors
+    for(const auto& diag : m_Edit->clang->PData->Diags) {
+        // TODO: fixes are there, but does everyone has fixes ? and diag.Source
+        const int H = computeHeightForLine(diag.Range.start.line);
+        const QLineF LINE(QPointF(0, H), QPointF(width(), H));
+        switch (diag.Severity) {
+            case clang::DiagnosticsEngine::Level::Warning:
+                pen.setColor(Qt::yellow);
+                break;
+            case clang::DiagnosticsEngine::Level::Error:
+                pen.setColor(Qt::red);
+                break;
+
+            default:
+                break;
+        }
+        painter.drawLine(LINE);
+    }
+    */
+    // breakPoint
+    for (const auto &line : m_Edit->breakPointArea->B_blocks) {
+        const float H = computeHeightForLine(line);
+        const QLineF LINE(QPointF(0, H), QPointF(width(), H));
+        pen.setColor(Qt::darkRed);
+        painter.drawLine(LINE);
+    }
+}
+
+void ScrollBar::mousePressEvent(QMouseEvent *event) {
+    const int H = pos().y();
+    const int widthPerLine = height() / m_Edit->blockCount();
+    const int betweenLinePos = widthPerLine * H;
+
+    m_Edit->scroll(0, H);
+    QScrollBar::mousePressEvent(event);
+}
+
+void ScrollBar::mouseDoubleClickEvent(QMouseEvent *event) {
+
+
+    QScrollBar::mouseDoubleClickEvent(event);
+}
+
+void ScrollBar::leaveEvent(QEvent *event) {
+    // we are in smallEdit
+    inWidget = false;
+    if (!smallEdit->inWidget) {
+        smallEdit->hide();
+    }
+    QScrollBar::leaveEvent(event);
+}
+
+void ScrollBar::enterEvent(QEvent *event) {
+    // check if cursor moved
+    inWidget = true;
+    QTimer::singleShot(2000, this, [=]() {
+        if (inWidget) {
+            smallEdit->show();
+            smallEdit->setFocus();
+        }
+    });
+    QScrollBar::enterEvent(event);
+}
+
+void ScrollBar::mouseMoveEvent(QMouseEvent *event) {
+    calculateAndSetSmallEditGeometry(event->pos().y());
+    QScrollBar::mouseMoveEvent(event);
+}
+
+float ScrollBar::computeHeightForLine(const int &line) {
+    // NOTE! it has to fit in height() ; blockCount() is never 0
+
+    // FIXME: this works, but the other NOT.
+    if (m_Edit->blockCount() <= height()) {
+        const int widthPerLine = height() / m_Edit->blockCount();
+        return line * widthPerLine;
+    } else {
+        // we have more lines than our height()
+        // we have to get <= height()
+        // TODO: this down not work
+        const float H = (float(height() / m_Edit->blockCount())) * height();
+        return H;
+    }
+}
+
+void ScrollBar::calculateAndSetSmallEditGeometry(const int &posY) {
+    // middle is with cursor 400;
+    HEIGHT = 300 * smallEdit->timesAplified;
+    // TODO: change 200 to fit width exactly with side widgets
+    smallEdit->setGeometry(200, posY - (HEIGHT / 2), m_Edit->width() - width() - (HEIGHT / 2), HEIGHT);
+    const int widthPerLine = height() / m_Edit->blockCount();
+    const int betweenLinePos = widthPerLine * posY;
+    const int lineHeight = m_Edit->fontMetrics().height();
+    /*
+    if(height() < m_Edit->blockCount())
+        smallEdit->scroll(0, posY);
+    else
+        smallEdit->scroll(0, betweenLinePos);
+    */
+    smallEdit->scroll(0, widthPerLine * lineHeight);
+    // one line has height 15
+    // const int numLinesToFit = 400 / 15;
+    // by ranges
+    /*
+    QString content;
+    QTextCursor cursor = m_Edit->textCursor();
+    for(int i = 0; i <= numLinesToFit; i++) {
+        content += m_Edit->getLineUnderCursor(cursor);
+    }
+    smallEdit->setPlainText(content);
+    */
+}

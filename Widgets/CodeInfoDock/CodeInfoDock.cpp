@@ -42,6 +42,62 @@ void ClangHandler::slotGetHighlights() {
     //clangBridge->semanticHighlights(currentFile);
 }
 
+void ClangHandler::slotGetHoverInfo() {
+    //clangBridge->findHover(currentFile, position);
+    // clangBridge->hoverInfo
+}
+
+
+SpellHandler::SpellHandler(QObject *parent) : QObject(parent) {
+}
+
+SpellHandler::~SpellHandler() {
+    delete spellChecker;
+    spellChecker = nullptr;
+}
+
+void SpellHandler::slotGetSpellCheck() {
+    const std::string buf("wronk");
+
+    int start = 0;
+    // new line count i
+    int tempi = 0;
+    for (unsigned int i = 0; i <= sentence.size(); i++) {
+        if (strncmp(&sentence[i], "\n", 1)) {
+            startLine++;
+            tempi = 0;
+        }
+        if (strncmp(&sentence[i], " ", 1)) {
+            const std::string word = sentence.substr(start, i);
+            tempi++;
+            start = i;
+
+            const bool dp = spellChecker->spell(word);
+            std::vector<std::string> suggList;
+            if (dp) {
+                fprintf(stdout, "\"%s\" is okay\n", word.c_str());
+                fprintf(stdout, "\n");
+            } else {
+                fprintf(stdout, "\"%s\" is incorrect!\n", word.c_str());
+                fprintf(stdout, "   suggestions:\n");
+                suggList = spellChecker->suggest(word.c_str());
+                for (size_t i = 0; i < suggList.size(); ++i) {
+                    fprintf(stdout, "    ...\"%s\"\n", suggList[i].c_str());
+                }
+                fprintf(stdout, "\n");
+            }
+            // for the same of testing this code path
+            // do an analysis here and throw away the results
+            const std::vector<std::string> morf = spellChecker->analyze(word);
+            for (const auto &m : morf) {
+                fprintf(stdout, "%s", m.c_str());
+            }
+            suggestions.push_back(SpellSuggestion{word, QPoint(tempi, startLine), suggList});
+        }
+    }
+    thread()->quit();
+}
+
 
 CodeInfoDock::CodeInfoDock(QWidget *parent) : QDockWidget(parent) {
     setWindowTitle("Code Informations");
@@ -57,17 +113,54 @@ CodeInfoDock::CodeInfoDock(QWidget *parent) : QDockWidget(parent) {
 }
 
 CodeInfoDock::~CodeInfoDock() {
-    /*
+    // not really sure why it has to be like that after delete
     signatureThread->deleteLater();
+    signatureThread = nullptr;
     codeCompleteThread->deleteLater();
+    codeCompleteThread = nullptr;
     renameThread->deleteLater();
-    codeCheckThread->deleteLater();
-    clangTidyCheckThread->deleteLater();
+    renameThread = nullptr;
+    updatePreambleThread->deleteLater();
+    updatePreambleThread = nullptr;
     findReferencesThread->deleteLater();
+    findReferencesThread = nullptr;
     formatFileThread->deleteLater();
+    formatFileThread = nullptr;
     goToDefinitionThread->deleteLater();
+    goToDefinitionThread = nullptr;
     generateThread->deleteLater();
-    */
+    generateThread = nullptr;
+    highlightsThread->deleteLater();
+    highlightsThread = nullptr;
+    hoverInfoThread->deleteLater();
+    hoverInfoThread = nullptr;
+    spellCheckThread->deleteLater();
+    spellCheckThread = nullptr;
+
+    Handler->deleteLater();
+    Handler = nullptr;
+    signatureWorker->deleteLater();
+    signatureWorker = nullptr;
+    definitionWorker->deleteLater();
+    definitionWorker = nullptr;
+    codeCompleteWorker->deleteLater();
+    codeCompleteWorker = nullptr;
+    renameWorker->deleteLater();
+    renameWorker = nullptr;
+    preambleUpdateWorker->deleteLater();
+    preambleUpdateWorker = nullptr;
+    findReferencesWorker->deleteLater();
+    findReferencesWorker = nullptr;
+    formatFileWorker->deleteLater();
+    formatFileWorker = nullptr;
+    generateWorker->deleteLater();
+    generateWorker = nullptr;
+    highlightWorker->deleteLater();
+    highlightWorker = nullptr;
+    hoverInfoWorker->deleteLater();
+    hoverInfoWorker = nullptr;
+    spellCheckWorker->deleteLater();
+    spellCheckWorker = nullptr;
 }
 
 void CodeInfoDock::createWindow() {
@@ -139,6 +232,8 @@ void CodeInfoDock::connectThreads() {
     formatFileWorker = new ClangHandler(clang);
     generateWorker = new ClangHandler(clang);
     highlightWorker = new ClangHandler(clang);
+    hoverInfoWorker = new ClangHandler(clang);
+    spellCheckWorker = new SpellHandler();
 
     signatureThread = new QThread(this);
     connect(signatureThread, &QThread::started, signatureWorker, &ClangHandler::slotGetSignature);
@@ -184,6 +279,16 @@ void CodeInfoDock::connectThreads() {
     connect(highlightsThread, &QThread::started, highlightWorker, &ClangHandler::slotGetHighlights);
     connect(highlightsThread, SIGNAL(finished()), this, SLOT(slotGetHighlights()));
     highlightWorker->moveToThread(highlightsThread);
+
+    hoverInfoThread = new QThread(this);
+    connect(hoverInfoThread, &QThread::started, hoverInfoWorker, &ClangHandler::slotGetHoverInfo);
+    connect(hoverInfoThread, SIGNAL(finished()), this, SLOT(slotGetHoverInfo()));
+    hoverInfoWorker->moveToThread(hoverInfoThread);
+
+    spellCheckThread = new QThread(this);
+    connect(spellCheckThread, &QThread::started, spellCheckWorker, &SpellHandler::slotGetSpellCheck);
+    connect(spellCheckThread, SIGNAL(finished()), this, SLOT(slotGetSpellCheck()));
+    spellCheckWorker->moveToThread(spellCheckThread);
 }
 
 void CodeInfoDock::connectDocks() {
@@ -249,6 +354,18 @@ void CodeInfoDock::runAction(const CodeInfoDock::Action &action) {
                 return;
             }
             highlightsThread->start();
+            break;
+        case HoverInfo:
+            if (hoverInfoThread->isRunning()) {
+                return;
+            }
+            hoverInfoThread->start();
+            break;
+        case SpellCheck:
+            if (spellCheckThread->isRunning()) {
+                return;
+            }
+            spellCheckThread->start();
             break;
 
         default:
@@ -384,11 +501,11 @@ void CodeInfoDock::slotRename() {
 }
 
 void CodeInfoDock::slotUpdatePreamble() {
-    /*
+
     //codeCheckThread->quit();
     updatePreambleThread->terminate();
     updatePreambleThread->wait();
-
+    /*
     Handler->forcePreambleUpdate = false;
     Handler->updateChecks = false;
 
@@ -399,7 +516,9 @@ void CodeInfoDock::slotUpdatePreamble() {
         // TODO: fixes are there, but does everyone has fixes ? and diag.Source
 
         Linter->addItem(QString::fromStdString(content), filePath, diag.Severity);
-
+        // underline
+        edit->setUnderLineSelection(QPoint(diag.Range.start.character, diag.Range.start.line),
+                                    QPoint(diag.Range.end.character, diag.Range.end.line), PlainTextEdit::SpellCheck);
     }
     */
 }
@@ -407,6 +526,9 @@ void CodeInfoDock::slotFindReferences() {
     //findReferencesThread->quit();
     findReferencesThread->terminate();
     findReferencesThread->wait();
+
+    edit->showMessage("no references found");
+
     // show and fill dock
     slotShowReferencesDock();
 }
@@ -426,12 +548,17 @@ void CodeInfoDock::slotGoToDefinition() {
 
     std::cout << filepath;
     */
+
+    edit->showMessage("No definition found");
 }
 
 void CodeInfoDock::slotGenerate() {
     //generateThread->quit();
     generateThread->terminate();
     generateThread->wait();
+
+    // cannot generate anything useful
+    edit->showMessage("No generation avaliable");
 }
 
 void CodeInfoDock::slotGetHighlights() {
@@ -448,6 +575,25 @@ void CodeInfoDock::slotGetHighlights() {
                 break;
                 // and so on
         }
+    }
+}
+
+void CodeInfoDock::slotGetHoverInfo() {
+    //hoverInfoThread->quit();
+    hoverInfoThread->terminate();
+    hoverInfoThread->wait();
+    // TODO: construct hover info html + icon
+    // edit->hoverInfo->setLabelText(info, icon);
+}
+
+void CodeInfoDock::slotGetSpellCheck() {
+    qDebug() << "done";
+    // underline words
+    for (const auto &spell : spellCheckWorker->suggestions) {
+        edit->setUnderLineSelection(
+                spell.startPosition,    /* there simply add word len to x, we have no word wrap in edit */
+                QPoint(spell.startPosition.x() + spell.word.length(), spell.startPosition.y()),
+                PlainTextEdit::SpellCheck);
     }
 }
 

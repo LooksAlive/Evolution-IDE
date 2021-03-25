@@ -53,6 +53,10 @@
 
 #include "ClangBridge.h"
 
+ProjectInfo ref(PathRef ref) {
+    std::cout << "storage created, indexing finished.";
+    return ProjectInfo{"mydir"};
+}
 
 ClangBridge::ClangBridge() {
 
@@ -61,6 +65,13 @@ ClangBridge::ClangBridge() {
     //llvm::ErrorOr<PrecompiledPreamble> precompiledPreamble = PrecompiledPreamble::Build(Invocation, MainFileBuffer, Bounds, *Diagnostics, VFS, PCHContainerOps, true, Callbacks);
     //PreambleData preambleData {Inputs, precompiledPreamble, Diags, Includes, Macros, StatCache, CanonIncludes};
     /*
+    DirectoryBasedGlobalCompilationDatabase CDB(std::string("jskdfh"));
+    Inputs.CompileCommand = CDB.getCompileCommand("args").getValue(); // fileName
+    //cmd.getValue().CommandLine;
+
+
+    BackgroundIndexStorage::Factory indexStorageFactory = BackgroundIndexStorage::createDiskBackedStorageFactory(ref);
+    BackgroundIndex backgroundIndex(TFS, CDB, std::move(indexStorageFactory), BackgroundIndex::Options());
     //PreambleData *preambleData;
     PreambleParsedCallback PreambleCallback;    // not setting up no idea how exactly :)
     preambleData = buildPreamble("FileName", CI,

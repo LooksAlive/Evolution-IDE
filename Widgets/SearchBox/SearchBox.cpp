@@ -1,12 +1,15 @@
+#include <QShortcut>
 #include "SearchBox.h"
 #include "icons/IconFactory.h"
 
 
 SearchBox::SearchBox(Tab *tab, QWidget *parent) : QWidget(parent), m_Tab(tab) {
+    setVisible(false);
     createWindow();
     // 120 for buttons, every button has 30px width
     setFixedWidth(270);
 }
+
 void SearchBox::createWindow() {
     MainLayout = new QHBoxLayout();
     find_options_menu_button = new QToolButton(this);
@@ -44,7 +47,11 @@ void SearchBox::createWindow() {
 
     find_options_menu_button->setContextMenuPolicy(Qt::CustomContextMenu);
     // FIXME: this works only for right click !!! , but at least works :)
-    connect(find_options_menu_button, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(slotShowMenu(const QPoint &)));
+    connect(find_options_menu_button, SIGNAL(customContextMenuRequested(const QPoint &)), this,
+            SLOT(slotShowMenu(const QPoint &)));
+
+    // escape shortcut  -> will close the window
+    connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [=] { setVisible(false); });
 
     // enter, return
     connect(lineEdit, SIGNAL(returnPressed()), this, SLOT(slotNext()));
@@ -63,7 +70,16 @@ void SearchBox::createWindow() {
     MainLayout->setSpacing(0);
     MainLayout->addStretch(0);
 
-    setLayout(MainLayout);
+    // FIXME: layout cause that background widget has no color
+    auto *widget = new QWidget(this);
+    widget->setLayout(MainLayout);
+    widget->setStyleSheet("border: 1px solid rgb(65, 65, 65); background-color: rgb(50, 30, 50);");
+
+    auto *layout = new QHBoxLayout();
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+    layout->addWidget(widget);
+    setLayout(layout);
 }
 
 /* needs to be called everytime in case of changes */
@@ -93,19 +109,19 @@ void SearchBox::getOptionsAndTexts() {
 }
 
 void SearchBox::slotPrevious() {
+    getOptionsAndTexts();
     if (!m_Edit) {
         return;
     }
-    getOptionsAndTexts();
     find_options |= QTextDocument::FindBackward;// flag for previous search
     m_Edit->findNext(search_text, find_options);
 }
 
 void SearchBox::slotNext() {
+    getOptionsAndTexts();
     if (!m_Edit) {
         return;
     }
-    getOptionsAndTexts();
     if (search_text != temp_search_text) {
         m_Edit->findStoreAndSelectAll(search_text, find_options);
         temp_search_text = search_text;

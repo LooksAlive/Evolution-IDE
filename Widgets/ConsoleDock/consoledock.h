@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "customtabstyle.h"
+#include "Widgets/ProcessDataPlot/ProcessDataPlot.h"
 
 /*
 
@@ -32,6 +33,7 @@ public:
     ~ConsoleDock() = default;
 
     QTextBrowser *ConsoleOutput;
+    ProcessDataPlot *processMemoryPlot;
 
     QToolButton *run;
     QToolButton *rerun;// stop and run again
@@ -55,7 +57,7 @@ public:
         Previous
     };
 
-    Link findLink(const QString filepath, const Direction &next = Current);
+    Link findLink(const QString &filepath, const Direction &next = Current) const;
 
 private:
     QHBoxLayout *MainLayout;

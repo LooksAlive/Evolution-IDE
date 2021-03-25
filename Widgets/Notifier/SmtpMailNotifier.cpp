@@ -13,12 +13,12 @@ void SmtpMailNotifier::sendMessage(const QString &msg, const QString &subject) {
     server->setConnectionType(SimpleMail::Server::SslConnection);
 
     // We need to set the username (your email address) and the password for smtp authentication.
-    server->setUsername("");
-    server->setPassword("");
+    server->setUsername("myEmail");
+    server->setPassword("myPass");
 
     // Now we create a MimeMessage object. This will be the email.
     SimpleMail::MimeMessage message;
-    SimpleMail::EmailAddress sender("");
+    SimpleMail::EmailAddress sender("myEmail");
     message.setSender(sender);
 
     SimpleMail::EmailAddress to(sender);

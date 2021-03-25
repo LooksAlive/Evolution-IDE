@@ -5,7 +5,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_COMPILER clang++-10)
-set(BASE_FLAGS "-O0 -g -Wall") # -O3
+# -g -s
+set(BASE_FLAGS "-O0 -s -Wall") # -O3
 
 # required flags for clang, llvm, lldb
 # -frtti for SMTP # -fno-rtti
@@ -251,8 +252,6 @@ set(SOURCE_FILES
         Widgets/Converter/converter.cpp
         Widgets/Converter/converter.h
 
-        #Debugger/lldbbridge.cpp
-        #Debugger/lldbbridge.h
         Debugger/lldbBridge.cpp
         Debugger/lldbBridge.h
         Clang/indexer.cpp
@@ -284,8 +283,6 @@ set(SOURCE_FILES
         Widgets/Settings/Debugger/DebuggerSettings.cpp
         Widgets/Settings/Debugger/DebuggerSettings.h
         Widgets/FileExplorer/SourceTemplates.h
-        Widgets/NodeView/NodeView.cpp
-        Widgets/NodeView/NodeView.h
         Widgets/PlainTextEdit/GoToLineColumn.cpp
         Widgets/PlainTextEdit/GoToLineColumn.h
         Widgets/ProgressBar/ProgressBar.cpp
@@ -312,13 +309,45 @@ set(SOURCE_FILES
         Widgets/CodeInfoDock/LinterDock.h
         Widgets/PlainTextEdit/InvitationScreen.cpp
         Widgets/PlainTextEdit/InvitationScreen.h
+        Widgets/PlainTextEdit/SpellCheckList.cpp
+        Widgets/PlainTextEdit/SpellCheckList.h
         Widgets/Git/GitDock.cpp
         Widgets/Git/GitDock.h
         Widgets/Education/CodeSamples.cpp
         Widgets/Notifier/SmtpMailNotifier.cpp
         Widgets/Notifier/SmtpMailNotifier.h
         Widgets/Notifier/ContactDeveloper.cpp
-        Widgets/Notifier/ContactDeveloper.h Widgets/PlainTextEdit/HoverInfo.cpp Widgets/PlainTextEdit/HoverInfo.h)
+        Widgets/Notifier/ContactDeveloper.h
+        Widgets/PlainTextEdit/HoverInfoWidget.cpp
+        Widgets/PlainTextEdit/HoverInfoWidget.h
+        Widgets/CommentTagsReminder/CommentTagsReminder.cpp
+        Widgets/CommentTagsReminder/CommentTagsReminder.h
+        Widgets/PlainTextEdit/CommentTagList.cpp
+        Widgets/PlainTextEdit/CommentTagList.h
+        Widgets/PlainTextEdit/InformativeMessage.cpp
+        Widgets/PlainTextEdit/InformativeMessage.h
+        Widgets/PlainTextEdit/SmallRoundedEdit.cpp
+        Widgets/PlainTextEdit/SmallRoundedEdit.h
+        Widgets/PlainTextEdit/ScrollBarMap.cpp
+        Widgets/PlainTextEdit/ScrollBarMap.h
+        Widgets/ProcessDataPlot/ProcessDataPlot.cpp
+        Widgets/ProcessDataPlot/ProcessDataPlot.h
+        # NodeView
+        Widgets/NodeView/NodeView.cpp
+        Widgets/NodeView/NodeView.h
+        Widgets/NodeView/TextNodeRelationManager.cpp
+        Widgets/NodeView/TextNodeRelationManager.h
+        #Widgets/NodeView/NodeScene.cpp
+        #Widgets/NodeView/NodeScene.h
+        #Widgets/NodeView/Node.cpp
+        #Widgets/NodeView/Node.h
+        #Widgets/NodeView/Connection.cpp
+        #Widgets/NodeView/Connection.h
+        #Widgets/NodeView/NodePainter.cpp
+        #Widgets/NodeView/NodePainter.h
+        #Widgets/NodeView/ConnectionPainter.cpp
+        #Widgets/NodeView/ConnectionPainter.h
+        )
 
 
 
@@ -338,6 +367,10 @@ set (CMAKE_INCLUDE_CURRENT_DIR ON)
 set(SYSTEM_LIBS rt dl tinfo pthread m z)
 
 set(LLDB_LIBS_SHARED lldb) # one shared lib
+
+set(HUNSPELL_LIBS
+        libhunspell-1.7.so # static is also 1.7.a
+        )
 
 # clang libraries; also added manually:
 # clangd has no shared libs, so if i want to use clang shared lib in the future and recompile clang by in this manner
@@ -443,6 +476,7 @@ find_package( Qt5 REQUIRED
         Xml
         PrintSupport
         Network
+        Charts
         )
 #find_package( Qt5Widgets REQUIRED )
 #find_package( Qt5Gui REQUIRED )
@@ -453,5 +487,5 @@ find_package( Qt5 REQUIRED
 
 set_target_properties(Qt5::Core PROPERTIES MAP_IMPORTED_CONFIG_COVERAGE "DEBUG")
 
-target_link_libraries(editor -Wl,--start-group Qt5::Widgets Qt5::Gui Qt5::Core Qt5::Network Qt5::Xml Qt5::PrintSupport
-        ${SYSTEM_LIBS} ${LLVM_LIBS} ${CLANG_LIBS} ${LLDB_LIBS_SHARED} ${GIT_LIBS} -Wl,--end-group)
+target_link_libraries(editor -Wl,--start-group Qt5::Widgets Qt5::Gui Qt5::Core Qt5::Network Qt5::Xml Qt5::PrintSupport Qt5::Charts
+        ${SYSTEM_LIBS} ${LLVM_LIBS} ${CLANG_LIBS} ${LLDB_LIBS_SHARED} ${GIT_LIBS} ${HUNSPELL_LIBS} -Wl,--end-group)

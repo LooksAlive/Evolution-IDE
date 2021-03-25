@@ -23,11 +23,6 @@ ConsoleDock::ConsoleDock(QWidget *parent) : QDockWidget(parent)
     BuildConsole();
     setTitleBarWidget(title_bar);
     Links.reserve(3);   // :)
-
-    auto *window = new QWidget(this);
-    window->setLayout(MainLayout);
-
-    setWidget(window);
 }
 
 // change to QListWidget most probably, bc. of specific widget shows its own data and do not know
@@ -37,6 +32,7 @@ void ConsoleDock::BuildConsole() {
     tool_bar = new QToolBar(this);
     title_bar = new QToolBar(this);
     ConsoleOutput = new QTextBrowser(this);
+    processMemoryPlot = new ProcessDataPlot(this);
 
     ConsoleOutput->setReadOnly(true);
     // we have ours custom signal and slot handling for clicked link, do not want to open browser
@@ -89,9 +85,15 @@ void ConsoleDock::BuildConsole() {
 
     MainLayout->addWidget(tool_bar);
     MainLayout->addWidget(ConsoleOutput);
+    MainLayout->addWidget(processMemoryPlot);
 
     MainLayout->setContentsMargins(0, 0, 0, 0);
     MainLayout->setSpacing(0);
+
+    auto *window = new QWidget(this);
+    window->setLayout(MainLayout);
+
+    setWidget(window);
 
     //ConsoleOutput->setHtml("<a href = http://google.com > moj text </a>");
     //ConsoleOutput->append("<a href = http://google.com > moj text </a>");
@@ -201,7 +203,7 @@ void ConsoleDock::processText(const QString &text) {
     ConsoleOutput->append(ProcessedText);
 }
 
-ConsoleDock::Link ConsoleDock::findLink(const QString filepath, const Direction &direction) {
+ConsoleDock::Link ConsoleDock::findLink(const QString &filepath, const Direction &direction) const {
     for (auto it = Links.begin(); it != Links.end(); it++) {
         if (it->filePath == filepath) {
             if (direction == Direction::Current)

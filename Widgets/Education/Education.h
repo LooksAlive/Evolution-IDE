@@ -51,7 +51,7 @@ public:
     QListWidget *CppUsersSamples;
 
     // TODO: consider preview widget under list with spacer
-    // again i cannot import my custim edit, so it will be blank QPlainTextEdit
+    // again i cannot import my custom edit, so it will be blank QPlainTextEdit
     // + readonly (possible copying, etc.), also can prompt highlighter
     // or can it be done some other way, from outside maybe ???
 

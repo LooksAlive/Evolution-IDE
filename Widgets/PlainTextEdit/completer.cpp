@@ -39,10 +39,9 @@ Completer::Completer(QObject *parent) : QCompleter(parent) {
     auto delegate = new CompleterItemDelegate();
     popup()->setItemDelegate(delegate);
     */
-
 }
 
-void Completer::addItem(const std::string &name, const std::string &returnType, const QIcon &icon) {
+void Completer::addItems(const std::string &name, const std::string &returnType, const QIcon &icon) {
     /*
     auto *item = new QListWidgetItem();
     item->setText(QString::fromStdString(returnType + "  " + name));
@@ -51,4 +50,15 @@ void Completer::addItem(const std::string &name, const std::string &returnType, 
     item->setStatusTip(QString::fromStdString("status: " + name));
     Popup->addItem(item);
     */
+
+    setModel(new QStringListModel(defaultCompletionData, this));
+}
+
+void Completer::addItems(const QStringList &data) {
+    setModel(new QStringListModel(defaultCompletionData + data, this));
+}
+
+void Completer::clear() {
+    // QStringList()
+    setModel(new QStringListModel(defaultCompletionData, this));
 }

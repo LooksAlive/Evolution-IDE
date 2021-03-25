@@ -39,6 +39,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     //CreateFile();
     SetupStatusBar();
+    SetupTagsReminder();
 
     SetupDockWidgetsLayering();
 
@@ -77,26 +78,31 @@ void MainWindow::dropEvent(QDropEvent *drop_event) {
 void MainWindow::LoadRegisters() {
     QSettings settings("Evolution");
 
-    QRect rect = settings.value("Evolution/MainWindowGeometry").toRect();
+    const QRect rect = settings.value("Evolution/MainWindowGeometry").toRect();
     if (!rect.isEmpty()) {
         setGeometry(rect);
     }
 
-    /*
-    QStringList tabs = settings.value("Evolution/opened_tabs").toStringList();
-    auto positions = settings.value("Evolution/opened_tabs_cursor_positions").toList();
-    if(!tabs.isEmpty()){
-        for (int i = 0; i < tabs.size(); i++) { // one error, default tab has no path
-            OpenFile(tabs[i]);
-            (qobject_cast<PlainTextEdit *>(Tabs->widget(i)))->textCursor().setPosition(positions[i].toInt());
+
+    const QStringList opened_tabs = settings.value("Evolution/opened_tabs").toStringList();
+    // FIXME: getting position (int) from list bc. no idea how to set QList<int> to registers
+    const QStringList positions = settings.value("Evolution/opened_tabs_cursor_positions").toStringList();
+    if (!opened_tabs.isEmpty()) {
+        for (int i = 0; i < opened_tabs.size(); i++) { // one error, default tab has no path
+            if (OpenFile(opened_tabs[i])) {
+                QTextCursor cursor = currentWidget->textCursor();
+                cursor.setPosition(positions[i].toInt());
+                currentWidget->setTextCursor(cursor);
+            }
+            // TODO: status to inform user that read failed, or just let it be, file might have been removed by user...
         }
     }
 
-    if(vertical_stack->currentIndex() != 5)     // invitanion screen
-        showEditorView();       // switch from Invitation Screen which is default
-    */
+    // invitanion screen is on ...
+    showEditorView();       // switch from Invitation Screen which is default
 
-    QString Project_Root_Dir = settings.value("Evolution/Project_Root_Dir").toString();
+
+    const QString Project_Root_Dir = settings.value("Evolution/Project_Root_Dir").toString();
     if (!Project_Root_Dir.isEmpty()) {
         Explorer->setRootDirectory(Project_Root_Dir);
         file_manager.Project_Dir = Project_Root_Dir;
@@ -146,8 +152,8 @@ void MainWindow::SetupVerticalBar() {
     vertical_stack->setParent(this);
 
     vertical_stack->insertWidget(0, Tabs);
-    vertical_stack->insertWidget(1, nodeview);
-    vertical_stack->insertWidget(2, hexview);
+    vertical_stack->insertWidget(1, nodeView);
+    vertical_stack->insertWidget(2, hexView);
     vertical_stack->insertWidget(3, binaryView);
     vertical_stack->insertWidget(4, Tabs);             // debuggerBridge
     vertical_stack->insertWidget(5, invitation_screen);// helpful, do not belong to this stack, but is there
@@ -213,26 +219,61 @@ void MainWindow::SetupStatusBar() {
     progress_bar = new ProgressBar(this);
     btn_encoding = new QToolButton(this);
     btn_position = new QToolButton(this);
+    current_function = new QLabel(this);
+    current_file_path = new QLabel(this);
+    locate_open_file = new QLineEdit(this);
+    locate_completer = new QCompleter(this);
+    btn_comment_tags = new QToolButton(this);
 
-    statusbar->setContentsMargins(0, 0, 0, 0);
+    statusbar->layout()->setContentsMargins(0, 0, 0, 0);
     statusbar->setFixedHeight(25);
     statusbar->setMouseTracking(true);
     btn_encoding->setText("UTF-8");
     btn_encoding->setFixedWidth(50);
     btn_encoding->setToolButtonStyle(Qt::ToolButtonFollowStyle);
+    btn_encoding->setToolTip("Encoding");
     btn_position->setFixedWidth(70);
     btn_position->setToolButtonStyle(Qt::ToolButtonFollowStyle);
+    btn_position->setToolTip("Position");
     connect(btn_position, SIGNAL(clicked()), this, SLOT(slotGoToLine()));
+    btn_comment_tags->setFixedWidth(70);
+    btn_comment_tags->setToolButtonStyle(Qt::ToolButtonFollowStyle);
+    btn_comment_tags->setText("Tags");
+    btn_comment_tags->setToolTip("Show comment tags");
+    connect(btn_comment_tags, &QToolButton::clicked, this, [=]() { tagReminder->show(); });
+    current_function->setText("current function   ");
+    locate_open_file->setCompleter(locate_completer);
+    // locate_open_file->setMinimumWidth(100);
+    locate_open_file->setMaximumWidth(200);
+    locate_open_file->setPlaceholderText("look up file");
+    locate_completer->setModel(new QStringListModel(file_manager.source_files_names, locate_completer));
+    locate_completer->setMaxVisibleItems(12);
+    locate_completer->setCompletionMode(QCompleter::PopupCompletion);
+    locate_completer->setFilterMode(Qt::MatchContains);
+    connect(locate_completer, SIGNAL(activated(const QString &)), this, SLOT(slotOpenLocateFile(const QString &)));
 
     statusbar->setWindowFlags(Qt::FramelessWindowHint);
     statusbar->setAttribute(Qt::WA_NoSystemBackground, true);
     statusbar->setAttribute(Qt::WA_TranslucentBackground, true);
 
-    statusbar->showMessage("loading", 5000);
-    statusbar->addPermanentWidget(progress_bar);// align right with permanent widget
+    // statusbar->showMessage("loading", 5000);
+    statusbar->addWidget(locate_open_file); // to left
+    statusbar->addWidget(btn_comment_tags);
+    statusbar->addPermanentWidget(current_file_path);
+    statusbar->addPermanentWidget(current_function);
     statusbar->addPermanentWidget(btn_position);
     statusbar->addPermanentWidget(btn_encoding);
+    statusbar->addPermanentWidget(progress_bar);// align right with permanent widget
     setStatusBar(statusbar);
+}
+
+void MainWindow::slotOpenLocateFile(const QString &filepath) {
+    for (const auto &path : file_manager.source_files) {
+        if (QFileInfo(path).fileName() == filepath) {
+            OpenFile(path);
+            return;
+        }
+    }
 }
 
 // after line is set , field is empty
@@ -264,7 +305,6 @@ void MainWindow::SetupMenuBar() {
     //menuBar->setFixedHeight(24);    // or none, still work well
     menuBar->setMouseTracking(true);
     //menuBar->setNativeMenuBar(false);
-    menuBar->setTabletTracking(true);
 
     // if there will not be this param, will not show, or add geometry manually like above
     auto *fileMenu = new QMenu("File", this);
@@ -376,9 +416,8 @@ void MainWindow::SetupToolBar() {
 
     searchBox = new SearchBox(Tabs, this);
     searchBox->setFixedHeight(topToolBar->height());
-    searchBox->setContentsMargins(0, 0, 0, 0);
     connect(searchBox->more, SIGNAL(clicked()), this, SLOT(slotShowFindReplaceDock()));
-    topToolBar->addWidget(searchBox);
+    //topToolBar->addWidget(searchBox);
 
     auto *spacer = new QWidget(this);// blank Widget to align other action to right
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -439,7 +478,7 @@ void MainWindow::showNodeView() {
 
     // Will there be some dock visible ???
     HideAllDockWidgets();
-    vertical_stack->setCurrentWidget(nodeview);
+    vertical_stack->setCurrentWidget(nodeView);
 }
 
 void MainWindow::showBinaryView() {
@@ -481,13 +520,13 @@ void MainWindow::showHexView() {
     // Tabs->tabToolTip(Tabs->currentIndex());
     QString path = currentWidget->getFilePath();
     if (path != "") {
-        hexview->open(path);
-        vertical_stack->setCurrentWidget(hexview);
+        hexView->open(path);
+        vertical_stack->setCurrentWidget(hexView);
     } else {
         // not saved file, get data and convert right :)
         QString data = currentWidget->toPlainText();
-        hexview->setText(data.toUtf8());
-        vertical_stack->setCurrentWidget(hexview);
+        hexView->setText(data.toUtf8());
+        vertical_stack->setCurrentWidget(hexView);
     }
 }
 
@@ -579,11 +618,28 @@ void MainWindow::SetupFileExplorer() {
 void MainWindow::SetupFileDocker() {
     Docker = new FileDock(this);
 
-    connect(Docker->DockerFileList, SIGNAL(itemClicked(QListWidgetItem *)), this, SLOT(UpdateCurrentIndex(QListWidgetItem *)));
+    connect(Docker->DockerFileList, SIGNAL(itemClicked(QListWidgetItem * )), this,
+            SLOT(UpdateCurrentIndex(QListWidgetItem * )));
     connect(Docker->DockerFileList, SIGNAL(currentRowChanged(int)), Tabs, SLOT(setCurrentIndex(int)));
     addDockWidget(Qt::LeftDockWidgetArea, Docker);
 }
 
+void MainWindow::SetupTagsReminder() {
+    tagReminder = new CommentTagsReminder(this);
+    tagReminder->setSources(file_manager.source_files);
+    tagReminder->searchEverywhere();
+
+    connect(tagReminder->view, SIGNAL(itemDoubleClicked(QTreeWidgetItem * , int)), this,
+            SLOT(openCommentTag(QTreeWidgetItem * , int)));
+}
+
+void MainWindow::openCommentTag(QTreeWidgetItem *item, int column) {
+    Q_UNUSED(column);
+    OpenFile(item->toolTip(0));
+
+    const int line = item->text(2).toInt();
+    currentWidget->setCursorAtLine(line);
+}
 
 void MainWindow::SetupCompileDock() {
     console_dock = new ConsoleDock(this);
@@ -611,13 +667,17 @@ void MainWindow::slotOpenUrl(const QUrl &url) {
 
     OpenFile(filepath);
     currentWidget->setCursorPosition(link.position.x(), link.position.y());
-    // How to get position  ???
 }
 
 void MainWindow::slotFind() {
     if (!currentWidget) {
         return;
     }
+    // top left corner
+    // FIXME: when dock is shown on the left side or upside update this rectangle + how to handle moving docks ?
+    searchBox->setGeometry(centralWidget()->geometry().x() + currentWidget->lineNumberArea->width(),
+                           centralWidget()->geometry().y() + Tabs->tabBar()->height(), 300, 70);
+    searchBox->show();
     searchBox->lineEdit->setFocus();
     QString text = currentWidget->textCursor().selectedText();
     // find selected text
@@ -636,6 +696,19 @@ void MainWindow::slotFind() {
     searchBox->setStyleSheet("QWidget{border: 2px solid; background-color: grey;}");
     searchBox->setVisible(true);
     */
+}
+
+void MainWindow::slotOpenHoverInfoUrl(const QUrl &url) {
+    const QString text = url.url(QUrl::None);
+    // filepath:posx:posy
+    const int posStart = text.indexOf(":");
+    const QString filepath = text.mid(0, posStart);
+
+    const int x = text.mid(0, text.indexOf(":", posStart)).toInt();
+    const int y = text.mid(0, text.indexOf(posStart)).toInt();
+
+    OpenFile(filepath);
+    currentWidget->setCursorPosition(x, y);
 }
 
 void MainWindow::SetupCodeInfoDock() {
@@ -755,7 +828,8 @@ void MainWindow::SetupEducationDock() {
     // has to be outside bc. i will use option to add a sample in editor so cannot import them cross
 
     connect(education->CppCodeSamples, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotOpenCppSample(QListWidgetItem *)));
-    connect(education->CppUsersSamples, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotOpenCppUserSample(QListWidgetItem *)));
+    connect(education->CppUsersSamples, SIGNAL(itemDoubleClicked(QListWidgetItem * )), this,
+            SLOT(slotOpenCppUserSample(QListWidgetItem * )));
     // should there be a disconnection when main window is destructed ?
 }
 
@@ -765,7 +839,19 @@ void MainWindow::SetupGitDock() {
 }
 
 void MainWindow::SetupNodeView() {
-    nodeview = new NodeView(this);
+    nodeView = new NodeView(this);
+    nodeView->setClangBridge(clangBridge);
+    nodeView->setCurrentWidget(currentWidget);
+    nodeView->setCodeInfo(codeInfoDock);
+
+    connect(nodeView, SIGNAL(openFile(const QString&, const int&)), this,
+            SLOT(slotOpenFileFromNode(const QString&, const int&)));
+}
+
+void MainWindow::slotOpenFileFromNode(const QString &filepath, const int &line) {
+    if (OpenFile(filepath)) {
+        currentWidget->setCursorAtLine(line);
+    }
 }
 
 void MainWindow::SetupDebuggerView() {
@@ -800,7 +886,7 @@ void MainWindow::SetupBinaryView() {
     binaryView = new BinaryView(this);
 }
 void MainWindow::SetupHexView() {
-    hexview = new HexView(this);
+    hexView = new HexView(this);
 }
 void MainWindow::showDecompilerView() {
 }
@@ -821,14 +907,21 @@ void MainWindow::CreateFile() {
     currentWidget = qobject_cast<PlainTextEdit *>(Tabs->widget(index));
     currentWidget->setCodeInfo(codeInfoDock);
     currentWidget->setEducation(education);
-    //currentWidget->setClang(clangBridge);
+    currentWidget->setClang(clangBridge);
+    currentWidget->setTagReminder(tagReminder);
+    currentWidget->setNodeView(nodeView);
+
     // go to line/column
     connect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotCursorPositionChanged()));
     connect(currentWidget, SIGNAL(textChanged()), this, SLOT(UpdateParameter()));
+    connect(currentWidget->hoverInfo->MainWidget, SIGNAL(anchorClicked(const QUrl &)), this,
+            SLOT(slotOpenHoverInfoUrl(const QUrl &)));
     // breakpoints
     // TODO: if i pass debugger widget by instance pointer, will it be faster ??
-    connect(currentWidget->BreakpointArea, SIGNAL(breakPointCreated(const int &)), this, SLOT(slotCreateBreakPoint(const int &)));
-    connect(currentWidget->BreakpointArea, SIGNAL(breakPointRemoved(const int &)), this, SLOT(slotDeleteBreakPoint(const int &)));
+    connect(currentWidget->breakPointArea, SIGNAL(breakPointCreated(const int &)), this,
+            SLOT(slotCreateBreakPoint(const int &)));
+    connect(currentWidget->breakPointArea, SIGNAL(breakPointRemoved(const int &)), this,
+            SLOT(slotDeleteBreakPoint(const int &)));
 
     // file dock
     auto *new_item = new QListWidgetItem;
@@ -863,7 +956,7 @@ void MainWindow::OpenFile() {
     OpenFile(filepath);
 }
 
-void MainWindow::OpenFile(const QString &filepath, const bool &readAndSetDocument) {
+bool MainWindow::OpenFile(const QString &filepath, const bool &readAndSetDocument) {
 
     // directory operations
     if (QFileInfo(filepath).isDir()) {
@@ -871,7 +964,7 @@ void MainWindow::OpenFile(const QString &filepath, const bool &readAndSetDocumen
         Explorer->setRootDirectory(filepath);
         // set recursively all files in dir, set root project dir
         file_manager.getFilesRecursively(filepath);
-        return;
+        return false;
     }
     QString content;
     PlainTextEdit *new_text_edit;
@@ -897,7 +990,7 @@ void MainWindow::OpenFile(const QString &filepath, const bool &readAndSetDocumen
             goto end;
         } else {
             // not valid file path, no more exceptions
-            return;
+            return false;
         }
     } else {
         new_text_edit = new PlainTextEdit();
@@ -918,7 +1011,7 @@ end:;
     for (int i = 0; i < Tabs->count(); ++i)
         if (Tabs->tabToolTip(i) == filepath) {
             Tabs->setCurrentIndex(i);
-            return;
+            return false;
         }
 
     // ????????????????????????????????????????????????????????
@@ -959,6 +1052,7 @@ end:;
 
     // we definitely have a new tab
     showEditorView();// switch from Invitation Screen which is default
+    return true;
 }
 
 
@@ -1042,8 +1136,10 @@ void MainWindow::CloseFile(int index_) {
     }
 
     // breakpoints
-    disconnect(currentWidget->BreakpointArea, SIGNAL(breakPointCreated(const int &)), this, SLOT(slotCreateBreakPoint(const int &)));
-    disconnect(currentWidget->BreakpointArea, SIGNAL(breakPointRemoved(const int &)), this, SLOT(slotDeleteBreakPoint(const int &)));
+    disconnect(currentWidget->breakPointArea, SIGNAL(breakPointCreated(const int &)), this,
+               SLOT(slotCreateBreakPoint(const int &)));
+    disconnect(currentWidget->breakPointArea, SIGNAL(breakPointRemoved(const int &)), this,
+               SLOT(slotDeleteBreakPoint(const int &)));
     // go to line/column
     disconnect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotCursorPositionChanged()));
     delete Tabs->widget(index_);
@@ -1053,9 +1149,15 @@ void MainWindow::CloseFile(int index_) {
         // CreateFile();
         showInvitationScreen();
         currentWidget = nullptr;
+
+        // clear status and all other
+        current_file_path->clear();
+        current_function->clear();
+        btn_encoding->setText(QString());
+        btn_position->setText(QString());
+
         return;// tab is not active, (code below)
     }
-
     Tabs->currentWidget()->setFocus();
 }
 
@@ -1084,6 +1186,8 @@ void MainWindow::CloseAllFiles() {
     // while (Tabs->count() > 0)
     // delete Tabs->widget(0);
     Tabs->clear();
+    // FIXME: ************************************************************************************************
+    // close file one by one bot like this...
 
     Docker->DockerFileList->clear();
 
@@ -1102,16 +1206,23 @@ void MainWindow::CloseWindow() {
     }
     // reopen project not closed tabs later.
     QStringList opened_tabs;
-    QList<int> tabs_cursor_positions;
-    for (int i = 0; i <= Tabs->count(); i++) {
-        if (Tabs->tabText(i) != "untitled") {// default tab has no path, since is not saved
-            opened_tabs.push_back(Tabs->tabToolTip(i));
-            //tabs_cursor_positions.push_back(qobject_cast<PlainTextEdit*>(Tabs->widget(i))->textCursor().position());
+    QStringList tabs_cursor_positions;
+    for (int i = 0; i <= Tabs->count(); i++) {       // < or <= ?????????????????
+        // default tab has no path, since is not saved
+        // Tabs->tabText(i) != "untitled" ||
+        if (currentWidget->getFilePath().isEmpty() && currentWidget->toPlainText().isEmpty()) {
+            continue;
+        }
+            // common file
+        else {
+            opened_tabs.push_back(currentWidget->getFilePath()); // or Tabs->tabToolTip(i)
+            tabs_cursor_positions.push_back(QString::number(currentWidget->textCursor().position()));
         }
     }
     QSettings settings("Evolution");
     settings.setValue("Evolution/opened_tabs", opened_tabs);
-    //settings.setValue("Evolution/opened_tabs_cursor_positions", QVariant::fromValue(tabs_cursor_positions));
+    settings.setValue("Evolution/opened_tabs_cursor_positions", tabs_cursor_positions);
+
     // save window geometry, load in constructor
     settings.setValue("Evolution/MainWindowGeometry", geometry());
 
@@ -1153,11 +1264,18 @@ void MainWindow::OpenFile(const QModelIndex &file_index) {
         currentWidget = qobject_cast<PlainTextEdit *>(Tabs->widget(Tabs->currentIndex()));
         currentWidget->setCodeInfo(codeInfoDock);
         currentWidget->setEducation(education);
-        //currentWidget->setClang(clangBridge);
+        currentWidget->setClang(clangBridge);
+        currentWidget->setTagReminder(tagReminder);
+        currentWidget->setNodeView(nodeView);
+
         connect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotCursorPositionChanged()));
         // breakpoints
-        connect(currentWidget->BreakpointArea, SIGNAL(breakPointCreated(const int &)), this, SLOT(slotCreateBreakPoint(const int &)));
-        connect(currentWidget->BreakpointArea, SIGNAL(breakPointRemoved(const int &)), this, SLOT(slotDeleteBreakPoint(const int &)));
+        connect(currentWidget->breakPointArea, SIGNAL(breakPointCreated(const int &)), this,
+                SLOT(slotCreateBreakPoint(const int &)));
+        connect(currentWidget->breakPointArea, SIGNAL(breakPointRemoved(const int &)), this,
+                SLOT(slotDeleteBreakPoint(const int &)));
+        connect(currentWidget->hoverInfo->MainWidget, SIGNAL(anchorClicked(const QUrl &)), this,
+                SLOT(slotOpenHoverInfoUrl(const QUrl &)));
     }
 }
 
@@ -1175,12 +1293,16 @@ void MainWindow::ChangeTabIndexInList(int old_index, int new_index) {
     Docker->DockerFileList->insertItem(new_index, first_item);
 }
 
+// docker
 void MainWindow::UpdateCurrentIndex(QListWidgetItem *current_item) {
     int index = current_item->listWidget()->row(current_item);
     currentWidget = qobject_cast<PlainTextEdit *>(Tabs->widget(index));
     Tabs->setCurrentIndex(index);
+
+    current_file_path->setText(currentWidget->getFilePath() + "     ");
 }
 
+// tab
 void MainWindow::UpdateCurrentIndex(int new_selection_index) {
     Docker->DockerFileList->setCurrentRow(new_selection_index);
     currentWidget = qobject_cast<PlainTextEdit *>(Tabs->widget(new_selection_index));
@@ -1194,6 +1316,9 @@ void MainWindow::UpdateCurrentIndex(int new_selection_index) {
             highlighter->setDocument(currentWidget->document());
             highlighter->highlightBlock(currentWidget->toPlainText());
         }
+    }
+    if (currentWidget) {
+        current_file_path->setText(currentWidget->getFilePath() + "     ");
     }
 }
 
@@ -1558,7 +1683,11 @@ void MainWindow::slotShowAttachToProcess() {
 }
 
 void MainWindow::slotRestart() {
-    // find how to
+    // weird i know :)
+    const QString appFilePath = QApplication::applicationFilePath();
+    CommandLineExecutor::ExecuteSimpleCommand(appFilePath.toLatin1().data());
+    // FIXME: close current app, not working yet...
+    CloseWindow();
 }
 
 void MainWindow::slotOpenCppSample(QListWidgetItem *item) {

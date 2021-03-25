@@ -25,12 +25,20 @@ class CompleterItemDelegate : public QStyledItemDelegate {
 class Completer : public QCompleter {
 Q_OBJECT
 public:
-    Completer(QObject *parent = nullptr);
+    explicit Completer(QObject *parent = nullptr);
 
     ~Completer() = default;
 
     // TODO: add icon and type
-    void addItem(const std::string &name, const std::string &returnType, const QIcon &icon = QIcon());
+    void addItems(const std::string &name, const std::string &returnType, const QIcon &icon = QIcon());
+
+    void addItems(const QStringList &data);
+
+    // clear the completions data, NOTE! remains the default ones
+    void clear();
+
+    // default data for certain file extension, type meant to be as default.
+    QStringList defaultCompletionData;
 
 private:
     QListWidget *Popup;

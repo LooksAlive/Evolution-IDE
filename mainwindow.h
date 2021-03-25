@@ -47,6 +47,7 @@
 #include <QPlainTextEdit>
 #include <QToolButton>
 #include <QUrl>
+#include <QApplication>
 
 #include "Widgets/FileDock/filedock.h"
 #include "Widgets/FileExplorer/fileexplorer.h"
@@ -60,6 +61,7 @@
 #include "Widgets/ConsoleDock/consoledock.h"
 #include "Widgets/FindReplace/findreplace.h"
 #include "Widgets/SearchBox/SearchBox.h"
+#include "Widgets/CommentTagsReminder/CommentTagsReminder.h"
 
 #include "Widgets/Git/GitDock.h"
 
@@ -138,6 +140,8 @@ private:
 
     CommandLineExecutor *executor;
 
+    CommentTagsReminder *tagReminder;
+
     // top tool bar
     QToolBar *topToolBar;
     SearchBox *searchBox;
@@ -145,8 +149,8 @@ private:
     /* toolbar -> views */
     QToolBar *vertical_bar;// all kind of views: hex, binary, debugger, decompiler ---> widgets
     // editorView are Tabs
-    HexView *hexview;
-    NodeView *nodeview;
+    HexView *hexView;
+    NodeView *nodeView;
     lldbBridge *debuggerBridge;
     BinaryView *binaryView;
     // Decompiler *decompilerView;
@@ -156,6 +160,12 @@ private:
     ProgressBar *progress_bar;
     QToolButton *btn_position;
     QToolButton *btn_encoding;
+    QLabel *current_function;
+    QLabel *current_file_path;  // when tab moves
+    QLineEdit *locate_open_file;
+    QCompleter *locate_completer;   // filenames
+    // shows comment tags dialog in project
+    QToolButton *btn_comment_tags;
 
     /* settings window */
     SettingsWindow *Settings;
@@ -205,7 +215,10 @@ private:
     void SetupCompileDock();
     void SetupCodeInfoDock();
     void SetupEducationDock();
+
     void SetupGitDock();
+
+    void SetupTagsReminder();
 
     void SetupVerticalBar();
     void SetupNodeView();
@@ -228,7 +241,7 @@ private:
 
     void LoadRegisters();
 
-    // indicates wheather in file open actions ignore filepath ad insert own content, TODO: make not save able, editable
+    // indicates weather in file open actions ignore filepath ad insert own content, TODO: make not save able, editable
     bool SampleLoading = false;
     bool AssemblyLoading = false;
 
@@ -242,6 +255,9 @@ private:
     // because it would be mess here.
     void uncheckAllVerticalTabButtons();
 
+    // return true if file was successfully opened
+    bool OpenFile(const QString &filepath, const bool &readAndSetDocument = true);
+
 private slots:
 
     // PlainTextEdit text operations
@@ -252,7 +268,6 @@ private slots:
     void CreateFile();
 
     void OpenFile();
-    void OpenFile(const QString &filepath, const bool &readAndSetDocument = true);
     void OpenFile(const QModelIndex &);
     void SaveFile();
     void SaveFileAs();
@@ -341,18 +356,34 @@ private slots:
 
     // Education dock --- doubleclick
     void slotOpenCppSample(QListWidgetItem *item);
+
     void slotOpenCppUserSample(QListWidgetItem *item);
 
     void slotOpenLinterFile(QListWidgetItem *item);
+
     void slotOpenReferenceFile(QTreeWidgetItem *item, int column);
 
     void slotUpdateDebuggerFilePath(const QString &, const int &, const int &);
+
     void slotOpenUrl(const QUrl &);
+
+    void slotOpenHoverInfoUrl(const QUrl &url);
+
+    void slotOpenLocateFile(const QString &);
+
+    void openCommentTag(QTreeWidgetItem *, int);
+
+    void slotOpenFileFromNode(const QString &, const int &);
 
 private:
     // files operation variables
     bool CHANGES_IN_PROJECT = false;
     bool ALWAYS_SAVE = false;
+
+    const QString appAbsDirPath = QApplication::applicationDirPath();
+    // TODO: use own clang-12 statically built and insert into release forlder with paths
+    // for windows, when installed probably in programFiles and also in linux locate its path as a component
+    const QString clangPath = appAbsDirPath + "/tools/clang-12";
 };
 
 

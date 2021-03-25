@@ -15,8 +15,6 @@ public:
     explicit DebugWatchDock(QWidget *parent = nullptr);
     ~DebugWatchDock() = default;
 
-
-public:
     void createDock();
 
     QToolButton *addWatch, *removeWatch, *removeAll, *modifyWatch, *disableAll, *enableAll;

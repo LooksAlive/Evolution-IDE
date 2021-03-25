@@ -179,8 +179,8 @@ void lldbBridge::fillCallStack() {
 void lldbBridge::slotGoToBreakPointFile(QTreeWidgetItem *item, int column) {
     Q_UNUSED(column);
     // path is in toolTip, text inly only fileName
-    const char *filepath = Dock->BreakPoint_List->BpList->currentItem()->toolTip(1).toLatin1().data();
-    const int line = Dock->BreakPoint_List->BpList->currentItem()->text(2).toInt();
+    const char *filepath = item->toolTip(1).toLatin1().data();
+    const int line = item->text(2).toInt();
     emit filePathUpdate(filepath, line, 1);
 }
 
@@ -303,15 +303,15 @@ void lldbBridge::setExecutable(const std::string &exe_file_path) {
 }
 
 void lldbBridge::showBreakPointsList() {
-    DialogBreakPoint_List = new BreakPointListWindow();
+    DialogBreakPoint_List = new BreakPointListWindow(Dock); // for example
     DialogBreakPoint_List->setWindowFlags(Qt::Dialog);
     DialogBreakPoint_List->setMinimumWidth(400);
     for (const auto &BP : BreakPointList) {
         DialogBreakPoint_List->insertBreakPoint(BP.break_id, BP.filepath, BP.line);
     }
     // connect tool buttons + some new slots
-    connect(DialogBreakPoint_List->BpList, SIGNAL(itemDoubleClicked(QListWidgetItem * , int column)), this,
-            SLOT(slotGoToBreakPointFile(QListWidgetItem * , int column)));
+    connect(DialogBreakPoint_List->BpList, SIGNAL(itemDoubleClicked(QTreeWidgetItem * , int)), this,
+            SLOT(slotGoToBreakPointFile(QTreeWidgetItem * , int)));
     connect(DialogBreakPoint_List->remove, SIGNAL(clicked()), this, SLOT(slotRemoveBreakPoint()));
     connect(DialogBreakPoint_List->removeAll, SIGNAL(clicked()), this, SLOT(slotRemoveAllBreakPoints()));
 

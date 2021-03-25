@@ -40,6 +40,8 @@
 
 #include "Protocol.h"   // clangd::Position
 
+#include "hunspell/hunspell.hxx"  // spell checking
+
 class ClangBridge;
 
 class PlainTextEdit;
@@ -51,7 +53,6 @@ Q_OBJECT
 
 public:
     explicit ClangHandler(ClangBridge *bridge, QObject *parent = nullptr);
-
     ~ClangHandler() = default;
 
     std::string currentFile;
@@ -117,12 +118,50 @@ public slots:
     void slotUpdatePreamble();
 
     void slotFindReferences();
+
     void slotFormatFile();
+
     void slotGoToDefinition();
 
     void slotGenerate();
 
     void slotGetHighlights();
+
+    void slotGetHoverInfo();
+
+};
+
+class SpellHandler : public QObject {
+Q_OBJECT
+
+public:
+    explicit SpellHandler(QObject *parent = nullptr);
+
+    ~SpellHandler();
+
+    // might be longer text, so record start line
+    // coord x will be computed, also each word position
+    // line cout is done by \n appearence
+    std::string sentence;
+    unsigned int startLine;
+
+    struct SpellSuggestion {
+        std::string word;
+        QPoint startPosition;
+        std::vector<std::string> suggestions;
+    };
+
+    // for now they are specific only for current file
+    std::vector<SpellSuggestion> suggestions;
+
+private:
+    // using english dictionary
+    Hunspell *spellChecker = new Hunspell("/usr/share/hunspell/en_US.aff", "/usr/share/hunspell/en_US.dic");
+
+public slots:
+
+    // only comments in code, if text file -> for all
+    void slotGetSpellCheck();
 
 };
 
@@ -160,6 +199,8 @@ public:
     ClangHandler *formatFileWorker;
     ClangHandler *generateWorker;
     ClangHandler *highlightWorker;
+    ClangHandler *hoverInfoWorker;
+    SpellHandler *spellCheckWorker;
 
     enum Action {
         GetSignature = 0,
@@ -170,7 +211,9 @@ public:
         FormatFile,
         GoToDefinition,
         Generate, // what could be generated will appear in widget list
-        Highlights
+        Highlights,
+        HoverInfo,
+        SpellCheck
     };
 
     void runAction(const Action &action);
@@ -224,9 +267,11 @@ private:
     QThread *goToDefinitionThread;
     QThread *generateThread;
     QThread *highlightsThread;
-
+    QThread *hoverInfoThread;
+    QThread *spellCheckThread;
 
     void connectThreads();
+
     void connectDocks();
 
     // these will update widgets
@@ -258,6 +303,11 @@ private slots:
     void slotGenerate();
 
     void slotGetHighlights();
+
+    void slotGetHoverInfo();
+
+    // TODO: only for comment in current file
+    void slotGetSpellCheck();
 };
 
 

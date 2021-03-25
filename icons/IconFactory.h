@@ -52,6 +52,11 @@ public:
 
     static constexpr auto Settings = "/home/adam/Desktop/sources/Evolution-IDE/icons/settings.svg";
 
+    static constexpr auto Color = "/home/adam/Desktop/sources/Evolution-IDE/icons/color.png";
+    static constexpr auto Error = "/home/adam/Desktop/sources/Evolution-IDE/icons/error.png";
+    static constexpr auto Warning = "/home/adam/Desktop/sources/Evolution-IDE/icons/warning.png";
+
+
     // TEXT
     static constexpr auto Copy = "/home/adam/Desktop/sources/Evolution-IDE/icons/copy.svg";
     static constexpr auto Paste = "/home/adam/Desktop/sources/Evolution-IDE/icons/paste.svg";

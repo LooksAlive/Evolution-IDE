@@ -23,7 +23,6 @@ public:
         Debug = 1,
         Release = 2,
     };
-    // basic command on the main thread to take no longer than second
     static std::string ExecuteSimpleCommand(const std::string &cmd);
 
     void setSourceFiles(const std::vector<std::string> &sources);
@@ -35,9 +34,10 @@ public:
     static int getPid(const std::string &executable_path);
     static void killProcess(const int &proc_id);
 
-    // clang_format_file_path -> .clang-format file with conf-s
     static std::string ClangFormat(const std::vector<std::string> &sources, const std::string &clang_format_file_path);
+
     static std::string ClangTidy(const std::vector<std::string> &sources);
+
     static std::string ClangCheck(const std::vector<std::string> &sources);
 
     static std::string Valgrind(const std::string &executable_path);
@@ -45,6 +45,9 @@ public:
     static void OpenGdbGui(const std::string &executable_path);
 
     std::string compile_args = "/usr/bin/";
+
+    // when some tool is not installed we have static ones in /tools
+    bool useAppTools = false;
 
 private:
     static void DetermineCompilerVersion(const std::string &tool);
@@ -54,6 +57,7 @@ private:
     QProcess *process;
 
 private slots:
+
     void slotSetOutput();
 };
 
