@@ -21,14 +21,22 @@ set(CMAKE_CXX_FLAGS ${CXX_FLAGS})
 include_directories(
         ${CMAKE_CURRENT_BINARY_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
-        /usr/local/include         # llvm, lldb, clang
-        /usr/local/include/clang-tidy
-        /usr/local/include/clangd  # clangd -> indexer, completer, parser etc.
-        /usr/local/include/clangd/support
-        Widgets/Notifier/simple-mail/src        # SMTP
+        include/
+        include/clangd/
+        include/clangd/support
+        #/usr/local/include         # llvm, lldb, clang
+        #/usr/local/include/clang-tidy
+        #/usr/local/include/clangd  # clangd -> indexer, completer, parser etc.
+        #/usr/local/include/clangd/support
+        #Widgets/Notifier/simple-mail/src        # SMTP
+
         #clangd
         #clangd/support
 )
+
+link_directories(#/usr/local/lib
+                libs/
+                )
 
 set(CLANGD_SOURCES
         clangd/AST.cpp
@@ -274,6 +282,7 @@ set(SOURCE_FILES
         Widgets/Settings/git/gitwidget.cpp
         Widgets/Settings/git/gitwidget.h
         icons/IconFactory.h
+        icons/IconFactory.cpp
         Widgets/Settings/Appearence/AppearenceWidget.cpp
         Widgets/Settings/Appearence/AppearenceWidget.h
         Widgets/CodeInfoDock/CodeInfoDock.cpp
@@ -349,13 +358,9 @@ set(SOURCE_FILES
         #Widgets/NodeView/ConnectionPainter.h
         )
 
-
-
-
 #set(Qt5Core_DIR "/opt/Qt/5.9.3/gcc_64/lib/cmake/Qt5Core/")
 #set(Qt5Widgets_DIR "/opt/Qt/5.9.3/gcc_64/lib/cmake/Qt5Widgets/")
 #set(Qt5Console_DIR "/opt/Qt/5.9.3/gcc_64/lib/cmake/Qt5Console/")
-
 
 SET(CMAKE_AUTOUIC ON)
 set (CMAKE_AUTOMOC ON)
@@ -415,7 +420,6 @@ set(LLVM_LIBS_SHARED    Polly
                         LLVM #llvm -> not working
                         )
 
-
 set(LLVM_LIBS
         LLVMXRay LLVMWindowsManifest LLVMTableGen LLVMSymbolize
         LLVMDebugInfoPDB LLVMOrcJIT LLVMOrcError LLVMJITLink
@@ -456,12 +460,11 @@ set(LLVM_LIBS
         LLVMAArch64AsmParser LLVMMCParser LLVMAArch64Desc LLVMMC
         LLVMDebugInfoCodeView LLVMDebugInfoMSF LLVMBinaryFormat
         LLVMAArch64Utils LLVMAArch64Info LLVMSupport LLVMDemangle
-
         )
 
-set(GIT_LIBS git2)
-
-link_directories(/usr/local/lib)
+set(GIT_LIBS git2
+        #libgit2.so.0.28.5
+    )
 
 add_executable(editor ${SOURCE_FILES} resources.qrc)
 
@@ -478,10 +481,6 @@ find_package( Qt5 REQUIRED
         Network
         Charts
         )
-#find_package( Qt5Widgets REQUIRED )
-#find_package( Qt5Gui REQUIRED )
-#find_package( Qt5Xml REQUIRED )
-#find_package( Qt5PrintSupport REQUIRED )
 
 #qt5_use_modules( editor Core Widgets Gui Xml PrintSupport)
 

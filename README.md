@@ -7,6 +7,16 @@ Integrated Development Environment
 - my IDE is simple, fast, multiplatform, based on Qt & all classes are in 
   separate folders(widgets) and can be reused without extern 
   requirement(headers, sources, etc.)
+  
+Contribution:
+- you may notices folders include(.h files), libs(.so, .a libraries) for build
+- NOTE: these are manually built clang, llvm libs and they are compressed, so if you want to build... decompress
+ them in same location, similarly if you heading to work with them, you can download already built .a libs from here
+
+Requirements:
+* Qt5+
+* QCharts (I had to download this on linux with "sudo apt-get install libqt5chars5-dev", Windows: download through client)
+* clang, llvm, git, hunspell (linking with libs folder already, therefore that huge project :)  )
 
 Features:
 
@@ -30,6 +40,7 @@ Text:
 * CTRL+LEFT/RIGHT               -> moving to start of next words
 * automatic insertions like  () [] {} <> "" ''
 
+* spell checking
 
 Overall:
 

@@ -1,6 +1,8 @@
 /*
   * this class manages icons, images, etc.
   * if you have any idea how to initialize static and add prefix, write me, i tried,  == empty variable, with QIcon
+  *
+  * Qt requires also cpp file for generating moc files...
 */
 
 #ifndef ICONFACTORY_H
@@ -16,88 +18,92 @@
 class IconFactory
 {
 public:
-    IconFactory();
+    IconFactory() = default;
     ~IconFactory() = default;
 
-    static constexpr auto prefix = "/home/adam/Desktop/sources/Evolution-IDE/icons/";
+    // QApplication::applicationDirPath();      NOTE: this returns dir for executable, we need source dir soo configure your own
+    // into icons/  folder
+    // CHANGE THIS:
+    static const QString prefix;
 
     // Editor Icon
-    static constexpr auto Evolution = "/home/adam/Desktop/sources/Evolution-IDE/icons/editor.png";
+    static const QString Evolution;
 
     // TOOL BARS
-    static constexpr auto EditorView = "/home/adam/Desktop/sources/Evolution-IDE/icons/SourceView.png";
-    static constexpr auto HexView = "/home/adam/Desktop/sources/Evolution-IDE/icons/HexView.png";
-    static constexpr auto NodeView = "/home/adam/Desktop/sources/Evolution-IDE/icons/NodeView.png";
-    static constexpr auto DebuggerView = "/home/adam/Desktop/sources/Evolution-IDE/icons/DebuggerView.svg";
-    static constexpr auto BinaryView = "/home/adam/Desktop/sources/Evolution-IDE/icons/BinaryView.png";
+    static const QString EditorView;
+    static const QString HexView;
+    static const QString NodeView;
+    static const QString DebuggerView;
+    static const QString BinaryView;
 
-    static constexpr auto OpenFile = "/home/adam/Desktop/sources/Evolution-IDE/icons/open_file.svg";
-    static constexpr auto NewFile = "/home/adam/Desktop/sources/Evolution-IDE/icons/new_file.svg";
-    static constexpr auto SaveFile = "/home/adam/Desktop/sources/Evolution-IDE/icons/save_file.svg";
-    static constexpr auto SaveAllFiles = "/home/adam/Desktop/sources/Evolution-IDE/icons/save_all_files.png";
+    static const QString OpenFile;
+    static const QString NewFile;
+    static const QString SaveFile;
+    static const QString SaveAllFiles;
 
-    static constexpr auto Build = "/home/adam/Desktop/sources/Evolution-IDE/icons/Build.png";
-    static constexpr auto Run = "/home/adam/Desktop/sources/Evolution-IDE/icons/run.svg";
-    static constexpr auto Rerun = "/home/adam/Desktop/sources/Evolution-IDE/icons/rerun.svg";
-    static constexpr auto Stop = "/home/adam/Desktop/sources/Evolution-IDE/icons/stop.svg";
-    static constexpr auto ShutDown = "/home/adam/Desktop/sources/Evolution-IDE/icons/shutdown.svg";
-    static constexpr auto FullScreen = "/home/adam/Desktop/sources/Evolution-IDE/icons/fullscreen.svg";
-    static constexpr auto Push = "/home/adam/Desktop/sources/Evolution-IDE/icons/git_push.png";
-    static constexpr auto Pull = "/home/adam/Desktop/sources/Evolution-IDE/icons/git_pull.png";
-    static constexpr auto Merge = "/home/adam/Desktop/sources/Evolution-IDE/icons/git_merge.png";
-    static constexpr auto Commit = "/home/adam/Desktop/sources/Evolution-IDE/icons/git_commit.png";
+    static const QString Build;
+    static const QString Run;
+    static const QString Rerun;
+    static const QString Stop;
+    static const QString ShutDown;
+    static const QString FullScreen;
+    static const QString Push ;
+    static const QString Pull;
+    static const QString Merge;
+    static const QString Commit;
 
-    static constexpr auto Undo = "/home/adam/Desktop/sources/Evolution-IDE/icons/undo.svg";
-    static constexpr auto Redo = "/home/adam/Desktop/sources/Evolution-IDE/icons/redo.svg";
+    static const QString Undo;
+    static const QString Redo ;
 
-    static constexpr auto Settings = "/home/adam/Desktop/sources/Evolution-IDE/icons/settings.svg";
+    static const QString Settings;
 
-    static constexpr auto Color = "/home/adam/Desktop/sources/Evolution-IDE/icons/color.png";
-    static constexpr auto Error = "/home/adam/Desktop/sources/Evolution-IDE/icons/error.png";
-    static constexpr auto Warning = "/home/adam/Desktop/sources/Evolution-IDE/icons/warning.png";
+    static const QString Color;
+    static const QString Error;
+    static const QString Warning;
 
 
     // TEXT
-    static constexpr auto Copy = "/home/adam/Desktop/sources/Evolution-IDE/icons/copy.svg";
-    static constexpr auto Paste = "/home/adam/Desktop/sources/Evolution-IDE/icons/paste.svg";
-    static constexpr auto Cut = "/home/adam/Desktop/sources/Evolution-IDE/icons/cut.svg";
-    static constexpr auto SelectAll = "/home/adam/Desktop/sources/Evolution-IDE/icons/select_all.svg";
-    static constexpr auto Collapse = "/home/adam/Desktop/sources/Evolution-IDE/icons/collapse.svg";
-    static constexpr auto Expand = "/home/adam/Desktop/sources/Evolution-IDE/icons/expand.svg";
-    static constexpr auto BreakPoint = "/home/adam/Desktop/sources/Evolution-IDE/icons/BreakPoint.png";
-    static constexpr auto Comment = "/home/adam/Desktop/sources/Evolution-IDE/icons/comment.png";
+    static const QString Copy;
+    static const QString Paste;
+    static const QString Cut;
+    static const QString SelectAll;
+    static const QString Collapse;
+    static const QString Expand;
+    static const QString BreakPoint;
+    static const QString Comment;
 
     // EXPLORERS
-    static constexpr auto Plus = "/home/adam/Desktop/sources/Evolution-IDE/icons/plus.svg";
-    static constexpr auto Minus = "/home/adam/Desktop/sources/Evolution-IDE/icons/minus.svg";
-    static constexpr auto DefaultDir = "/home/adam/Desktop/sources/Evolution-IDE/icons/default_dir.svg";
-    static constexpr auto Back = "/home/adam/Desktop/sources/Evolution-IDE/icons/back.svg";
-    static constexpr auto Search = "/home/adam/Desktop/sources/Evolution-IDE/icons/search.svg";
-    static constexpr auto Replace = "/home/adam/Desktop/sources/Evolution-IDE/icons/replace.svg";
-    static constexpr auto NewDirectory = "/home/adam/Desktop/sources/Evolution-IDE/icons/new_directory.svg";
-    static constexpr auto Remove = "/home/adam/Desktop/sources/Evolution-IDE/icons/remove2.svg";
-    static constexpr auto RemoveAll2 = "/home/adam/Desktop/sources/Evolution-IDE/icons/remove_all.png";
-    static constexpr auto AllFiles = "/home/adam/Desktop/sources/Evolution-IDE/icons/all_files.png";
-    static constexpr auto CurrentFile = "/home/adam/Desktop/sources/Evolution-IDE/icons/current_file.png";
-    static constexpr auto Done = "/home/adam/Desktop/sources/Evolution-IDE/icons/done.svg";
-    static constexpr auto ScrollUp = "/home/adam/Desktop/sources/Evolution-IDE/icons/scroll_up.svg";
-    static constexpr auto ScrollDown = "/home/adam/Desktop/sources/Evolution-IDE/icons/scroll_down.svg";
-    static constexpr auto TrashBin = "/home/adam/Desktop/sources/Evolution-IDE/icons/trash_bin.svg";
+    static const QString Plus;
+    static const QString Minus;
+    static const QString DefaultDir;
+    static const QString Back;
+    static const QString Search;
+    static const QString Replace;
+    static const QString NewDirectory;
+    static const QString Remove;
+    static const QString RemoveAll2;
+    static const QString AllFiles;
+    static const QString CurrentFile;
+    static const QString Done;
+    static const QString ScrollUp;
+    static const QString ScrollDown;
+    static const QString TrashBin;
 
     // DEBUGGER
-    static constexpr auto StartDebug = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/StartDebug.png";
-    static constexpr auto StopDebug = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/StopDebug.png";// square
-    static constexpr auto Resume = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/Resume.png";
-    static constexpr auto RunToCursor = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/RunToCursor.png";
-    static constexpr auto NextLine = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/NextLine.png";
-    static constexpr auto StepInto = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/GetIntoFunction.png";
-    static constexpr auto StepInstruction = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/NextInstruction.png";// StepInstruction
-    static constexpr auto GetOutOfFunction = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/GetOutOfFunction.png";
-    static constexpr auto AddWatch = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/AddWatch.png";
-    static constexpr auto RemoveWatch = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/RemoveWatch.png";
-    static constexpr auto ModifyWatch = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/ModifyWatch.png";
-    static constexpr auto Mute = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/mute.svg";
-    static constexpr auto RemoveAll = "/home/adam/Desktop/sources/Evolution-IDE/icons/Debugger/removeAll.svg";
+    static const QString StartDebug;
+    static const QString StopDebug;// square
+    static const QString Resume;
+    static const QString RunToCursor;
+    static const QString NextLine;
+    static const QString StepInto;
+    static const QString StepInstruction;// StepInstruction
+    static const QString GetOutOfFunction;
+    static const QString AddWatch;
+    static const QString RemoveWatch;
+    static const QString ModifyWatch;
+    static const QString Mute;
+    static const QString RemoveAll;
 };
+
 
 #endif // ICONFACTORY_H
