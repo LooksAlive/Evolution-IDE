@@ -22,6 +22,7 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
     codeNotifyArea = new CodeNotifyArea(this);
     lineNumberArea = new LineNumberArea(this);
     arrowArea = new ArrowArea(this);
+    statusArea = new StatusArea(this);
     scrollBar = new ScrollBar(this);
 
     setVerticalScrollBar(scrollBar);
@@ -1235,8 +1236,12 @@ void PlainTextEdit::slotBlockCountChanged(const int &count) {
     // lineNumberArea->sizeHint().width() + arrowArea->sizeHint().width()
 
     // expanding to right
-    setViewportMargins(breakPointArea->sizeHint().width() + codeNotifyArea->sizeHint().width() +
-                       lineNumberArea->sizeHint().width() + arrowArea->sizeHint().width(), 0, 0, 0);
+    setViewportMargins(
+                /* left */
+                breakPointArea->sizeHint().width() + codeNotifyArea->sizeHint().width() +
+                lineNumberArea->sizeHint().width() + arrowArea->sizeHint().width(),
+                /* top */
+                statusArea->sizeHint().height(), 0, 0);
 }
 
 void PlainTextEdit::slotHighlightCurrentLine()
@@ -1284,6 +1289,7 @@ void PlainTextEdit::slotUpdateRequest(const QRect &rect, const int column) {
     lineNumberArea->update();
     breakPointArea->update();
     arrowArea->update();
+    statusArea->update();
     codeNotifyArea->update();
 
     if (rect.contains(viewport()->rect())) {
@@ -1710,7 +1716,7 @@ bool PlainTextEdit::event(QEvent *event) {
         QTextCursor cursor = cursorForPosition(helpEvent->pos());
 
         // collapsed text set as default QToolTip
-        const QString collapsedText = anchorAt(helpEvent->pos()) + "\n ksalhdfjkhdsajlkhf \n jksahdf j\nsjladfkh";
+        const QString collapsedText = anchorAt(helpEvent->pos());
         if (!collapsedText.isEmpty()) {
             // smallEdit shows collapsed scope
             smallEdit->setPlainText(collapsedText);
@@ -2217,6 +2223,7 @@ ScrollBar::ScrollBar(PlainTextEdit *edit, QWidget *parent) : QScrollBar(edit), m
     QFont f;
     f.setPixelSize(15);
     smallEdit->setFont(f);
+    // pointer ---> changes possible reflects to real editor
     smallEdit->setDocument(m_Edit->document());
     smallEdit->verticalScrollBar()->setVisible(false);
 }
@@ -2374,4 +2381,48 @@ void ScrollBar::calculateAndSetSmallEditGeometry(const int &posY) {
     }
     smallEdit->setPlainText(content);
     */
+}
+
+
+
+
+
+StatusArea::StatusArea(PlainTextEdit *edit, QWidget *parent) : QWidget(edit), m_Edit(edit) {
+    createWindow();
+    setFixedHeight(20);
+    setStyleSheet("padding: 0px; border: 1px solid black;");
+
+    setGeometry(0, 0, edit->width(), 20);
+}
+
+void StatusArea::createWindow() {
+    MainLayout = new QHBoxLayout(this);
+    collapseAllScopes = new QToolButton(this);
+    expandAllScopes = new QToolButton(this);
+    notifyTags = new QToolButton(this);
+    currentFunction = new QLabel(this);
+
+    collapseAllScopes->setIcon(QIcon(IconFactory::Collapse));
+    collapseAllScopes->setToolTip("Collapse All Scopes");
+    expandAllScopes->setIcon(QIcon(IconFactory::Expand));
+    expandAllScopes->setToolTip("Expand All Scopes");
+    notifyTags->setText("Comment Tags");
+    currentFunction->setMinimumWidth(100);
+
+    connect(notifyTags, &QToolButton::clicked, this, [=](){
+       m_Edit->tagReminder->fillView(m_Edit->getFilePath());
+       m_Edit->tagReminder->show();
+    });
+
+    // TODO: connnect expand, collapse with arrowArea + take care for editor hrefs for this.
+    // TODO: make function for this to call.
+
+
+    MainLayout->addWidget(collapseAllScopes);
+    MainLayout->addWidget(expandAllScopes);
+    MainLayout->addWidget(notifyTags);
+    MainLayout->addWidget(currentFunction);
+
+    MainLayout->setContentsMargins(0, 0, 0, 0);
+    MainLayout->setSpacing(0);
 }

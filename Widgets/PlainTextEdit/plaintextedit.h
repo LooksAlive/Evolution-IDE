@@ -55,6 +55,8 @@ class ArrowArea;
 
 class ScrollBar;
 
+class StatusArea;
+
 class ClangBridge;
 
 class NodeView;
@@ -76,6 +78,7 @@ public:
     LineNumberArea *lineNumberArea;
     ArrowArea *arrowArea;
     CodeNotifyArea *codeNotifyArea;
+    StatusArea *statusArea;
     ScrollBar *scrollBar;
     // only triggers actions to do with its Handler ...
     CodeInfoDock *code_info;
@@ -554,5 +557,44 @@ private:
     void calculateAndSetSmallEditGeometry(const int &posY);
 
 };
+
+
+
+
+
+
+// this is top status bar in editor
+class StatusArea : public QWidget {
+Q_OBJECT
+public:
+    explicit StatusArea(PlainTextEdit *edit, QWidget *parent = nullptr);
+    ~StatusArea() = default;
+
+    // QSize sizeHint() const override;
+
+private:
+    PlainTextEdit *m_Edit;
+
+    QHBoxLayout *MainLayout;
+    // top rigth
+    QToolButton *collapseAllScopes;
+    QToolButton *expandAllScopes;
+
+    QToolButton *notifyTags;
+    QLabel *currentFunction;
+
+    void createWindow();
+
+};
+
+
+
+
+
+
+
+
+
+
 
 #endif // SOURCECODEEDIT_H

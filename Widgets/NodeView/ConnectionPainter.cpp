@@ -97,7 +97,7 @@ void ConnectionPainter::debugDrawing(QPainter * painter, Connection* connection)
 }
 
 void ConnectionPainter::drawSketchLine(QPainter * painter, Connection* connection) {
-    ConnectionState const& state =
+    const ConnectionState& state =
             connection->connectionState();
 
     if (state.requiresPort()) {
@@ -119,7 +119,7 @@ void ConnectionPainter::drawSketchLine(QPainter * painter, Connection* connectio
 }
 
 void ConnectionPainter::drawHoveredOrSelected(QPainter * painter, Connection* connection) {
-    bool const hovered = connection->hovered();
+    bool const hovered = connection->_hovered;
     bool const selected = connection->isSelected();
 
     // drawn as a fat background

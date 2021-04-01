@@ -27,9 +27,10 @@ Build:
 * under 4 minutes
 * requires arround 250 MB
 
-mkdir build && cd build
-cmake ..
-make -j4
+
+* mkdir build && cd build
+* cmake ..
+* make -j4
 
 
 Features:

@@ -6,6 +6,10 @@
 
 CommentTagsReminder::CommentTagsReminder(QWidget *parent) : QWidget(parent) {
     createWindow();
+    // TODO: for all such widgets, figure out how to center to middle of the app, instead of this dialog
+    // which adds panel etc.
+    // TODO: ESC shortcut to exit, since we are not going to have any panel buttons.
+    // kinda frameless window
     setWindowFlags(Qt::Dialog);
     setWindowTitle("Comment tags");
     setVisible(false);
@@ -59,7 +63,7 @@ void CommentTagsReminder::fillView(const QString& filepath) {
     view->clear();
 
     if(!filepath.isEmpty()) {
-        for(int i = 0; i < tagData.size(); i++) {
+        for(unsigned int i = 0; i < tagData.size(); i++) {
             if(sources[i] == filepath) {
                 fileNameFilter->setCurrentText(filepath);
                 auto *topItem = new QTreeWidgetItem();
@@ -82,7 +86,7 @@ void CommentTagsReminder::fillView(const QString& filepath) {
     }
 
     if(tagFilter->currentText() == "All tags") {
-        for(int i = 0; i < tagData.size(); i++) {
+        for(unsigned int i = 0; i < tagData.size(); i++) {
             auto *topItem = new QTreeWidgetItem();
             topItem->setToolTip(0, sources[i]);
             topItem->setText(0, QFileInfo(sources[i]).fileName());
@@ -102,7 +106,7 @@ void CommentTagsReminder::fillView(const QString& filepath) {
     }
     else {
         // filtering one , TODO: hybrids allowed
-        for(int i = 0; i < tagData.size(); i++) {
+        for(unsigned int i = 0; i < tagData.size(); i++) {
             for(const auto& elem : tagData[i]) {
                 if(elem.tag == tagFilter->currentText()) {
                     // FIXME: this will be only list

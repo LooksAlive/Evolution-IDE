@@ -75,13 +75,11 @@ public:
     void removeFromNodes() const;
 
 public:
-    int getPortIndex(PortType portType) const;
+    int getPortIndex(Node::PortType portType) const;
 
-    void
-    clearNode(PortType portType);
+    void clearNode(Node::PortType portType);
 
-    NodeDataType
-    dataType(PortType portType) const;
+    NodeDataType dataType(Node::PortType portType) const;
 
     bool complete() const;
 
@@ -197,8 +195,6 @@ public:
 
     void moveEndPoint(Node::PortType portType, QPointF const &offset);
 
-    QRectF boundingRect() const;
-
     std::pair<QPointF, QPointF> pointsC1C2() const;
 
     QPointF source() const { return _out; }
@@ -207,7 +203,7 @@ public:
 
     void setHovered(bool hovered) { _hovered = hovered; }
 
-private:
+public:
     // local object coordinates
     QPointF _in{0, 0};
     QPointF _out{0, 0};

@@ -34,20 +34,6 @@ public:
 
     void setSources(const QStringList& s) { sources = s; }
 
-    enum Tag {
-        TODO = 0,
-        FIXME,
-        NOTE,
-        USELESS,
-        LONG,
-        SPEEDUP,
-        EXPAND,
-        SHRINK,
-        DEPRECATED,
-
-        ALL // in filter to indicate all kinds are visible
-    };
-
     QTreeWidget *view;
 
     void searchEverywhere();
@@ -73,12 +59,7 @@ private:
     QComboBox *tagFilter;
     QComboBox *fileNameFilter;
 
-
-
-
     void createWindow();
-
-
 };
 
 

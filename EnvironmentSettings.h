@@ -25,7 +25,6 @@ constexpr auto FONT_SIZE = 16;
 /*
 main();
 templates,
-[[[[ FIX IT ]]]]
 
 void <name>()
 {
@@ -35,7 +34,7 @@ void <name>()
 
 
 const QStringList CommentTags = {
-        "TODO",
+        "TODO",    /* consider TODO1,2,3 level to select which is more important (similar with FIXME; or ) */
         "FIXME",
         "NOTE",
         "LONG",
@@ -44,6 +43,7 @@ const QStringList CommentTags = {
         "SPEEDUP",
         "EXPAND",
         "SHRINK",
+        "REARRANGE",
         "DEPRECATED"
 };
 
