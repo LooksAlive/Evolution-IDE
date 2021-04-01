@@ -12,6 +12,8 @@ Contribution:
 - you may notices folders include(.h files), libs(.so, .a libraries) for build
 - NOTE: these are manually built clang, llvm libs and they are compressed, so if you want to build... decompress
  them in same location, similarly if you heading to work with them, you can download already built .a libs from here
+- if any problem with commit, try "git gc"
+
 
 Requirements:
 * Qt5+
