@@ -1,0 +1,2 @@
+#define CLANGD_BUILD_XPC 0
+#define CLANGD_ENABLE_REMOTE 0

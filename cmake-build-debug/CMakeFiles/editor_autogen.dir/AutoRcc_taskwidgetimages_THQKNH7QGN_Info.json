@@ -1,0 +1,19 @@
+{
+	"BUILD_DIR" : "/home/adam/Desktop/sources/Evolution-IDE/cmake-build-debug/editor_autogen",
+	"CMAKE_BINARY_DIR" : "/home/adam/Desktop/sources/Evolution-IDE/cmake-build-debug",
+	"CMAKE_CURRENT_BINARY_DIR" : "/home/adam/Desktop/sources/Evolution-IDE/cmake-build-debug",
+	"CMAKE_CURRENT_SOURCE_DIR" : "/home/adam/Desktop/sources/Evolution-IDE",
+	"CMAKE_SOURCE_DIR" : "/home/adam/Desktop/sources/Evolution-IDE",
+	"INCLUDE_DIR" : "/home/adam/Desktop/sources/Evolution-IDE/cmake-build-debug/editor_autogen/include",
+	"INPUTS" : [ "/home/adam/Desktop/sources/Evolution-IDE/TaskWidget/images/find.png" ],
+	"LOCK_FILE" : "/home/adam/Desktop/sources/Evolution-IDE/cmake-build-debug/CMakeFiles/editor_autogen.dir/AutoRcc_taskwidgetimages_THQKNH7QGN_Lock.lock",
+	"MULTI_CONFIG" : false,
+	"OPTIONS" : [ "-name", "taskwidgetimages" ],
+	"OUTPUT_CHECKSUM" : "THQKNH7QGN",
+	"OUTPUT_NAME" : "qrc_taskwidgetimages.cpp",
+	"RCC_EXECUTABLE" : "/usr/lib/qt5/bin/rcc",
+	"RCC_LIST_OPTIONS" : [ "--list" ],
+	"SETTINGS_FILE" : "/home/adam/Desktop/sources/Evolution-IDE/cmake-build-debug/CMakeFiles/editor_autogen.dir/AutoRcc_taskwidgetimages_THQKNH7QGN_Used.txt",
+	"SOURCE" : "/home/adam/Desktop/sources/Evolution-IDE/TaskWidget/taskwidgetimages.qrc",
+	"VERBOSITY" : 0
+}

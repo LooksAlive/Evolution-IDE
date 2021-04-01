@@ -1,0 +1,4 @@
+/home/adam/Desktop/sources/Evolution-IDE/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/adam/Desktop/sources/Evolution-IDE/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/adam/Desktop/sources/Evolution-IDE/cmake-build-debug/CMakeFiles/editor.dir
+/home/adam/Desktop/sources/Evolution-IDE/cmake-build-debug/CMakeFiles/editor_autogen.dir
