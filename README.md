@@ -19,6 +19,18 @@ Requirements:
 * Qt5+
 * QCharts (I had to download this on linux with "sudo apt-get install libqt5chars5-dev", Windows: download through client)
 * clang, llvm, git, hunspell (linking with libs folder already, therefore that huge project :)  )
+* pthread
+
+
+Build:
+* make sure libs/ is filled (decompressed libraries)
+* under 4 minutes
+* requires arround 250 MB
+
+mkdir build && cd build
+cmake ..
+make -j4
+
 
 Features:
 
@@ -80,3 +92,13 @@ Future:
 * binary information view (llvm implemented tools)
 * git version control
 * use (CINT) / Cling C++ interpreter
+
+
+
+Contact:
+
+discord pivate:  ADAM    #6261
+discord-group:   will come soon
+email:           will come soon
+
+
