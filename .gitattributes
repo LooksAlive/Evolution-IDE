@@ -1,0 +1,2 @@
+*.tag.gz filter=lfs diff=lfs merge=lfs -text
+libs/libs.tag.gz filter=lfs diff=lfs merge=lfs -text
