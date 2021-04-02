@@ -37,6 +37,8 @@
 #include "icons/IconFactory.h"
 #include "Widgets/Education/Education.h"
 #include "Widgets/CommentTagsReminder/CommentTagsReminder.h"
+#include "Widgets/DocumentationHelper/DocumentationHelper.h"
+#include "GoToLineColumn.h"
 
 #include "completer.h"
 #include "HoverInfoWidget.h"
@@ -89,6 +91,7 @@ public:
     Education *education;
     NewSampleWindow *newSampleWindow;
     CommentTagsReminder *tagReminder;
+    DocumentationHelper *documentationHelper;
 
     Completer *completer;
     SpellCheckList *spellCheckPopup;
@@ -572,22 +575,40 @@ public:
 
     // QSize sizeHint() const override;
 
+    QToolButton *lineColumn;
+
 private:
     PlainTextEdit *m_Edit;
+    GoToLineColumn *goToLineColumn;
 
     QHBoxLayout *MainLayout;
     // top rigth
     QToolButton *collapseAllScopes;
     QToolButton *expandAllScopes;
 
-    QToolButton *notifyTags;
     QLabel *currentFunction;
+
+    QToolButton *encoding;
+
+    QToolButton *documentCode;
+    QToolButton *commentTagsforThisFile;
 
     void createWindow();
 
 };
 
+/*
+    // later consider creating new button here
+    // What if on the changed tab is no cursor set -> remain last cursor position
+    if (Tabs->isVisible()) {
+        const QPoint point = currentWidget->getCursorPosition();
+        const QString pos = QString::number(point.y()) + ":" + QString::number(point.x());// row:col
 
+        github_branch->setText(pos);
+    } else {
+        github_branch->setText("");
+    }
+*/
 
 
 

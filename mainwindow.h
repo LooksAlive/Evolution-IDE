@@ -158,10 +158,8 @@ private:
     // Status Bar
     QStatusBar *statusbar;
     ProgressBar *progress_bar;
-    QToolButton *btn_position;
-    QToolButton *btn_encoding;
-    QLabel *current_function;
-    QLabel *current_file_path;  // when tab moves
+    QToolButton *github_branch;
+
     QLineEdit *locate_open_file;
     QCompleter *locate_completer;   // filenames
     // shows comment tags dialog in project
@@ -327,11 +325,9 @@ private slots:
     void slotAbout();
 
     void slotFullScreen();
-    void slotGoToLine();
     void slotFind();
 
     void slotShowFindReplaceDock();
-    void slotCursorPositionChanged();
 
     // debugger
     void slotStartDebug();

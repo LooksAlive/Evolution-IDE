@@ -2,8 +2,6 @@
 
 #include <QPainter>
 
-class ConnectionGeometry;
-class ConnectionState;
 class Connection;
 
 class ConnectionPainter {

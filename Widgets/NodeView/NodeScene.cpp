@@ -12,9 +12,9 @@ NodeScene::NodeScene(QObject *parent) : QGraphicsScene(parent) {
 
 std::shared_ptr<Connection>
 NodeScene::
-createConnection(PortType connectedPort,
+createConnection(Node::PortType connectedPort,
                  Node &node,
-                 PortIndex portIndex) {
+                 int portIndex) {
     auto connection = std::make_shared<Connection>(connectedPort, node, portIndex);
 
     auto cgo = detail::make_unique<ConnectionGraphicsObject>(*this, *connection);
@@ -77,8 +77,8 @@ restoreConnection(QJsonObject const &connectionJson) {
     QUuid nodeInId = QUuid(connectionJson["in_id"].toString());
     QUuid nodeOutId = QUuid(connectionJson["out_id"].toString());
 
-    PortIndex portIndexIn = connectionJson["in_index"].toInt();
-    PortIndex portIndexOut = connectionJson["out_index"].toInt();
+    int portIndexIn = connectionJson["in_index"].toInt();
+    int portIndexOut = connectionJson["out_index"].toInt();
 
     auto nodeIn = _nodes[nodeInId].get();
     auto nodeOut = _nodes[nodeOutId].get();

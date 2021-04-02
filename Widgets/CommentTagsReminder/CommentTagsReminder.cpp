@@ -1,7 +1,9 @@
 #include <QFileInfo>
+#include <QSettings>
 
 #include "icons/IconFactory.h"
 #include "Delegate.h"
+#include "filemanager.h"
 #include "CommentTagsReminder.h"
 
 CommentTagsReminder::CommentTagsReminder(QWidget *parent) : QWidget(parent) {
@@ -57,6 +59,27 @@ void CommentTagsReminder::createWindow() {
     MainLayout->setContentsMargins(0, 0, 0, 0);
     MainLayout->setSpacing(0);
     setLayout(MainLayout);
+}
+
+void CommentTagsReminder::saveIssuesFile() {
+    FileDirManager file_manager;
+    QString content;
+    for(unsigned int i = 0; i < tagData.size(); i++) {
+        for(const auto& elem : tagData[i]) {
+            if(elem.tag == "FIXME") {
+                content.append("File: \n" + sources[i]);
+                content.append("Line: \n" + QString::number(elem.line + 1));
+                content.append("Issue: \n" + elem.LineContent);
+            }
+        }
+    }
+
+    if(!content.isEmpty()) {
+        QSettings settings("Evolution");
+        const QString project_file_path = settings.value("Evolution/Project_Root_Dir").toString();
+
+        file_manager.write(project_file_path + "/ISSUES.txt", content.toLatin1().data());
+    }
 }
 
 void CommentTagsReminder::fillView(const QString& filepath) {
@@ -177,4 +200,6 @@ void CommentTagsReminder::searchEverywhere() {
     }
     fileNameFilter->setCurrentText("All files");
     fillView();
+
+    saveIssuesFile();
 }

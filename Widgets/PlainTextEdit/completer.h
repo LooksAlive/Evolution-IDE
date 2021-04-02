@@ -43,6 +43,21 @@ public:
 private:
     QListWidget *Popup;
 
+
+    // words pairs to macth different name for suggested symbol
+    // there is loop running with them and actual data to compare similar names
+    // really helps sometime
+    const QList<QPair<QString, QString>> pairs {
+        QPair{"get", "load"},
+        QPair{"set", "add"},
+        QPair{"remove", "take"},
+        QPair{"remove", "delete"},
+        QPair{"clear", "reset"},
+        QPair{"do", "run"}
+        // TODO: add some other what comes to your mind
+    };
+
+
 };
 
 #endif // COMPLETER_H

@@ -341,6 +341,10 @@ set(SOURCE_FILES
         Widgets/PlainTextEdit/ScrollBarMap.h
         Widgets/ProcessDataPlot/ProcessDataPlot.cpp
         Widgets/ProcessDataPlot/ProcessDataPlot.h
+        Widgets/ErrorCodeList/ErrorCodeList.cpp
+        Widgets/ErrorCodeList/ErrorCodeList.h
+        Widgets/DocumentationHelper/DocumentationHelper.cpp
+        Widgets/DocumentationHelper/DocumentationHelper.h
         # NodeView
         Widgets/NodeView/NodeView.cpp
         Widgets/NodeView/NodeView.h

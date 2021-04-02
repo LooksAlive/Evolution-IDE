@@ -33,6 +33,24 @@ void <name>()
 */
 
 
+// documentation tags
+// every statement folows symbol, highlighted
+// commented with ///     overview description comes at first !!
+// used in DocumentationHelper
+const QStringList DocumentationTags = {
+        "@param",       // param[in] ; [out] ; [in, out]
+        "@tparam",      // template param
+        "@return",
+        "@note",
+        "@warning",
+        "@remark",
+        "@throws",
+        "@overload",
+        "@see",         // see other related code
+        "@exceptsafe",
+        "@image"
+};
+
 const QStringList CommentTags = {
         "TODO",    /* consider TODO1,2,3 level to select which is more important (similar with FIXME; or ) */
         "FIXME",

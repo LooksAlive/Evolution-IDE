@@ -6,9 +6,9 @@
 #include <QFormLayout>
 #include <QString>
 
-#include <Widgets/PlainTextEdit/plaintextedit.h>
+class PlainTextEdit;
 
-class GoToLineColumn : public QWidget{
+class GoToLineColumn : public QWidget {
 Q_OBJECT
 public:
     explicit GoToLineColumn(PlainTextEdit *textEdit, QWidget *parent = nullptr);

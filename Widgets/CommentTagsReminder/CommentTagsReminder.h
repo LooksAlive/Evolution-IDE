@@ -7,6 +7,9 @@
  * TODO, FIXME, NOTE
  * added by Evolution-IDE :
  * LONG, USELESS, SPEEDUP, EXPAND, SHRINK, DEPRECATED
+ *
+ *
+ * FIXME are considered issues, saved into file ISSUES.txt
 */
 
 #include <QWidget>
@@ -60,6 +63,8 @@ private:
     QComboBox *fileNameFilter;
 
     void createWindow();
+
+    void saveIssuesFile();
 };
 
 

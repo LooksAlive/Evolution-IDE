@@ -218,10 +218,7 @@ void MainWindow::SetupVerticalBar() {
 void MainWindow::SetupStatusBar() {
     statusbar = new QStatusBar(this);
     progress_bar = new ProgressBar(this);
-    btn_encoding = new QToolButton(this);
-    btn_position = new QToolButton(this);
-    current_function = new QLabel(this);
-    current_file_path = new QLabel(this);
+    github_branch = new QToolButton(this);
     locate_open_file = new QLineEdit(this);
     locate_completer = new QCompleter(this);
     btn_comment_tags = new QToolButton(this);
@@ -229,20 +226,18 @@ void MainWindow::SetupStatusBar() {
     statusbar->layout()->setContentsMargins(0, 0, 0, 0);
     statusbar->setFixedHeight(25);
     statusbar->setMouseTracking(true);
-    btn_encoding->setText("UTF-8");
-    btn_encoding->setFixedWidth(50);
-    btn_encoding->setToolButtonStyle(Qt::ToolButtonFollowStyle);
-    btn_encoding->setToolTip("Encoding");
-    btn_position->setFixedWidth(70);
-    btn_position->setToolButtonStyle(Qt::ToolButtonFollowStyle);
-    btn_position->setToolTip("Position");
-    connect(btn_position, SIGNAL(clicked()), this, SLOT(slotGoToLine()));
+    github_branch->setFixedWidth(70);
+    github_branch->setToolButtonStyle(Qt::ToolButtonFollowStyle);
+    github_branch->setToolTip("git branch");
+    connect(github_branch, &QToolButton::clicked, this, [=](){
+        gitDock->show();
+        gitDock->raise();
+    });
     btn_comment_tags->setFixedWidth(70);
     btn_comment_tags->setToolButtonStyle(Qt::ToolButtonFollowStyle);
     btn_comment_tags->setText("Tags");
     btn_comment_tags->setToolTip("Show comment tags");
     connect(btn_comment_tags, &QToolButton::clicked, this, [=]() { tagReminder->show(); });
-    current_function->setText("current function   ");
     locate_open_file->setCompleter(locate_completer);
     // locate_open_file->setMinimumWidth(100);
     locate_open_file->setMaximumWidth(200);
@@ -258,13 +253,11 @@ void MainWindow::SetupStatusBar() {
     statusbar->setAttribute(Qt::WA_TranslucentBackground, true);
 
     // statusbar->showMessage("loading", 5000);
+    // TODO: update available with showMessage for some time
     statusbar->addWidget(locate_open_file); // to left
     statusbar->addWidget(btn_comment_tags);
-    statusbar->addPermanentWidget(current_file_path);
-    statusbar->addPermanentWidget(current_function);
-    statusbar->addPermanentWidget(btn_position);
-    statusbar->addPermanentWidget(btn_encoding);
     statusbar->addPermanentWidget(progress_bar);// align right with permanent widget
+    statusbar->addPermanentWidget(github_branch);
     setStatusBar(statusbar);
 }
 
@@ -275,26 +268,6 @@ void MainWindow::slotOpenLocateFile(const QString &filepath) {
             return;
         }
     }
-}
-
-// after line is set , field is empty
-void MainWindow::slotCursorPositionChanged() {
-    // later consider creating new button here
-    // What if on the changed tab is no cursor set -> remain last cursor position
-    if (Tabs->isVisible()) {
-        const QPoint point = currentWidget->getCursorPosition();
-        const QString pos = QString::number(point.y()) + ":" + QString::number(point.x());// row:col
-
-        btn_position->setText(pos);
-    } else {
-        btn_position->setText("");
-    }
-}
-
-void MainWindow::slotGoToLine() {
-    auto *goTo = new GoToLineColumn(currentWidget, this);
-    goTo->show();
-    slotCursorPositionChanged();// update  position
 }
 
 void MainWindow::SetupMenuBar() {
@@ -913,7 +886,6 @@ void MainWindow::CreateFile() {
     currentWidget->setNodeView(nodeView);
 
     // go to line/column
-    connect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotCursorPositionChanged()));
     connect(currentWidget, SIGNAL(textChanged()), this, SLOT(UpdateParameter()));
     connect(currentWidget->hoverInfo->MainWidget, SIGNAL(anchorClicked(const QUrl &)), this,
             SLOT(slotOpenHoverInfoUrl(const QUrl &)));
@@ -1141,8 +1113,6 @@ void MainWindow::CloseFile(int index_) {
                SLOT(slotCreateBreakPoint(const int &)));
     disconnect(currentWidget->breakPointArea, SIGNAL(breakPointRemoved(const int &)), this,
                SLOT(slotDeleteBreakPoint(const int &)));
-    // go to line/column
-    disconnect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotCursorPositionChanged()));
     delete Tabs->widget(index_);
     DeleteTabFromList(index_);
 
@@ -1150,12 +1120,6 @@ void MainWindow::CloseFile(int index_) {
         // CreateFile();
         showInvitationScreen();
         currentWidget = nullptr;
-
-        // clear status and all other
-        current_file_path->clear();
-        current_function->clear();
-        btn_encoding->setText(QString());
-        btn_position->setText(QString());
 
         return;// tab is not active, (code below)
     }
@@ -1269,7 +1233,6 @@ void MainWindow::OpenFile(const QModelIndex &file_index) {
         currentWidget->setTagReminder(tagReminder);
         currentWidget->setNodeView(nodeView);
 
-        connect(currentWidget, SIGNAL(cursorPositionChanged()), this, SLOT(slotCursorPositionChanged()));
         // breakpoints
         connect(currentWidget->breakPointArea, SIGNAL(breakPointCreated(const int &)), this,
                 SLOT(slotCreateBreakPoint(const int &)));
@@ -1299,8 +1262,6 @@ void MainWindow::UpdateCurrentIndex(QListWidgetItem *current_item) {
     int index = current_item->listWidget()->row(current_item);
     currentWidget = qobject_cast<PlainTextEdit *>(Tabs->widget(index));
     Tabs->setCurrentIndex(index);
-
-    current_file_path->setText(currentWidget->getFilePath() + "     ");
 }
 
 // tab
@@ -1317,9 +1278,6 @@ void MainWindow::UpdateCurrentIndex(int new_selection_index) {
             highlighter->setDocument(currentWidget->document());
             highlighter->highlightBlock(currentWidget->toPlainText());
         }
-    }
-    if (currentWidget) {
-        current_file_path->setText(currentWidget->getFilePath() + "     ");
     }
 }
 

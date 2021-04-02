@@ -924,6 +924,9 @@ void PlainTextEdit::SetupAdditionalWidgets() {
 
     smallEdit = new SmallRoundedEdit(this, this);
     smallEdit->verticalScrollBar()->setVisible(false);
+
+    documentationHelper = new DocumentationHelper(this);
+    documentationHelper->setEdit(this);
 }
 
 void PlainTextEdit::showMessage(const QString &message) {
@@ -1259,6 +1262,11 @@ void PlainTextEdit::slotHighlightCurrentLine()
     }
     // there bc. is it connected also to cursorPositionChanged signal + called in slotTextChanged
     updateExtraSelections();
+
+    // line column widget update
+    const QPoint pos = getCursorPosition();
+    statusArea->lineColumn->setText(QString::number(pos.y()) + ":" + QString::number(pos.x()));
+
 
     //  ++++ cursor is changing...
 
@@ -2399,19 +2407,38 @@ void StatusArea::createWindow() {
     MainLayout = new QHBoxLayout(this);
     collapseAllScopes = new QToolButton(this);
     expandAllScopes = new QToolButton(this);
-    notifyTags = new QToolButton(this);
     currentFunction = new QLabel(this);
+    encoding = new QToolButton(this);
+    lineColumn = new QToolButton(this);
+    documentCode = new QToolButton(this);
+    commentTagsforThisFile = new QToolButton(this);
+
+    goToLineColumn = new GoToLineColumn(m_Edit);
 
     collapseAllScopes->setIcon(QIcon(IconFactory::Collapse));
     collapseAllScopes->setToolTip("Collapse All Scopes");
     expandAllScopes->setIcon(QIcon(IconFactory::Expand));
     expandAllScopes->setToolTip("Expand All Scopes");
-    notifyTags->setText("Comment Tags");
     currentFunction->setMinimumWidth(100);
+    encoding->setText("UTF-8");
+    encoding->setFixedWidth(35);
+    lineColumn->setFixedWidth(40);
+    documentCode->setText("doc");
+    documentCode->setFixedWidth(35);
+    commentTagsforThisFile->setText("Comment Tags");
+    commentTagsforThisFile->setFixedWidth(70);
 
-    connect(notifyTags, &QToolButton::clicked, this, [=](){
+    connect(lineColumn, &QAbstractButton::clicked, this, [=](){
+       goToLineColumn->show();
+    });
+    connect(commentTagsforThisFile, &QToolButton::clicked, this, [=](){
        m_Edit->tagReminder->fillView(m_Edit->getFilePath());
        m_Edit->tagReminder->show();
+    });
+    connect(documentCode, &QToolButton::clicked, this, [=](){
+        // TODO: with clang get right position offset and params + type(void, non-void, enum)
+       m_Edit->documentationHelper->setDocData(m_Edit->getCursorPosition(), QStringList() << "mmmm" << "nnnn");
+       m_Edit->documentationHelper->show();
     });
 
     // TODO: connnect expand, collapse with arrowArea + take care for editor hrefs for this.
@@ -2420,8 +2447,12 @@ void StatusArea::createWindow() {
 
     MainLayout->addWidget(collapseAllScopes);
     MainLayout->addWidget(expandAllScopes);
-    MainLayout->addWidget(notifyTags);
     MainLayout->addWidget(currentFunction);
+
+    MainLayout->addWidget(commentTagsforThisFile);
+    MainLayout->addWidget(documentCode);
+    MainLayout->addWidget(lineColumn);
+    MainLayout->addWidget(encoding);
 
     MainLayout->setContentsMargins(0, 0, 0, 0);
     MainLayout->setSpacing(0);

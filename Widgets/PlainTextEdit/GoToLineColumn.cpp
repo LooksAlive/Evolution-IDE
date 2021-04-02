@@ -1,3 +1,5 @@
+#include <Widgets/PlainTextEdit/plaintextedit.h>
+
 #include "GoToLineColumn.h"
 
 GoToLineColumn::GoToLineColumn(PlainTextEdit *textEdit, QWidget *parent) : QWidget(parent), edit(textEdit){

@@ -32,7 +32,7 @@ class NodePainter;
 */
 
 class Node : public QGraphicsObject {
-Q_OBJECT
+    Q_OBJECT
 public:
     explicit Node(NodeScene *scene = nullptr);     // scene
     ~Node();
@@ -119,10 +119,10 @@ private:
         int index;
 
         Port()
-                : type(PortType::None), index(INVALID) {}
+            : type(PortType::None), index(INVALID) {}
 
         Port(PortType type, int portIndex)
-                : type(type), index(portIndex) {}
+            : type(type), index(portIndex) {}
 
         bool indexIsValid() { return index != INVALID; }
 
@@ -132,15 +132,15 @@ private:
     PortType oppositePort(PortType port) {
         PortType result = PortType::None;
         switch (port) {
-            case PortType::In:
-                result = PortType::Out;
-                break;
-            case PortType::Out:
-                result = PortType::In;
-                break;
+        case PortType::In:
+            result = PortType::Out;
+            break;
+        case PortType::Out:
+            result = PortType::In;
+            break;
 
-            default: /* None */
-                break;
+        default: /* None */
+            break;
         }
         return result;
     }
@@ -207,7 +207,7 @@ public:
     void setReaction(ReactToConnectionState reaction,
                      PortType reactingPortType = PortType::None,
                      NodeDataType reactingDataType =
-                     NodeDataType());
+            NodeDataType());
 
 private:
     std::vector<ConnectionPtrSet> _inConnections;
@@ -265,10 +265,11 @@ public:
     static QPointF calculateNodePositionBetweenNodePorts(int targetPortIndex, PortType targetPort, Node *targetNode,
                                                          int sourcePortIndex, PortType sourcePort, Node *sourceNode,
                                                          Node &newNode);
-
-private:
+// geometry data
+public:
     unsigned int _width = 100;
     unsigned int _height = 150;
+    unsigned int _validationHeight = 100;   // Correct this, just miised everywhere
     unsigned int _entryWidth;
     unsigned int _inputPortWidth = 70;
     unsigned int _outputPortWidth = 70;
@@ -285,6 +286,36 @@ private:
     QFontMetrics _fontMetrics;
     QFontMetrics _boldFontMetrics;
 
+
+
+
+    // Style
+    // for painting
+
+public:
+
+    QColor NormalBoundaryColor = QColor(255, 255, 255);
+    QColor SelectedBoundaryColor = QColor(255, 165, 0);
+    QColor GradientColor0 = Qt::gray;
+    QColor GradientColor1 = QColor(80, 80, 80);
+    QColor GradientColor2 = QColor(64, 64, 64);
+    QColor GradientColor3 = QColor(58, 58, 58);
+    QColor ShadowColor = QColor(20, 20, 20);
+    QColor FontColor = Qt::white;
+    QColor FontColorFaded = Qt::gray;
+
+    QColor ConnectionPointColor = QColor(169, 169, 169);
+    QColor FilledConnectionPointColor = Qt::cyan;
+
+    QColor WarningColor = QColor(128, 128, 0);
+    QColor ErrorColor = Qt::red;
+
+    float PenWidth = 1.0;
+    float HoveredPenWidth = 1.5;
+
+    float ConnectionPointDiameter = 8.0;
+
+    float Opacity = 0.8;
 
 signals:
 

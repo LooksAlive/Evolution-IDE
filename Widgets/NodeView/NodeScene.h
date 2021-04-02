@@ -27,7 +27,7 @@ struct TypeConverter {
 };
 
 class NodeScene : public QGraphicsScene {
-Q_OBJECT
+    Q_OBJECT
 public:
     explicit NodeScene(QObject *parent = nullptr);
 
@@ -145,6 +145,15 @@ private slots:
     Node *locateNodeAt(QPointF scenePoint, NodeScene &scene,
                        QTransform const &viewTransform);
 
+
+
+    // Style
+    // for painting
+
+public:
+    QColor BackgroundColor = QColor(53, 53, 53);
+    QColor FineGridColor = QColor(60, 60, 60);
+    QColor CoarseGridColor = QColor(25, 25, 25);
 
 };
 

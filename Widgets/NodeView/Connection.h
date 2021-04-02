@@ -8,7 +8,7 @@
 #include "NodeScene.h"
 
 class Connection : public QGraphicsObject {
-Q_OBJECT
+    Q_OBJECT
 public:
     explicit Connection(NodeScene *scene = nullptr);
 
@@ -211,9 +211,27 @@ public:
     //int _animationPhase;
 
     double _lineWidth{3.0};
-
     bool _hovered = false;
 
+
+
+    // Style
+    // for painting.
+
+public:
+    QColor ConstructionColor = Qt::gray;
+    QColor NormalColor = Qt::darkCyan;
+    QColor SelectedColor = QColor(100, 100, 100);
+    QColor SelectedHaloColor = Qt::red;
+    QColor HoveredColor = Qt::cyan; // light
+
+    float LineWidth = 3.0;
+    float ConstructionLineWidth = 2.0;
+    float PointDiameter = 10.0;
+
+    bool UseDataDefinedColors = false;
+
+    QColor normalColor(const QString& typeId) const;
 
 };
 
