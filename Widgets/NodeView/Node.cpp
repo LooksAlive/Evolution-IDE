@@ -1,8 +1,8 @@
-#include "NodeScene.h"
-//#include "NodePainter.h"
+#include <QApplication>
 
+#include "NodeScene.h"
+#include "Connection.h"
 #include "Node.h"
-//#include "Connection.h"
 
 Node::Node(NodeScene *scene) : scene(scene) {
     setFlag(QGraphicsItem::ItemDoesntPropagateOpacityToChildren, true);
@@ -12,6 +12,9 @@ Node::Node(NodeScene *scene) : scene(scene) {
     setFlag(QGraphicsItem::ItemSendsScenePositionChanges, true);
 
     setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+
+    setAcceptHoverEvents(true);
+    setGraphicsEffect(new QGraphicsDropShadowEffect);
 
     setMaximumSize(200, 200);
     createWindow();
@@ -33,8 +36,14 @@ void Node::addPort(const Node::PortPosition& position, const int &distance) {
     }
 }
 
+void Node::startToDrawConnectionLine() {
+    auto *connection = new Connection(scene);
+    connection->startPos = cursor().pos();
+    scene->activeConnectionPath = connection;
+}
 
-void Node::lock(bool locked) {
+
+void Node::lockNode(bool locked) {
     _locked = locked;
 
     setFlag(QGraphicsItem::ItemIsMovable, false);
@@ -49,8 +58,14 @@ void Node::createWindow() {
     removeNode = new QToolButton;
     caption = new QLineEdit;
 
+    // only shadow mode
+    animePort = new NewPort(this);
+    animePort->setVisible(false);
+    animePort->setBrush(Qt::lightGray);
+    animePort->setPen(QPen(Qt::gray));
+
     toolBar->addWidget(removeNode);
-    toolBar->setFixedHeight(30);
+    toolBar->setFixedHeight(20);
     caption->setText("caption");
 
     QGraphicsProxyWidget *bar = scene->addWidget(toolBar);
@@ -73,15 +88,73 @@ void Node::createWindow() {
     setWindowTitle(tr("Basic Graphics Layouts Example"));
 }
 
+void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
+    Q_UNUSED(option);
+    Q_UNUSED(widget);
+
+    const QPen pen(Qt::darkGray, 3);
+    // pen.setCapStyle(Qt::RoundCap);
+    painter->setRenderHint(QPainter::Antialiasing);
+    painter->setPen(pen);
+    painter->setBrush(Qt::blue);
+    painter->drawRoundedRect(boundingRect(), 10.0, 10.0);
+    // painter->drawRect(boundingRect());
+    // QGraphicsWidget::paint(painter, option, widget);
+}
+
+void Node::mousePressEvent(QGraphicsSceneMouseEvent *event) {
+    const QRectF rect = boundingRect();
+    if((event->pos().x() < 15) || (event->pos().x() > rect.width() -15)){
+        // TODO: figure this out
+        // addPort(Left, event->pos().y());
+        // startToDrawConnectionLine();
+    }
+
+    QGraphicsWidget::mousePressEvent(event);
+}
+
+void Node::hoverEnterEvent(QGraphicsSceneHoverEvent *event) {
+    QGraphicsWidget::hoverEnterEvent(event);
+    // match port area, take only x
+    const QRectF rect = boundingRect();
+    if(!(event->pos().x() < 15) || !(event->pos().x() > rect.width() -15)){
+        return;
+    }
+    QApplication::setOverrideCursor(Qt::ArrowCursor);
+    if(event->pos().x() < 15) {
+        animePort->setPos(rect.x(), event->pos().y());
+    }
+    if(event->pos().x() > rect.width() -15) {
+        animePort->setPos(rect.width() - 15, event->pos().y());
+    }
+}
+
+void Node::hoverLeaveEvent(QGraphicsSceneHoverEvent *event) {
+    QGraphicsWidget::hoverLeaveEvent(event);
+    QApplication::restoreOverrideCursor();
+    animePort->hide();
+}
+
 
 
 
 NewPort::NewPort(Node *parent) : node(parent) {
     // setRect(0,0,1,1);
-    setBrush(Qt::red);
-    setPen(QPen(Qt::yellow));
+    brush.setColor(Qt::red);
+    pen.setColor(Qt::gray);
+    pen.setWidth(3);
 }
 
+
+void NewPort::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
+    Q_UNUSED(option);
+    Q_UNUSED(widget);
+
+    painter->setPen(pen);
+    painter->setBrush(brush);
+
+    painter->drawEllipse(boundingRect());
+}
 
 void NewPort::mousePressEvent(QGraphicsSceneMouseEvent *event) {
     QGraphicsEllipseItem::mousePressEvent(event);

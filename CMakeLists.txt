@@ -354,8 +354,10 @@ set(SOURCE_FILES
         Widgets/NodeView/NodeScene.h
         Widgets/NodeView/Node.cpp
         Widgets/NodeView/Node.h
-        #Widgets/NodeView/Connection.cpp
-        #Widgets/NodeView/Connection.h
+        Widgets/NodeView/Connection.cpp
+        Widgets/NodeView/Connection.h
+        Widgets/NodeView/ElementsList.cpp
+        Widgets/NodeView/ElementsList.h
         #Widgets/NodeView/NodePainter.cpp
         #Widgets/NodeView/NodePainter.h
         #Widgets/NodeView/ConnectionPainter.cpp

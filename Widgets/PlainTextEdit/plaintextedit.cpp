@@ -1220,7 +1220,7 @@ void PlainTextEdit::slotAddCommentTags() {
     }
     // const QPoint pos = this->cursor().pos();
     tagListPopup->setGeometry(cursorRect());
-    tagListPopup->show();
+    tagListPopup->showPopup();
     tagListPopup->setFocus();
 }
 

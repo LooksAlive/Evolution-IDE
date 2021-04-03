@@ -34,9 +34,9 @@ int NodeScene::spawnNode(const QString &content) {
     addItem(node);
 }
 
-bool NodeScene::removeNode(const int &nodeID) {
+bool NodeScene::removeNode(Node* node) {
     for(int i = 0; i < nodes.size(); i++) {
-        if(nodes[i].first == nodeID) {
+        if(nodes[i].second == node) {
             // FIXME: forst remove all connections; this will update everything, text, reparse all
             removeItem(nodes[i].second);
             delete nodes[i].second;

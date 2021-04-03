@@ -1,14 +1,14 @@
 #ifndef SPELLCHECKLIST_H
 #define SPELLCHECKLIST_H
 
-#include <QListWidget>
+#include <QComboBox>
 #include <QMenu>
 
 #include <iostream>
 #include <string>
 #include <vector>
 
-class SpellCheckList : public QListWidget {
+class SpellCheckList : public QComboBox {
 Q_OBJECT
 public:
     explicit SpellCheckList(QWidget *parent = nullptr);

@@ -35,9 +35,7 @@
 
 
 class NodeScene;
-
 class Connection;
-
 class NodePainter;
 
 
@@ -45,7 +43,7 @@ class NodePainter;
  * new node is initialized for a scene and added to it
 */
 
-class Port;
+class NewPort;
 
 class Node : public QGraphicsWidget {
     Q_OBJECT
@@ -55,21 +53,22 @@ public:
 
     NodeScene *scene;
 
-    enum PortType {
-        None,
-        In,
-        Out
-    };
-
-    struct Port {
-        PortType type;
-        int index;
-    };
-
     enum PortPosition {
         Left = 0,
         Right
     };
+
+    struct NodeConnection {
+        int nodeID;
+        int portID;
+        int distance;   // does not matter if in same port
+        PortPosition position;
+    };
+
+    // all connections: data for this node and other node
+    // NOTE: empty connections(not connected ports) are not contained here
+    QList<QPair<NodeConnection, NodeConnection>> connections;
+
 
     // all ports withing node
     QList<QPair<PortPosition, int>> portIndexes;
@@ -81,13 +80,15 @@ public:
     void addPort(const PortPosition& position, const int& distance);
 
     // this invokes Connection to paint +
-    void connectPorts(Node *in, Node *out, const int& portIndexIn, const int& portIndexOut);
+    void connectPorts(Node *first, Node *second, const int& portIDfirst, const int& portIDsecond);
+
+    void startToDrawConnectionLine();
 
 
     // locks widget, no moves, editing, etc.
-    void lock(bool locked);
+    void lockNode(bool locked);
 
-    unsigned int numConnectionsForPort(int portIndex) const;
+    unsigned int numConnectionsForPort(int portID) const;
 
 
     bool _hovered = false;
@@ -135,12 +136,24 @@ public:
 
 private:
     void createWindow();
+    // animating port with hover event
+    NewPort *animePort;
 
+protected:
+    // style
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
+    // in margin (port) area, click creates port, draw connection line
+    // hover shows shadowed port moving in this area + cursor
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
 
 };
 
 
 
+
+// this is just port circle drawn in margin area within Node
 class NewPort : public QObject,  public QGraphicsEllipseItem {
     Q_OBJECT
 public:
@@ -151,9 +164,11 @@ public:
 private:
     Node *node;
 
+    QBrush brush;
+    QPen pen;
 
 protected:
-    // void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = nullptr) override;
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = nullptr) override;
     // press creates connection line
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     // hover changes color

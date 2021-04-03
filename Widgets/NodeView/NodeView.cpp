@@ -7,12 +7,23 @@
 NodeView::NodeView(QWidget *parent) : QGraphicsView(parent) {
     createNodeView();
 
-    scene = new NodeScene(this);
-    setScene(scene);
+
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 }
 
 void NodeView::createNodeView() {
+    MainLayout = new QHBoxLayout(this);
+    elementList = new ElementsList(this);
+    scene = new NodeScene(this);
 
+    setScene(scene);
+
+    MainLayout->addWidget(elementList);
+
+    MainLayout->setContentsMargins(0, 0, 0, 0);
+    MainLayout->setSpacing(0);
+    MainLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
 }
 
 

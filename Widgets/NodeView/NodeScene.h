@@ -3,11 +3,10 @@
 
 #include <QGraphicsScene>
 
+#include "Connection.h"
 #include "Node.h"
 
-
 class Node;
-class Connection;
 
 
 class NodeScene : public QGraphicsScene {
@@ -25,10 +24,13 @@ public:
 
     // might be in Node class, also take cares for its connections
     // if success returns true
-    bool removeNode(const int& nodeID);
+    bool removeNode(Node* node);
 
     // TODO: how to manage distance here , default is im the middle
     void connectNodes(const int& nodeID1, const Node::PortPosition& pos1, const int& nodeID2, const Node::PortPosition& pos2);
+
+
+    Connection *activeConnectionPath = nullptr;
 
 
     // Style

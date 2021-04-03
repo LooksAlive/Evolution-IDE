@@ -5,10 +5,10 @@
 #include <QWidget>
 #include <QWidgetAction>
 #include <QLineEdit>
-#include <QTreeWidget>
+#include <QHBoxLayout>
 
 #include "TextNodeRelationManager.h"
-
+#include "ElementsList.h"
 #include "NodeScene.h"
 
 
@@ -28,7 +28,6 @@ class NodeView : public QGraphicsView {
 Q_OBJECT
 public:
     explicit NodeView(QWidget *parent = nullptr);
-
     ~NodeView() = default;
 
     void setCurrentWidget(PlainTextEdit *e) {
@@ -55,6 +54,9 @@ public:
 private:
     void createNodeView();
     NodeScene *scene;
+    QHBoxLayout *MainLayout;
+    ElementsList *elementList;
+
 
     PlainTextEdit *edit;
     ClangBridge *clang;

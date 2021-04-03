@@ -1,12 +1,9 @@
 #include "CommentTagList.h"
 
-CommentTagList::CommentTagList(QWidget *parent) : QListWidget(parent) {
+CommentTagList::CommentTagList(QWidget *parent) : QComboBox(parent) {
     setVisible(false);
-    setTabKeyNavigation(true);
-
-
-    setItemAlignment(Qt::AlignCenter);
     addItems(CommentTags);
+    setMaxVisibleItems(6);
+    // setFixedSize(125, 125);
 
-    setFixedSize(125, 125);
 }
