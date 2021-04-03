@@ -37,7 +37,7 @@ Connection::~Connection() {
 }
 
 QRectF Connection::boundingRect() const {
-    return _connection.connectionGeometry().boundingRect();
+    return _connection->boundingRect();
 }
 
 
@@ -115,7 +115,7 @@ void Connection::mousePressEvent(QGraphicsSceneMouseEvent *event) {
 void Connection::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
     prepareGeometryChange();
 
-    auto view = static_cast<QGraphicsView *>(event->widget());
+    auto view = reinterpret_cast<QGraphicsView *>(event->widget());
     auto node = locateNodeAt(event->scenePos(),
                              _scene,
                              view->transform());

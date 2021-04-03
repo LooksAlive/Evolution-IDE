@@ -9,6 +9,8 @@
 
 #include "TextNodeRelationManager.h"
 
+#include "NodeScene.h"
+
 
 /*
  * Each node has nodeID (refers to Node struct with ranges), scopeChange(indicates editing)
@@ -20,8 +22,6 @@ class PlainTextEdit;
 class ClangBridge;
 
 class CodeInfoDock;
-
-class FlowScene;
 
 
 class NodeView : public QGraphicsView {
@@ -54,6 +54,7 @@ public:
 
 private:
     void createNodeView();
+    NodeScene *scene;
 
     PlainTextEdit *edit;
     ClangBridge *clang;
@@ -80,6 +81,8 @@ protected:
     void keyReleaseEvent(QKeyEvent *event) override;
 
     void mousePressEvent(QMouseEvent *event) override;
+
+    void mouseReleaseEvent(QMouseEvent *event) override;
 
     void mouseMoveEvent(QMouseEvent *event) override;
 

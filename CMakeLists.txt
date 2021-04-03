@@ -350,10 +350,10 @@ set(SOURCE_FILES
         Widgets/NodeView/NodeView.h
         Widgets/NodeView/TextNodeRelationManager.cpp
         Widgets/NodeView/TextNodeRelationManager.h
-        #Widgets/NodeView/NodeScene.cpp
-        #Widgets/NodeView/NodeScene.h
-        #Widgets/NodeView/Node.cpp
-        #Widgets/NodeView/Node.h
+        Widgets/NodeView/NodeScene.cpp
+        Widgets/NodeView/NodeScene.h
+        Widgets/NodeView/Node.cpp
+        Widgets/NodeView/Node.h
         #Widgets/NodeView/Connection.cpp
         #Widgets/NodeView/Connection.h
         #Widgets/NodeView/NodePainter.cpp

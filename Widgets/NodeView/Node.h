@@ -3,10 +3,24 @@
 
 #include <QObject>
 #include <QGraphicsObject>
+#include <QGraphicsItem>
+#include <QGraphicsWidget>
+#include <QGraphicsEllipseItem>
+
 #include <QGraphicsProxyWidget>
 #include <QUuid>
 #include <QFontMetrics>
-#include <QTransform>
+
+#include <QGraphicsDropShadowEffect>
+#include <QStyleOptionGraphicsItem>
+
+#include <QGraphicsLinearLayout>
+#include <QGraphicsGridLayout>
+
+#include <QTextEdit>
+#include <QLineEdit>
+#include <QToolBar>
+#include <QToolButton>
 
 
 #include <QPainter>
@@ -31,262 +45,57 @@ class NodePainter;
  * new node is initialized for a scene and added to it
 */
 
-class Node : public QGraphicsObject {
+class Port;
+
+class Node : public QGraphicsWidget {
     Q_OBJECT
 public:
     explicit Node(NodeScene *scene = nullptr);     // scene
-    ~Node();
+    ~Node() = default;
 
-    // Real Object
+    NodeScene *scene;
 
-protected:
-    void paint(QPainter *painter, QStyleOptionGraphicsItem const *option, QWidget *widget = 0) override;
-
-    QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
-
-    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
-
-    void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
-
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
-
-    void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
-
-    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
-
-    void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
-
-    void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
-
-    void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) override;
-
-public:
-    void setGeometryChanged();
-
-    /// Visits all attached connections and corrects
-    /// their corresponding end points.
-    void moveConnections() const;
-
-    enum {
-        Type = UserType + 1
-    };
-
-    int type() const override { return Type; }
-
-    void lock(bool locked);
-
-
-    // Port type
-    static const int INVALID = -1;
-
-    enum class PortType {
+    enum PortType {
         None,
         In,
         Out
     };
 
-private:
-    void embedQWidget();
-
-    NodeScene &_scene;
-    bool _locked = false;
-
-    // either nullptr or owned by parent QGraphicsItem
-    QGraphicsProxyWidget *_proxyWidget = nullptr;
-
-
-    // Actual Node
-
-    enum ReactToConnectionState {
-        REACTING,
-        NOT_REACTING
-    };
-
-    struct NodeDataType {
-        QString id;
-        QString name;
-    };
-
-    enum class NodeValidationState {
-        Valid,
-        Warning,
-        Error
-    };
-
-
     struct Port {
         PortType type;
         int index;
-
-        Port()
-            : type(PortType::None), index(INVALID) {}
-
-        Port(PortType type, int portIndex)
-            : type(type), index(portIndex) {}
-
-        bool indexIsValid() { return index != INVALID; }
-
-        bool portTypeIsValid() { return type != PortType::None; }
     };
 
-    PortType oppositePort(PortType port) {
-        PortType result = PortType::None;
-        switch (port) {
-        case PortType::In:
-            result = PortType::Out;
-            break;
-        case PortType::Out:
-            result = PortType::In;
-            break;
+    enum PortPosition {
+        Left = 0,
+        Right
+    };
 
-        default: /* None */
-            break;
-        }
-        return result;
-    }
+    // all ports withing node
+    QList<QPair<PortPosition, int>> portIndexes;
 
+    // paints a new port
+    // distance from [0,0]; [x,0]   -> corners; distance depends on position
+    // por ex. Left 30 --> top left corner 30px down
+    // Right 30  --> top right corner 30px down
+    void addPort(const PortPosition& position, const int& distance);
 
-    // Node Data model
-
-    unsigned int nPorts(PortType portType) const;
+    // this invokes Connection to paint +
+    void connectPorts(Node *in, Node *out, const int& portIndexIn, const int& portIndexOut);
 
 
-public:
-    void reactToPossibleConnection(PortType, NodeDataType const &, QPointF const &scenePoint);
+    // locks widget, no moves, editing, etc.
+    void lock(bool locked);
 
-    void resetReactionToConnection();
+    unsigned int numConnectionsForPort(int portIndex) const;
 
-public slots: // data propagation
-    /// Propagates incoming data to the underlying model.
-    void
-    propagateData(std::shared_ptr<NodeData> nodeData,
-                  PortIndex inPortIndex) const;
-
-    /// Fetches data from model's OUT #index port
-    /// and propagates it to the connection
-    void onDataUpdated(int PortIndex);
-
-    /// update the graphic part if the size of the embeddedwidget changes
-    void onNodeSizeUpdated();
-
-
-private:
-    // addressing
-    QUuid _uid;
-
-
-
-
-
-    // Node State:
-
-public:
-    // Contains vectors of connected input and output connections.
-    // Stores bool for reacting on hovering connections
-    using ConnectionPtrSet =
-    std::unordered_map<QUuid, Connection *>;
-
-    /// Returns vector of connections ID.
-    /// Some of them can be empty (null)
-    std::vector<ConnectionPtrSet> const &
-    getEntries(PortType) const;
-
-    std::vector<ConnectionPtrSet> &
-    getEntries(PortType);
-
-    ConnectionPtrSet connections(PortType portType, int portIndex) const;
-
-    void setConnection(PortType portType,
-                       int portIndex,
-                       Connection &connection);
-
-    void eraseConnection(PortType portType,
-                         int portIndex,
-                         QUuid id);
-
-    void setReaction(ReactToConnectionState reaction,
-                     PortType reactingPortType = PortType::None,
-                     NodeDataType reactingDataType =
-            NodeDataType());
-
-private:
-    std::vector<ConnectionPtrSet> _inConnections;
-    std::vector<ConnectionPtrSet> _outConnections;
-
-    ReactToConnectionState _reaction;
-    PortType _reactingPortType;
-    NodeDataType _reactingDataType;
-
-    bool _resizing;
-
-
-
-
-
-    // Node Geometry ; all data from nodeModel
-
-public:
-    QRectF entryBoundingRect() const;
-
-    /// Updates size unconditionally
-    void recalculateSize();
-
-    /// Updates size if the QFontMetrics is changed
-    void recalculateSize(QFont const &font);
-
-    // TODO removed default QTransform()
-    QPointF portScenePosition(int portIndex,
-                              PortType portType,
-                              const QTransform &t = QTransform()) const;
-
-    // returns portIndex
-    int checkHitScenePoint(PortType portType,
-                           QPointF point,
-                           const QTransform &t = QTransform()) const;
-
-    QRect resizeRect() const;
-
-    /// Returns the position of a widget on the Node surface
-    QPointF widgetPosition() const;
-
-    /// Returns the maximum height a widget can be without causing the node to grow.
-    int equivalentWidgetHeight() const;
-
-    unsigned int captionWidth() const;
-
-    unsigned int captionHeight() const;
-
-    unsigned int validationHeight() const;
-
-    unsigned int validationWidth() const;
-
-    unsigned int portWidth(PortType portType) const;
-
-    static QPointF calculateNodePositionBetweenNodePorts(int targetPortIndex, PortType targetPort, Node *targetNode,
-                                                         int sourcePortIndex, PortType sourcePort, Node *sourceNode,
-                                                         Node &newNode);
-// geometry data
-public:
-    unsigned int _width = 100;
-    unsigned int _height = 150;
-    unsigned int _validationHeight = 100;   // Correct this, just miised everywhere
-    unsigned int _entryWidth;
-    unsigned int _inputPortWidth = 70;
-    unsigned int _outputPortWidth = 70;
-    unsigned int _entryHeight = 20;
-    unsigned int _spacing = 20;
 
     bool _hovered = false;
+    bool _locked = false;
 
-    unsigned int _nSource/* = dataModel->nPorts(PortType::Out)*/;
-    unsigned int _nSinks/* = dataModel->nPorts(PortType::In)*/;
-
-    QPointF _draggingPos = {-1000, -1000};
-
-    QFontMetrics _fontMetrics;
-    QFontMetrics _boldFontMetrics;
-
-
+    // base index for node
+    int nodeID;
+    bool changesOccured = false;
 
 
     // Style
@@ -317,8 +126,46 @@ public:
 
     float Opacity = 0.8;
 
-signals:
+
+    QGraphicsLinearLayout *windowLayout;
+    QToolBar *toolBar;
+    QToolButton *removeNode;
+    QTextEdit *textEdit;
+    QLineEdit *caption;
+
+private:
+    void createWindow();
+
 
 };
+
+
+
+class NewPort : public QObject,  public QGraphicsEllipseItem {
+    Q_OBJECT
+public:
+    explicit NewPort(Node *parent = nullptr);     // scene
+    ~NewPort() = default;
+
+
+private:
+    Node *node;
+
+
+protected:
+    // void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = nullptr) override;
+    // press creates connection line
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    // hover changes color
+    void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
+
+
+
+
+};
+
+
+
 
 #endif // NODE_H

@@ -178,10 +178,10 @@ void NodePainter::drawFilledConnectionPoints(QPainter * painter, Node* node, Con
 
 
 void NodePainter::drawModelName(QPainter * painter, Node* node) {        
-    if (!model->captionVisible())
-        return;
+    //if (!model->captionVisible())
+    //    return;
     
-    QString const &name = model->caption();
+    //QString const &name = model->caption();
     
     QFont f = painter->font();
     
@@ -189,14 +189,14 @@ void NodePainter::drawModelName(QPainter * painter, Node* node) {
     
     QFontMetrics metrics(f);
     
-    auto rect = metrics.boundingRect(name);
+    auto rect = metrics.boundingRect("name");   // name
     
     QPointF position((node->_width - rect.width()) / 2.0,
                      (node->_spacing + node->_entryHeight) / 3.0);
     
     painter->setFont(f);
     painter->setPen(node->FontColor);
-    painter->drawText(position, name);
+    painter->drawText(position, "name");    // name
     
     f.setBold(false);
     painter->setFont(f);

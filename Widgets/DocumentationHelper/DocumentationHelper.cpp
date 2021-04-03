@@ -20,13 +20,13 @@ void DocumentationHelper::createWindow() {
     insert = new QPushButton(this);
     overviewComment = new QPlainTextEdit(this);
 
-    toolBar->setFixedHeight(35);
+    toolBar->setFixedHeight(25);
     commentTags->addItems(DocumentationTags);
-    commentTags->setCurrentText("");
+    commentTags->setCurrentText("@param");
     addTag->setToolTip("Add Tag");
-    addTag->setWindowIcon(QIcon(IconFactory::Plus));
+    addTag->setIcon(QIcon(IconFactory::Plus));
     removeTag->setToolTip("Remove Tag");
-    removeTag->setWindowIcon(QIcon(IconFactory::Minus));
+    removeTag->setIcon(QIcon(IconFactory::Minus));
     insert->setText("Insert");
     overviewComment->setPlaceholderText("Base Comment");
 
@@ -65,7 +65,7 @@ void DocumentationHelper::setDocData(const QPoint &posToInsert, const QStringLis
     for (int i = 0; i < params.size(); i++) {
         auto *label = new QLabel(this);
         label->setTextFormat(Qt::RichText);
-        label->setText("@param \n <span style=bold>" + params[i] + "</span>");
+        label->setText("@param <br> <b>" + params[i] + "</b>");
         auto *comment = new QPlainTextEdit(this);
         sections.append(QPair(label, comment));
         MainLayout->addWidget(label, MainLayout->rowCount(), 0);

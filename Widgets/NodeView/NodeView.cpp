@@ -6,6 +6,9 @@
 
 NodeView::NodeView(QWidget *parent) : QGraphicsView(parent) {
     createNodeView();
+
+    scene = new NodeScene(this);
+    setScene(scene);
 }
 
 void NodeView::createNodeView() {
@@ -250,14 +253,20 @@ void NodeView::keyReleaseEvent(QKeyEvent *event) {
 
 void NodeView::mousePressEvent(QMouseEvent *event) {
     QGraphicsView::mousePressEvent(event);
+    QApplication::setOverrideCursor(Qt::PointingHandCursor);
     if (event->button() == Qt::LeftButton) {
         _clickPos = mapToScene(event->pos());
     }
 }
 
+void NodeView::mouseReleaseEvent(QMouseEvent *event) {
+    QGraphicsView::mouseReleaseEvent(event);
+    QApplication::restoreOverrideCursor();
+}
+
 void NodeView::mouseMoveEvent(QMouseEvent *event) {
     QGraphicsView::mouseMoveEvent(event);
-    if (scene()->mouseGrabberItem() == nullptr && event->buttons() == Qt::LeftButton) {
+    if (scene->mouseGrabberItem() == nullptr && event->buttons() == Qt::LeftButton) {
         // Make sure shift is not being pressed
         if ((event->modifiers() & Qt::ShiftModifier) == 0) {
             QPointF difference = _clickPos - mapToScene(event->pos());
