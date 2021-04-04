@@ -32,14 +32,8 @@ public:
 
     Connection *activeConnectionPath = nullptr;
 
-
     // Style
     // for painting
-
-public:
-    QColor BackgroundColor = QColor(53, 53, 53);
-    QColor FineGridColor = QColor(60, 60, 60);
-    QColor CoarseGridColor = QColor(25, 25, 25);
 
 };
 

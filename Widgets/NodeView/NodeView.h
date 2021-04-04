@@ -5,10 +5,12 @@
 #include <QWidget>
 #include <QWidgetAction>
 #include <QLineEdit>
-#include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QMenu>
 
 #include "TextNodeRelationManager.h"
 #include "ElementsList.h"
+#include "StructureTree.h"
 #include "NodeScene.h"
 
 
@@ -53,10 +55,14 @@ public:
 
 private:
     void createNodeView();
+    void createMainMenu();
+    void connectAll();
     NodeScene *scene;
-    QHBoxLayout *MainLayout;
+    QVBoxLayout *MainLayout;
     ElementsList *elementList;
+    StructureTree *structureTree;
 
+    QMenu *mainMenu;
 
     PlainTextEdit *edit;
     ClangBridge *clang;
@@ -75,26 +81,35 @@ private:
 
 
 protected:
-    //void contextMenuEvent(QContextMenuEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
-
     void keyPressEvent(QKeyEvent *event) override;
-
     void keyReleaseEvent(QKeyEvent *event) override;
-
     void mousePressEvent(QMouseEvent *event) override;
-
     void mouseReleaseEvent(QMouseEvent *event) override;
-
     void mouseMoveEvent(QMouseEvent *event) override;
-
-    //void drawBackground(QPainter* painter, const QRectF& r) override;
+    void drawBackground(QPainter* painter, const QRectF& r) override;
     void showEvent(QShowEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
 
 
 signals:
 
     void openFile(const QString &filepath, const int &line);
+
+
+private slots:
+    void structureTreeOpen(QTreeWidgetItem *item, int column);
+    // one click show documentation if any
+    void structureTreeShowDocumentation(QTreeWidgetItem *item, int column);
+    void structureTreeRemove(QTreeWidgetItem *item);
+
+    void slotShowMenu(const QPoint &pos);
+
+private:
+    QColor BackgroundColor = QColor(53, 53, 53);
+    QColor FineGridColor = QColor(60, 60, 60);
+    QColor CoarseGridColor = QColor(25, 25, 25);
+
 
 
 };

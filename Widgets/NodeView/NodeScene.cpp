@@ -1,3 +1,5 @@
+#include <QTreeWidget>
+#include <QDebug>
 #include "NodeScene.h"
 
 NodeScene::NodeScene(QObject *parent) : QGraphicsScene(parent) {
@@ -42,10 +44,13 @@ bool NodeScene::removeNode(Node* node) {
             delete nodes[i].second;
             nodes[i].second = nullptr;
             nodes.removeAt(i);
+            return true;
         }
     }
+    return false;
 }
 
 void NodeScene::connectNodes(const int &nodeID1, const Node::PortPosition &pos1, const int &nodeID2, const Node::PortPosition &pos2) {
     // Logic where to connect, position nodes
 }
+

@@ -70,14 +70,15 @@ public:
     QList<QPair<NodeConnection, NodeConnection>> connections;
 
 
-    // all ports withing node
-    QList<QPair<PortPosition, int>> portIndexes;
+    // new created port waiting for connection with node to be accepted
+    // contains animePortPosition from click event
+    QPair<PortPosition, QPointF> waitingPort;
 
     // paints a new port
     // distance from [0,0]; [x,0]   -> corners; distance depends on position
     // por ex. Left 30 --> top left corner 30px down
     // Right 30  --> top right corner 30px down
-    void addPort(const PortPosition& position, const int& distance);
+    void addPort(const PortPosition& position);
 
     // this invokes Connection to paint +
     void connectPorts(Node *first, Node *second, const int& portIDfirst, const int& portIDsecond);
@@ -137,7 +138,9 @@ public:
 private:
     void createWindow();
     // animating port with hover event
-    NewPort *animePort;
+
+    bool drawShadowPort = false;
+    QPointF animePortPosition;
 
 protected:
     // style
@@ -145,42 +148,10 @@ protected:
     // in margin (port) area, click creates port, draw connection line
     // hover shows shadowed port moving in this area + cursor
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
-    void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
+    void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
 
 };
-
-
-
-
-// this is just port circle drawn in margin area within Node
-class NewPort : public QObject,  public QGraphicsEllipseItem {
-    Q_OBJECT
-public:
-    explicit NewPort(Node *parent = nullptr);     // scene
-    ~NewPort() = default;
-
-
-private:
-    Node *node;
-
-    QBrush brush;
-    QPen pen;
-
-protected:
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = nullptr) override;
-    // press creates connection line
-    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
-    // hover changes color
-    void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
-    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
-
-
-
-
-};
-
-
 
 
 #endif // NODE_H

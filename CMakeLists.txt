@@ -358,10 +358,8 @@ set(SOURCE_FILES
         Widgets/NodeView/Connection.h
         Widgets/NodeView/ElementsList.cpp
         Widgets/NodeView/ElementsList.h
-        #Widgets/NodeView/NodePainter.cpp
-        #Widgets/NodeView/NodePainter.h
-        #Widgets/NodeView/ConnectionPainter.cpp
-        #Widgets/NodeView/ConnectionPainter.h
+        Widgets/NodeView/StructureTree.cpp
+        Widgets/NodeView/StructureTree.h
         )
 
 #set(Qt5Core_DIR "/opt/Qt/5.9.3/gcc_64/lib/cmake/Qt5Core/")

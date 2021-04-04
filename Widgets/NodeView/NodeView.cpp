@@ -6,24 +6,57 @@
 
 NodeView::NodeView(QWidget *parent) : QGraphicsView(parent) {
     createNodeView();
+    createMainMenu();
+    connectAll();
 
+    setInteractive(true);
 
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 }
 
 void NodeView::createNodeView() {
-    MainLayout = new QHBoxLayout(this);
+    MainLayout = new QVBoxLayout(this);
     elementList = new ElementsList(this);
+    structureTree = new StructureTree(this);
     scene = new NodeScene(this);
 
     setScene(scene);
 
     MainLayout->addWidget(elementList);
+    MainLayout->addWidget(structureTree);
 
     MainLayout->setContentsMargins(0, 0, 0, 0);
     MainLayout->setSpacing(0);
     MainLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+}
+
+void NodeView::createMainMenu() {
+    mainMenu = new QMenu(this);
+
+    mainMenu->addAction("new File");
+    mainMenu->addAction("new Component");
+    mainMenu->addAction("new Scene");
+    mainMenu->addAction("Copy Node");
+    mainMenu->addAction("Save Image As");
+    mainMenu->addAction("new File");
+    mainMenu->addAction("Scale To Fit");
+
+    setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(this, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(slotShowMenu(const QPoint &)));
+}
+
+void NodeView::connectAll() {
+    // structureTree
+    connect(structureTree, SIGNAL(itemClicked(QTreeWidgetItem *, int)), this, SLOT(structureTreeShowDocumentation(QTreeWidgetItem *, int)));
+    connect(structureTree, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)), this, SLOT(structureTreeOpen(QTreeWidgetItem *, int)));
+    // custom signal
+    connect(structureTree, SIGNAL(removeItem(QTreeWidgetItem*)), this, SLOT(structureTreeRemove(QTreeWidgetItem *)));
+
+    // elementList
+
+
+
 }
 
 
@@ -45,7 +78,7 @@ void NodeView::scaleUp() {
     const float step = 1.2;
     const float factor = std::pow(step, 1.0);
 
-    QTransform t = transform();
+    const QTransform t = transform();
 
     if (t.m11() > 2.0)
         return;
@@ -62,114 +95,7 @@ void NodeView::scaleDown() {
 }
 
 
-
-
-
-
-
 // Protected functions ************************************************
-/*
-void NodeView::contextMenuEvent(QContextMenuEvent *event) {
-    if (itemAt(event->pos()))
-    {
-        QGraphicsView::contextMenuEvent(event);
-        return;
-    }
-
-    QMenu modelMenu;
-
-    auto skipText = QStringLiteral("skip me");
-
-    //Add filterbox to the context menu
-    auto *txtBox = new QLineEdit(&modelMenu);
-
-    txtBox->setPlaceholderText(QStringLiteral("Filter"));
-    txtBox->setClearButtonEnabled(true);
-
-    auto *txtBoxAction = new QWidgetAction(&modelMenu);
-    txtBoxAction->setDefaultWidget(txtBox);
-
-    modelMenu.addAction(txtBoxAction);
-
-    //Add result treeview to the context menu
-    auto *treeView = new QTreeWidget(&modelMenu);
-    treeView->header()->close();
-
-    auto *treeViewAction = new QWidgetAction(&modelMenu);
-    treeViewAction->setDefaultWidget(treeView);
-
-    modelMenu.addAction(treeViewAction);
-
-    QMap<QString, QTreeWidgetItem*> topLevelItems;
-    for (auto const &cat : _scene->registry().categories())
-    {
-        auto item = new QTreeWidgetItem(treeView);
-        item->setText(0, cat);
-        item->setData(0, Qt::UserRole, skipText);
-        topLevelItems[cat] = item;
-    }
-
-    for (auto const &assoc : _scene->registry().registeredModelsCategoryAssociation())
-    {
-        auto parent = topLevelItems[assoc.second];
-        auto item   = new QTreeWidgetItem(parent);
-        item->setText(0, assoc.first);
-        item->setData(0, Qt::UserRole, assoc.first);
-    }
-
-    treeView->expandAll();
-
-    connect(treeView, &QTreeWidget::itemClicked, [&](QTreeWidgetItem *item, int)
-    {
-        QString modelName = item->data(0, Qt::UserRole).toString();
-
-        if (modelName == skipText)
-        {
-            return;
-        }
-
-        auto type = _scene->registry().create(modelName);
-
-        if (type)
-        {
-            auto& node = _scene->createNode(std::move(type));
-
-            QPoint pos = event->pos();
-
-            QPointF posView = this->mapToScene(pos);
-
-            node.nodeGraphicsObject().setPos(posView);
-
-            _scene->nodePlaced(node);
-        }
-        else
-        {
-            qDebug() << "Model not found";
-        }
-
-        modelMenu.close();
-    });
-
-    //Setup filtering
-    connect(txtBox, &QLineEdit::textChanged, [&](const QString &text)
-    {
-        for (auto& topLvlItem : topLevelItems)
-        {
-            for (int i = 0; i < topLvlItem->childCount(); ++i)
-            {
-                auto child = topLvlItem->child(i);
-                auto modelName = child->data(0, Qt::UserRole).toString();
-                const bool match = (modelName.contains(text, Qt::CaseInsensitive));
-                child->setHidden(!match);
-            }
-        }
-    });
-
-    // make sure the text box gets focus so the user doesn't have to click on it
-    txtBox->setFocus();
-
-    modelMenu.exec(event->globalPos());
-}
 
 void NodeView::drawBackground(QPainter* painter, const QRectF& r) {
     QGraphicsView::drawBackground(painter, r);
@@ -204,21 +130,19 @@ void NodeView::drawBackground(QPainter* painter, const QRectF& r) {
         }
     };
 
-    auto const &flowViewStyle = StyleCollection::flowViewStyle();
-
     QBrush bBrush = backgroundBrush();
 
-    QPen pfine(flowViewStyle.FineGridColor, 1.0);
+    QPen pfine(FineGridColor, 1.0);
 
     painter->setPen(pfine);
     drawGrid(15);
 
-    QPen p(flowViewStyle.CoarseGridColor, 1.0);
+    QPen p(CoarseGridColor, 1.0);
 
     painter->setPen(p);
     drawGrid(150);
 }
-*/
+
 void NodeView::wheelEvent(QWheelEvent *event) {
     QPoint delta = event->angleDelta();
 
@@ -264,7 +188,7 @@ void NodeView::keyReleaseEvent(QKeyEvent *event) {
 
 void NodeView::mousePressEvent(QMouseEvent *event) {
     QGraphicsView::mousePressEvent(event);
-    QApplication::setOverrideCursor(Qt::PointingHandCursor);
+    QApplication::setOverrideCursor(Qt::DragMoveCursor);
     if (event->button() == Qt::LeftButton) {
         _clickPos = mapToScene(event->pos());
     }
@@ -290,3 +214,35 @@ void NodeView::showEvent(QShowEvent *event) {
     // _scene->setSceneRect(this->rect());
     QGraphicsView::showEvent(event);
 }
+
+void NodeView::dropEvent(QDropEvent *event) {
+    event->setDropAction(Qt::MoveAction);
+    event->accept();
+    event->acceptProposedAction();
+    // event->widget();
+    if(QTreeWidget* lWidget = qobject_cast<QTreeWidget*> (event->source())) {
+        lWidget->currentItem()->text(0);
+        qDebug() << "tree....";
+    }
+    // QGraphicsView::dropEvent(event);
+}
+
+
+
+
+void NodeView::structureTreeOpen(QTreeWidgetItem *item, int column) {
+
+}
+
+void NodeView::structureTreeShowDocumentation(QTreeWidgetItem *item, int column) {
+
+}
+
+void NodeView::structureTreeRemove(QTreeWidgetItem *item) {
+
+}
+
+void NodeView::slotShowMenu(const QPoint &pos) {
+    mainMenu->exec(mapToGlobal(pos));
+}
+
