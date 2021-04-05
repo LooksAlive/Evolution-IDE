@@ -11,46 +11,124 @@ NodeScene::NodeScene(QObject *parent) : QGraphicsScene(parent) {
     addItem(node1);
     addItem(node2);
 
-    // spawnNode("caption", "content");
+    auto *n1 = spawnNode("caption", "content");
+    auto *n2 = spawnNode("caption", "content");
+
+    // connectNodes(n1, Node::Right, n2, Node::Left);
 }
 
-int NodeScene::spawnNode(const QString &caption, const QString &content) {
+Node* NodeScene::spawnNode(const QString &caption, const QString &content) {
     auto *node = new Node(this);
-    const int index = nodes.size() + 1;
-
-    node->nodeID = index;
     node->caption->setText(caption);
     node->textEdit->setPlainText(content);
-    nodes.append(QPair(index, node));
+    allNodes.append(node);
     addItem(node);
+
+    // connect all node actions
+    connect(node->removeNode, &QAbstractButton::clicked, this, [=](){ removeNode(); });
+
+    return node;
 }
 
-int NodeScene::spawnNode(const QString &content) {
+Node* NodeScene::spawnNode(const QString &content) {
     auto *node = new Node(this);
-    const int index = nodes.size() + 1;
-
-    node->nodeID = index;
     node->textEdit->setPlainText(content);
     node->caption->setVisible(false);
-    nodes.append(QPair(index, node));
+    allNodes.append(node);
     addItem(node);
+
+    return node;
 }
 
-bool NodeScene::removeNode(Node* node) {
-    for(int i = 0; i < nodes.size(); i++) {
-        if(nodes[i].second == node) {
-            // FIXME: forst remove all connections; this will update everything, text, reparse all
-            removeItem(nodes[i].second);
-            delete nodes[i].second;
-            nodes[i].second = nullptr;
-            nodes.removeAt(i);
-            return true;
+void NodeScene::connectNodes(Node *node1, const Node::PortPosition &pos1, Node *node2, const Node::PortPosition &pos2) {
+    auto* conn = new Connection(this);
+    // Will there be pendingConnection empty ?
+    conn->setFirstNode(node1, node1->suggestPortPosition(pos1));
+    conn->setSecondNode(node2, node1->suggestPortPosition(pos2));
+
+    node1->activePorts.append(node1->suggestPortPosition(pos1));
+    node2->activePorts.append(node2->suggestPortPosition(pos2));
+
+    allConnections.append(QPair(Node::NodeConnection{ node1, 0, node1->suggestPortPosition(pos1), pos1, conn },
+                                Node::NodeConnection{ node2, 0, node1->suggestPortPosition(pos2), pos2, conn }));
+}
+
+void NodeScene::duplicateNode() {
+    Node *node = static_cast<Node*>(selectedItems()[0]);
+    // create copy
+    Node *newNode = spawnNode(node->caption->text(), node->textEdit->toPlainText());
+    // + change position, move right
+    newNode->setPos(node->pos().x() + node->minimumWidth(), node->pos().y());
+}
+
+void NodeScene::removeNode() {
+    if(selectedItems().isEmpty()) {
+        return;
+    }
+    Node *selectedNode = static_cast<Node*>(selectedItems()[0]);
+    // TODO: which group
+    for(int i = 0; i < allNodes.size(); i++) {
+        if(allNodes[i] == selectedNode) { // fix this
+            // FIXME: first remove all connections; this will update everything, text, reparse all
+            // FIXME: copying
+            for(int i = 0; i < allConnections.size(); i++) {
+                if(allConnections[i].first.connection != nullptr) {
+                    removeItem(allConnections[i].first.connection);
+                    delete allConnections[i].first.connection;
+                    allConnections[i].first.connection = nullptr;
+                    allConnections.removeAt(i);
+                }
+            }
+            // by removing node itself, all ports, data, etc (children) will vanish together
+            removeItem(allNodes[i]);
+            delete allNodes[i];
+            allNodes[i] = nullptr;
+            allNodes.removeAt(i);
         }
     }
-    return false;
 }
 
-void NodeScene::connectNodes(const int &nodeID1, const Node::PortPosition &pos1, const int &nodeID2, const Node::PortPosition &pos2) {
-    // Logic where to connect, position nodes
+void NodeScene::resetScene() {
+    clear();
+
+    allNodes.clear();
+    allConnections.clear();
+    nodeGroups.clear();
+
+    pendingConnection.connection = nullptr;
+    pendingConnection.portPos = QPointF();
+    pendingConnection.node = nullptr;
+    pendingConnection.portPos = QPointF();
+    // position not matter.
 }
+
+void NodeScene::setNodeSizeByContentMetrics(Node *node) {
+    QFontMetrics fontMetrics(font());
+    const int width = qMax(fontMetrics.boundingRect(node->caption->text()).width(), fontMetrics.boundingRect(node->textEdit->toPlainText()).width());
+    const int height = qMax(fontMetrics.boundingRect(node->caption->text()).height(), fontMetrics.boundingRect(node->textEdit->toPlainText()).height());
+
+    // TODO: +++ add some space +
+    node->setGeometry(node->pos().x(), node->pos().y(), width, height);
+    // node->setMinimumSize(width, height);
+}
+
+void NodeScene::setNodeCoordinates(Node *node) {
+
+}
+
+void NodeScene::createNodesGroup(const QList<Node *> &nodes) {
+    if(nodes.empty()) {
+        auto *group = createItemGroup(selectedItems());
+        nodeGroups.append(group);
+        return;
+    }
+
+    QGraphicsItemGroup *group = nullptr;
+    for(Node* node : nodes) {
+        group->addToGroup(node);
+    }
+    nodeGroups.append(group);
+}
+
+
 

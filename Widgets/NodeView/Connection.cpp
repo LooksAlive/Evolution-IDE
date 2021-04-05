@@ -15,11 +15,19 @@ void Connection::paint(QPainter *painter, const QStyleOptionGraphicsItem *option
     Q_UNUSED(option);
     Q_UNUSED(widget);
 
-    painter->setPen(QPen(Qt::gray, 2));
+    painter->setPen(QPen(Qt::black, 8));
     painter->setBrush(Qt::blue);
 
-    QPainterPath path(startPos);
-    path.lineTo(currentPos);
+    const QPointF n1Pos = node1->scenePos();
+    QPainterPath path(QPointF(n1Pos.x() + port1Pos.x(), n1Pos.y() + port1Pos.y()));
+    if(node2) {
+        const QPointF n2Pos = node2->scenePos();
+        path.lineTo(QPointF(n2Pos.x() + port2Pos.x(), n2Pos.y() + port2Pos.y()));
+    }
+    else {
+        path.lineTo(scene->currentPos);
+    }
+
 
     painter->drawPath(path);
 
@@ -27,14 +35,13 @@ void Connection::paint(QPainter *painter, const QStyleOptionGraphicsItem *option
 }
 
 void Connection::mousePressEvent(QGraphicsSceneMouseEvent *event) {
-    if(touchedPort) {
-        draw = false;
-    }
+    //if(touchedPort) {
+    //    draw = false;
+    //}
     QGraphicsObject::mousePressEvent(event);
 }
 
 void Connection::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
-    currentPos = event->pos();
 
     QGraphicsObject::mouseMoveEvent(event);
 }

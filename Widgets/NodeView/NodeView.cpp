@@ -1,3 +1,6 @@
+#include <QShortcut>
+#include <QFileDialog>
+
 #include "Widgets/PlainTextEdit/plaintextedit.h"
 #include "Clang/ClangBridge.h"
 #include "Widgets/CodeInfoDock/CodeInfoDock.h"
@@ -13,6 +16,17 @@ NodeView::NodeView(QWidget *parent) : QGraphicsView(parent) {
 
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    // connect shortcuts
+    connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [=] {
+        if(scene->pendingConnection.connection) {
+            scene->removeItem(scene->pendingConnection.connection);
+            delete scene->pendingConnection.connection;
+            scene->pendingConnection.connection = nullptr;
+            // last in row was added in touch and is not connected to other node
+            scene->pendingConnection.node->activePorts.removeLast();
+        }
+    });
 }
 
 void NodeView::createNodeView() {
@@ -34,13 +48,12 @@ void NodeView::createNodeView() {
 void NodeView::createMainMenu() {
     mainMenu = new QMenu(this);
 
-    mainMenu->addAction("new File");
-    mainMenu->addAction("new Component");
-    mainMenu->addAction("new Scene");
-    mainMenu->addAction("Copy Node");
-    mainMenu->addAction("Save Image As");
-    mainMenu->addAction("new File");
-    mainMenu->addAction("Scale To Fit");
+    mainMenu->addAction("new File"/*, Qt::CTRL + Qt::Key_N*/);
+    mainMenu->addAction("Reset Scene", [=] { scene->resetScene(); });
+    mainMenu->addAction("Duplicate Node", [=] { scene->duplicateNode(); }, Qt::CTRL + Qt::Key_C);
+    mainMenu->addAction("Remove Node", [=] { scene->removeNode(); }, Qt::Key_Delete);
+    mainMenu->addAction("Save Image As", [=] { takePicture(); });
+    mainMenu->addAction("Scale To Fit", [=] { fitInView(scene->sceneRect(), Qt::IgnoreAspectRatio); });
 
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(slotShowMenu(const QPoint &)));
@@ -92,6 +105,25 @@ void NodeView::scaleDown() {
     const float factor = std::pow(step, -1.0);
 
     scale(factor, factor);
+}
+
+void NodeView::takePicture() {
+    QString fileName= QFileDialog::getSaveFileName(this, "Save image", QCoreApplication::applicationDirPath());
+    if (!fileName.isNull()) {
+        // all view
+        QPixmap pixMap = grab();
+        pixMap.save(fileName);
+
+        // scene
+        /*
+        QImage image(scene->sceneRect().size().toSize(), QImage::Format_ARGB32_Premultiplied);
+        QPainter painter(&image);
+        painter.setRenderHint(QPainter::Antialiasing);
+        image.fill(Qt::transparent);
+        scene->render(&painter);
+        image.save(fileName);
+        */
+    }
 }
 
 
@@ -161,12 +193,12 @@ void NodeView::wheelEvent(QWheelEvent *event) {
 
 void NodeView::keyPressEvent(QKeyEvent *event) {
     switch (event->key()) {
-        case Qt::Key_Shift:
-            setDragMode(QGraphicsView::RubberBandDrag);
-            break;
+    case Qt::Key_Shift:
+        setDragMode(QGraphicsView::RubberBandDrag);
+        break;
 
-        default:
-            break;
+    default:
+        break;
     }
 
     QGraphicsView::keyPressEvent(event);
@@ -175,12 +207,12 @@ void NodeView::keyPressEvent(QKeyEvent *event) {
 
 void NodeView::keyReleaseEvent(QKeyEvent *event) {
     switch (event->key()) {
-        case Qt::Key_Shift:
-            setDragMode(QGraphicsView::ScrollHandDrag);
-            break;
+    case Qt::Key_Shift:
+        setDragMode(QGraphicsView::ScrollHandDrag);
+        break;
 
-        default:
-            break;
+    default:
+        break;
     }
     QGraphicsView::keyReleaseEvent(event);
 }
@@ -190,7 +222,7 @@ void NodeView::mousePressEvent(QMouseEvent *event) {
     QGraphicsView::mousePressEvent(event);
     QApplication::setOverrideCursor(Qt::DragMoveCursor);
     if (event->button() == Qt::LeftButton) {
-        _clickPos = mapToScene(event->pos());
+        clickPos = mapToScene(event->pos());
     }
 }
 
@@ -200,11 +232,12 @@ void NodeView::mouseReleaseEvent(QMouseEvent *event) {
 }
 
 void NodeView::mouseMoveEvent(QMouseEvent *event) {
+    scene->currentPos = event->pos();
     QGraphicsView::mouseMoveEvent(event);
     if (scene->mouseGrabberItem() == nullptr && event->buttons() == Qt::LeftButton) {
         // Make sure shift is not being pressed
         if ((event->modifiers() & Qt::ShiftModifier) == 0) {
-            QPointF difference = _clickPos - mapToScene(event->pos());
+            QPointF difference = clickPos - mapToScene(event->pos());
             setSceneRect(sceneRect().translated(difference.x(), difference.y()));
         }
     }

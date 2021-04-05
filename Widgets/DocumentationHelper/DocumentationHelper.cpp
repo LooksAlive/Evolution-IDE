@@ -12,7 +12,7 @@ DocumentationHelper::DocumentationHelper(QWidget *parent) : QWidget(parent) {
 
 void DocumentationHelper::createWindow() {
     MLayout = new QVBoxLayout(this);
-    MainLayout = new QGridLayout();
+    MainLayout = new QFormLayout();
     toolBar = new QToolBar(this);
     commentTags = new QComboBox(this);
     addTag = new QToolButton(this);
@@ -20,7 +20,7 @@ void DocumentationHelper::createWindow() {
     insert = new QPushButton(this);
     overviewComment = new QPlainTextEdit(this);
 
-    toolBar->setFixedHeight(25);
+    toolBar->setFixedHeight(30);
     commentTags->addItems(DocumentationTags);
     commentTags->setCurrentText("@param");
     addTag->setToolTip("Add Tag");
@@ -31,7 +31,7 @@ void DocumentationHelper::createWindow() {
     overviewComment->setPlaceholderText("Base Comment");
 
     connect(addTag, SIGNAL(clicked()), this, SLOT(addCommentSection()));
-    connect(addTag, SIGNAL(clicked()), this, SLOT(removeCommentSection()));
+    connect(removeTag, SIGNAL(clicked()), this, SLOT(removeCommentSection()));
     connect(insert, SIGNAL(clicked()), this, SLOT(insertDoc()));
 
     toolBar->layout()->setContentsMargins(0, 0, 0, 0);
@@ -39,17 +39,19 @@ void DocumentationHelper::createWindow() {
     toolBar->addWidget(commentTags);
     toolBar->addWidget(addTag);
     toolBar->addWidget(removeTag);
+    toolBar->addWidget(insert);
 
     MainLayout->setContentsMargins(0, 0, 0, 0);
     MainLayout->setSpacing(1);
+    MainLayout->setAlignment(Qt::AlignCenter);
 
     MLayout->setContentsMargins(0, 0, 0, 0);
-    MLayout->setSpacing(0);
+    MLayout->setSpacing(1);
+    MLayout->setAlignment(Qt::AlignCenter);
 
     MLayout->addWidget(toolBar);
     MLayout->addWidget(overviewComment);
     MLayout->addLayout(MainLayout);
-    MLayout->addWidget(insert, 2, Qt::AlignRight);
 }
 
 
@@ -58,7 +60,7 @@ void DocumentationHelper::setDocData(const QPoint &posToInsert, const QStringLis
 
     if(isEnum) {
         // TODO: solve this one
-        MainLayout->addWidget(insert);
+
         return;
     }
 
@@ -68,8 +70,7 @@ void DocumentationHelper::setDocData(const QPoint &posToInsert, const QStringLis
         label->setText("@param <br> <b>" + params[i] + "</b>");
         auto *comment = new QPlainTextEdit(this);
         sections.append(QPair(label, comment));
-        MainLayout->addWidget(label, MainLayout->rowCount(), 0);
-        MainLayout->addWidget(comment, MainLayout->rowCount(), 1);
+        MainLayout->addRow(label, comment);
     }
 
     if(!isVoid) {
@@ -78,8 +79,7 @@ void DocumentationHelper::setDocData(const QPoint &posToInsert, const QStringLis
         label->setText("@return");
         auto *comment = new QPlainTextEdit(this);
         sections.append(QPair(label, comment));
-        MainLayout->addWidget(label, MainLayout->rowCount(), 0);
-        MainLayout->addWidget(comment, MainLayout->rowCount(), 1);
+        MainLayout->addRow(label, comment);
     }
 }
 
@@ -109,12 +109,12 @@ void DocumentationHelper::addCommentSection() {
     label->setText(tag);
     auto *comment = new QPlainTextEdit(this);
     sections.append(QPair(label, comment));
-    MainLayout->addWidget(label, MainLayout->rowCount(), 0);
-    MainLayout->addWidget(comment, MainLayout->rowCount(), 1);
+    MainLayout->addRow(label, comment);
 
     // FIXME: insert button goes at the end
 }
 
 void DocumentationHelper::removeCommentSection() {
-    MainLayout->removeWidget(overviewComment);
+    // from the end
+    MainLayout->removeRow(MainLayout->rowCount() - 1);
 }

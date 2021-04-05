@@ -13,7 +13,7 @@
 
 #include <QWidget>
 #include <QPushButton>
-#include <QGridLayout>
+#include <QFormLayout>
 #include <QVBoxLayout>
 #include <QPlainTextEdit>
 #include <QLabel>
@@ -45,9 +45,8 @@ public:
 
 private:
     PlainTextEdit *edit;
-
-    QGridLayout *MainLayout;
     QVBoxLayout *MLayout;
+    QFormLayout *MainLayout;
     // manipulating view, adding, removing them.
     QToolBar *toolBar;
     QComboBox *commentTags;

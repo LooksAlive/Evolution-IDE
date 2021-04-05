@@ -38,12 +38,19 @@ void Node::addPort(const Node::PortPosition& position) {
     }
 }
 
-void Node::startToDrawConnectionLine() {
-    auto *connection = new Connection(scene);
-    connection->startPos = cursor().pos();
-    scene->activeConnectionPath = connection;
+QPointF Node::suggestPortPosition(const Node::PortPosition &position) {
+
+
+    return QPointF(0, 50);
 }
 
+void Node::startToDrawConnectionLine(const QPointF& portPos) {
+    auto *connection = new Connection(scene);
+    // scene->addItem(connection);
+    connection->startPos = cursor().pos();
+    connection->setFirstNode(this, portPos); // FIXME: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!§§
+    scene->pendingConnection.connection = connection;
+}
 
 void Node::lockNode(bool locked) {
     _locked = locked;
@@ -90,6 +97,7 @@ void Node::createWindow() {
 void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
     Q_UNUSED(option);
     Q_UNUSED(widget);
+    QGraphicsWidget::paint(painter, option, widget);
 
     QPen pen(Qt::darkGray, 3);
     // pen.setCapStyle(Qt::RoundCap);
@@ -107,24 +115,53 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWid
     }
 
     // draw already connected ports and active ports
-
+    for(const QPointF& point : activePorts) {
+        pen.setBrush(Qt::blue);
+        pen.setColor(Qt::black);
+        painter->setPen(pen);
+        painter->drawEllipse(point.x(), point.y(), 15, 15);
+    }
 
     // painter->drawRect(boundingRect());
-    // QGraphicsWidget::paint(painter, option, widget);
 }
 
 void Node::mousePressEvent(QGraphicsSceneMouseEvent *event) {
+    // setSelected(true);
     const QRectF rect = boundingRect();
-    if((event->pos().x() < 15)){
+    if((event->pos().x() < 15)) {
         // TODO: figure this out
         // addPort(Left);
-        // startToDrawConnectionLine();
-        waitingPort.first = Left;
-        waitingPort.second = animePortPosition;
+        activePorts.append(event->pos());
+
+        if(!scene->pendingConnection.connection) {
+            // first time
+            scene->pendingConnection = { this, 0, event->pos(), Left, nullptr };
+            startToDrawConnectionLine(event->pos());
+        }
+        else {
+            // add connection
+            // FIXME: event->pos() certain position
+            scene->pendingConnection.connection->setSecondNode(this, event->pos());
+            scene->allConnections.append(QPair(scene->pendingConnection, NodeConnection{ this, 0, event->pos(), Left, scene->pendingConnection.connection }));
+            // second node connection established
+            scene->pendingConnection.connection = nullptr;
+        }
     }
     if(event->pos().x() > rect.width() -15) {
-        waitingPort.first = Right;
-        waitingPort.second = animePortPosition;
+        activePorts.append(event->pos());
+
+        if(!scene->pendingConnection.connection) {
+            // first time
+            scene->pendingConnection = { this, 0, event->pos(), Right, nullptr };
+            startToDrawConnectionLine(event->pos());
+        }
+        else {
+            // add connection
+            scene->pendingConnection.connection->setSecondNode(this, event->pos());
+            scene->allConnections.append(QPair(scene->pendingConnection, NodeConnection{ this, 0, event->pos(), Right, scene->pendingConnection.connection }));
+            // second node connection established
+            scene->pendingConnection.connection = nullptr;
+        }
     }
 
     QGraphicsWidget::mousePressEvent(event);

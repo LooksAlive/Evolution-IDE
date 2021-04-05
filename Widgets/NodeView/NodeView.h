@@ -70,14 +70,12 @@ private:
 
     TextNodeRelationManager textNodeManager;
 
-    // FlowScene *scene;
-
-
     void scaleUp();
-
     void scaleDown();
+    void takePicture();
 
-    QPointF _clickPos;
+    // moving items arround the scene
+    QPointF clickPos;
 
 
 protected:
@@ -93,7 +91,6 @@ protected:
 
 
 signals:
-
     void openFile(const QString &filepath, const int &line);
 
 

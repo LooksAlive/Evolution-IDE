@@ -5,6 +5,7 @@
 #include <QGraphicsBlurEffect>
 
 class NodeScene;
+class Node;
 
 class Connection : public QGraphicsObject {
     Q_OBJECT
@@ -12,10 +13,13 @@ public:
     explicit Connection(NodeScene *scene = nullptr);
     ~Connection() = default;
 
-    // drawing or is fixed ...  triggered only once
+    // nodes we are connected to, to track its global scene position
+    // and paint correctly
+    void setFirstNode(Node* n1, const QPointF& p1) { node1 = n1; port1Pos = p1; }
+    void setSecondNode(Node* n2, const QPointF& p2) { node2 = n2; port2Pos = p2; }
+
     // reset it while not connected to any node after click
-    bool draw = true;
-    bool touchedPort = false;
+    bool stableConnection = false;
 
     // these are dynamic ... moving when widgets in scene moves.-.
     QPointF startPos;
@@ -37,7 +41,11 @@ protected:
 private:
     NodeScene *scene;
 
-
+    // node1 will be always set, but node2 could not, therefore we track mouse postision
+    Node* node1;
+    QPointF port1Pos;
+    Node* node2;
+    QPointF port2Pos;
 
 
 };

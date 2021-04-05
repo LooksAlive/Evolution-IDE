@@ -36,7 +36,6 @@
 
 class NodeScene;
 class Connection;
-class NodePainter;
 
 
 /*
@@ -59,20 +58,15 @@ public:
     };
 
     struct NodeConnection {
-        int nodeID;
+        Node *node = nullptr;
         int portID;
-        int distance;   // does not matter if in same port
+        QPointF portPos;   // does not matter if in same port
         PortPosition position;
+        Connection *connection = nullptr;   // indicates wheather is user drawing connection
+
+        NodeConnection() = default;
+        ~NodeConnection() = default;
     };
-
-    // all connections: data for this node and other node
-    // NOTE: empty connections(not connected ports) are not contained here
-    QList<QPair<NodeConnection, NodeConnection>> connections;
-
-
-    // new created port waiting for connection with node to be accepted
-    // contains animePortPosition from click event
-    QPair<PortPosition, QPointF> waitingPort;
 
     // paints a new port
     // distance from [0,0]; [x,0]   -> corners; distance depends on position
@@ -83,7 +77,12 @@ public:
     // this invokes Connection to paint +
     void connectPorts(Node *first, Node *second, const int& portIDfirst, const int& portIDsecond);
 
-    void startToDrawConnectionLine();
+    // returns node pos for port to be drawn to.
+    // If we do not have specific port pos, and does not care where to put it.
+    // we are spawning to right for NOW !
+    QPointF suggestPortPosition(const PortPosition& position = Right);
+
+    void startToDrawConnectionLine(const QPointF& portPos);
 
 
     // locks widget, no moves, editing, etc.
@@ -96,8 +95,10 @@ public:
     bool _locked = false;
 
     // base index for node
-    int nodeID;
     bool changesOccured = false;
+
+    // to draw already; each port is represented by its position
+    QList<QPointF> activePorts;
 
 
     // Style
