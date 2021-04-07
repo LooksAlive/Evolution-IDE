@@ -47,7 +47,6 @@ QPointF Node::suggestPortPosition(const Node::PortPosition &position) {
 void Node::startToDrawConnectionLine(const QPointF& portPos) {
     auto *connection = new Connection(scene);
     // scene->addItem(connection);
-    connection->startPos = cursor().pos();
     connection->setFirstNode(this, portPos); // FIXME: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!§§
     scene->pendingConnection.connection = connection;
 }

@@ -54,7 +54,10 @@ void NodeScene::connectNodes(Node *node1, const Node::PortPosition &pos1, Node *
 }
 
 void NodeScene::duplicateNode() {
-    Node *node = static_cast<Node*>(selectedItems()[0]);
+    if(selectedItems().isEmpty()) {
+        return;
+    }
+    Node *node = dynamic_cast<Node*>(selectedItems()[0]);
     // create copy
     Node *newNode = spawnNode(node->caption->text(), node->textEdit->toPlainText());
     // + change position, move right
@@ -65,17 +68,17 @@ void NodeScene::removeNode() {
     if(selectedItems().isEmpty()) {
         return;
     }
-    Node *selectedNode = static_cast<Node*>(selectedItems()[0]);
+    Node *selectedNode = dynamic_cast<Node*>(selectedItems()[0]);
     // TODO: which group
     for(int i = 0; i < allNodes.size(); i++) {
         if(allNodes[i] == selectedNode) { // fix this
             // FIXME: first remove all connections; this will update everything, text, reparse all
             // FIXME: copying
-            for(int i = 0; i < allConnections.size(); i++) {
-                if(allConnections[i].first.connection != nullptr) {
-                    removeItem(allConnections[i].first.connection);
-                    delete allConnections[i].first.connection;
-                    allConnections[i].first.connection = nullptr;
+            for(int z = 0; z < allConnections.size(); z++) {
+                if(allConnections[z].first.connection != nullptr) {
+                    removeItem(allConnections[z].first.connection);
+                    delete allConnections[z].first.connection;
+                    allConnections[z].first.connection = nullptr;
                     allConnections.removeAt(i);
                 }
             }
@@ -123,10 +126,8 @@ void NodeScene::createNodesGroup(const QList<Node *> &nodes) {
         return;
     }
 
-    QGraphicsItemGroup *group = nullptr;
-    for(Node* node : nodes) {
-        group->addToGroup(node);
-    }
+    QGraphicsItemGroup *group =  createItemGroup((QList<struct QGraphicsItem *> &&) nodes);
+
     nodeGroups.append(group);
 }
 

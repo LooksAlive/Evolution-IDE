@@ -1,8 +1,9 @@
 #ifndef CONNECTION_H
 #define CONNECTION_H
 
-#include <QGraphicsObject>
+#include "Node.h"
 #include <QGraphicsBlurEffect>
+#include <QGraphicsObject>
 
 class NodeScene;
 class Node;
@@ -21,11 +22,6 @@ public:
     // reset it while not connected to any node after click
     bool stableConnection = false;
 
-    // these are dynamic ... moving when widgets in scene moves.-.
-    QPointF startPos;
-    QPointF currentPos;
-
-
 protected:
     void paint(QPainter *painter, QStyleOptionGraphicsItem const *option, QWidget *widget = 0) override;
     // end of connection
@@ -34,17 +30,20 @@ protected:
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
 
     QRectF boundingRect() const override {
-        return boundingRect();
+        return shape().boundingRect();
     }
 
+    QPainterPath shape() const override;
 
 private:
     NodeScene *scene;
 
-    // node1 will be always set, but node2 could not, therefore we track mouse postision
-    Node* node1;
+    // node1 will be always set, but node2 could not, therefore we track mouse positions
+    // these are dynamic ... moving when widgets in scene moves.-.
+
+    Node* node1 = nullptr;
     QPointF port1Pos;
-    Node* node2;
+    Node* node2 = nullptr;
     QPointF port2Pos;
 
 

@@ -11,7 +11,7 @@ public:
     ~DependencyInstaller() = default;
 
     enum Package{
-        clang = 1,
+        clang = 0,
         gcc,
         llvm,
         gdbgui, // does not have any linux build package to install by terminal, need to download(bin or github)
@@ -19,11 +19,12 @@ public:
         lldb,
         Qt5,
         python3,
+        Catch
 
     };
 
     // for now only on linux
-    void install(const Package &package);
+    static void install(const Package &package);
 
 
 };

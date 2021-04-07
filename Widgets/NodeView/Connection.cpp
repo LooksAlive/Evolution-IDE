@@ -28,7 +28,6 @@ void Connection::paint(QPainter *painter, const QStyleOptionGraphicsItem *option
         path.lineTo(scene->currentPos);
     }
 
-
     painter->drawPath(path);
 
     // QGraphicsObject::mouseMoveEvent(event);
@@ -44,4 +43,20 @@ void Connection::mousePressEvent(QGraphicsSceneMouseEvent *event) {
 void Connection::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
 
     QGraphicsObject::mouseMoveEvent(event);
+}
+QPainterPath Connection::shape() const {
+    const QPointF n1Pos = node1->scenePos();
+    QPainterPath path(QPointF(n1Pos.x() + port1Pos.x(), n1Pos.y() + port1Pos.y()));
+    if(node2) {
+        const QPointF n2Pos = node2->scenePos();
+        path.lineTo(QPointF(n2Pos.x() + port2Pos.x(), n2Pos.y() + port2Pos.y()));
+    }
+    else {
+        path.lineTo(scene->currentPos);
+    }
+
+    QPainterPathStroker stroker;
+    stroker.setWidth(8);
+
+    return stroker.createStroke(path);
 }

@@ -345,6 +345,8 @@ set(SOURCE_FILES
         Widgets/ErrorCodeList/ErrorCodeList.h
         Widgets/DocumentationHelper/DocumentationHelper.cpp
         Widgets/DocumentationHelper/DocumentationHelper.h
+        Plugins/CatchUnitTest.cpp
+        Plugins/CatchUnitTest.h
         # NodeView
         Widgets/NodeView/NodeView.cpp
         Widgets/NodeView/NodeView.h

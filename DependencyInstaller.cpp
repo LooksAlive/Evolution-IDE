@@ -29,6 +29,9 @@ void DependencyInstaller::install(const Package &package) {
         case python3:
             CommandLineExecutor::ExecuteSimpleCommand("sudo apt-get install python3");
             break;
+        case Catch:
+            CommandLineExecutor::ExecuteSimpleCommand("sudo apt-get install catch2");
+            break;
 
         default:
             break;
