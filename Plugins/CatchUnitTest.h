@@ -9,6 +9,7 @@
 
 
 class PlainTextEdit;
+// https://github.com/catchorg/Catch2/blob/devel/docs/tutorial.md
 
 class CatchUnitTest : public QWidget
 {

@@ -7,9 +7,14 @@ ElementsList::ElementsList(QWidget *parent) : QTreeWidget(parent){
     setHeaderHidden(true);
     // setMouseTracking(true);
     setMaximumSize(145, 250);
+    setIndentation(15);
 
     createWindow();
-    setItemDelegate(new ItemDelegate());
+    setItemDelegate(new ItemDelegate(this));
+
+    setRootIsDecorated(true);
+
+    // setStyleSheet("QListView::item { outline: none; padding: 0px; margin: 0px; }");
 }
 
 void ElementsList::createWindow() {
@@ -20,6 +25,7 @@ void ElementsList::createWindow() {
 
     auto *variable = new QTreeWidgetItem();
     variable->setText(0, "Variable");
+    variable->setChildIndicatorPolicy(QTreeWidgetItem::DontShowIndicator);
     elements->addChild(variable);
 
     auto *function = new QTreeWidgetItem();

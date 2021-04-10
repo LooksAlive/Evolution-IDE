@@ -6,7 +6,7 @@ TextNodeRelationManager::TextNodeRelationManager() {
 
 }
 
-void TextNodeRelationManager::updateText(Node *node, const bool &scopeChange, const bool &TUchange) {
+void TextNodeRelationManager::updateText(NodeData *node, const bool &scopeChange, const bool &TUchange) {
     if (!scopeChange) {
         return;
     }
@@ -26,7 +26,7 @@ void TextNodeRelationManager::updateText(Node *node, const bool &scopeChange, co
 
 }
 
-void TextNodeRelationManager::cursorWithSelectedText(TextNodeRelationManager::Node *node, QTextCursor &cursor) {
+void TextNodeRelationManager::cursorWithSelectedText(TextNodeRelationManager::NodeData *node, QTextCursor &cursor) {
     edit->setCursorPosition(cursor, node->range.start.character, node->range.start.line);
     const int linesToMove = node->range.end.line - node->range.start.line;
     if (linesToMove) {
@@ -49,7 +49,7 @@ void TextNodeRelationManager::updateNode() {
 
 }
 
-void TextNodeRelationManager::removeScope(Node *node) {
+void TextNodeRelationManager::removeScope(NodeData *node) {
     QTextCursor cursor = edit->textCursor();
     cursorWithSelectedText(node, cursor);
     const QString newText = "sakjlsdf"; // gather new by node with node->nodeID
@@ -57,7 +57,7 @@ void TextNodeRelationManager::removeScope(Node *node) {
     cursor.insertText(newText);
 }
 
-void TextNodeRelationManager::formatNode(Node *node) {
+void TextNodeRelationManager::formatNode(NodeData *node) {
     // range in tooling
     QTextCursor tc = edit->textCursor();
     edit->setCursorPosition(tc, node->range.start.character, node->range.start.line);

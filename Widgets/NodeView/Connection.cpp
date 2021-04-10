@@ -12,8 +12,7 @@ Connection::Connection(NodeScene *sc) : scene(sc) {
 }
 
 void Connection::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
-    Q_UNUSED(option);
-    Q_UNUSED(widget);
+    // QGraphicsObject::paint(painter, option, widget);
 
     painter->setPen(QPen(Qt::black, 8));
     painter->setBrush(Qt::blue);
@@ -29,8 +28,6 @@ void Connection::paint(QPainter *painter, const QStyleOptionGraphicsItem *option
     }
 
     painter->drawPath(path);
-
-    // QGraphicsObject::mouseMoveEvent(event);
 }
 
 void Connection::mousePressEvent(QGraphicsSceneMouseEvent *event) {

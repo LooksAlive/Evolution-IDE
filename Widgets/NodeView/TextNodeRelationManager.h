@@ -40,7 +40,7 @@ public:
 
 
     // nodeID related to text range
-    struct Node {
+    struct NodeData {
         clang::clangd::Range range;
         int nodeID;
     };
@@ -49,7 +49,7 @@ public:
     // std::vector<Node> scopes;
 
     struct TUdata {
-        std::vector<Node> scopes;
+        std::vector<NodeData> scopes;
         QString filePath;
     };
 
@@ -58,7 +58,7 @@ public:
 
     // sets cursor on selected text with original node range, to simplify
     // remove, insert operations
-    void cursorWithSelectedText(Node *node, QTextCursor &cursor);
+    void cursorWithSelectedText(NodeData *node, QTextCursor &cursor);
 
     // using clang pointer in current edit * ;  fill TUScopesData
     void createNodesFromAST();
@@ -68,14 +68,14 @@ public:
     void updateNode();
 
     // FROM node TO text
-    void updateText(Node *node, const bool &scopeChange, const bool &TUchange);
+    void updateText(NodeData *node, const bool &scopeChange, const bool &TUchange);
 
     // remove whole node, text scope
-    void removeScope(Node *node);
+    void removeScope(NodeData *node);
 
     // format text node, then call updateText() for formated partiotion (scope or more) it depends...
     // update ranges
-    void formatNode(Node *node);
+    void formatNode(NodeData *node);
 
 
     // from text

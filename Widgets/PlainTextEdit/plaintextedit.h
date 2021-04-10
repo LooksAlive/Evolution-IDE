@@ -175,6 +175,9 @@ public:
 
     QString getFilePath() const;
 
+    // returns how many times there is indentation for line
+    int countSpaceTabs(const QString& lineContent, const int& indentation);
+
     // false -> removed;   true -> created
     bool toggleBreakPoint(const int& line) const;
 

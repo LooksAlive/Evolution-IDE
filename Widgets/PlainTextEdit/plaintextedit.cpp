@@ -18,11 +18,11 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
     SetupAdditionalWidgets();
 
     // queue is critical for geometry
+    statusArea = new StatusArea(this);
     breakPointArea = new BreakPointArea(this);
     codeNotifyArea = new CodeNotifyArea(this);
     lineNumberArea = new LineNumberArea(this);
     arrowArea = new ArrowArea(this);
-    statusArea = new StatusArea(this);
     scrollBar = new ScrollBar(this);
 
     setVerticalScrollBar(scrollBar);
@@ -936,6 +936,32 @@ void PlainTextEdit::showMessage(const QString &message) {
     QTimer::singleShot(3000, this, [=]() { infoMessage->hide(); });
 }
 
+int PlainTextEdit::countSpaceTabs(const QString &lineContent, const int &indentation) {
+    int spaces = 0;
+    int tabs = 0;
+    for(const auto& ch : lineContent) {
+        if(ch == ' ') {
+            spaces++;
+        }
+        if(ch == '\t') {
+            tabs++;
+        }
+        if(ch != ' ' || ch == '\t') {
+            qDebug() << "spaces: ";
+            qDebug() << spaces;
+
+            if(spaces != 0) {
+                return spaces / indentation;
+            }
+            if(tabs != 0) {
+                return tabs;
+            }
+        }
+    }
+
+    return 0;
+}
+
 void PlainTextEdit::setFileExtension(const QString &extension) {
     file_extension = extension;
     // TODO: move this where this function is called, extension set...
@@ -1429,20 +1455,59 @@ void PlainTextEdit::wheelEvent(QWheelEvent *event) {
 }
 
 void PlainTextEdit::paintEvent(QPaintEvent *event) {
-    QPainter line(viewport());
+    // write content first as it was
+    QPlainTextEdit::paintEvent(event);
+
+    QPainter painter(viewport());
     // symbolic line that represents width of 1 row --> 80 characters
     const int offset = static_cast<int>((fontMetrics().width('8') * 80)
                                         + contentOffset().x()
                                         + document()->documentMargin());
-    QPen pen = line.pen();
+    QPen pen = painter.pen();
     static QColor endOfLineColor = palette().color(QPalette::Text);
     endOfLineColor.setAlpha(50);
     pen.setColor(endOfLineColor);
     // line made from dots
     pen.setStyle(Qt::DotLine);
-    line.setPen(pen);
-    line.drawLine(offset, 0, offset, viewport()->height());
-    QPlainTextEdit::paintEvent(event);
+    painter.setPen(pen);
+    painter.drawLine(offset, 0, offset, viewport()->height());
+
+    // DashLine
+    pen.setStyle(Qt::DashLine);
+    pen.setWidth(1);
+    pen.setColor(Qt::gray);
+    painter.setPen(pen);
+
+    // 4 spaces indent in code       + contentOffset().x() + document()->documentMargin()
+    // TODO: append closer to text somehow
+    const int indent = (4 * fontMetrics().width('8'));  // + 1 to fit
+
+    QTextCursor cursor = textCursor();
+    QTextBlock block = firstVisibleBlockProxy();
+    int i = block.blockNumber();
+    int top = static_cast<int>(blockBoundingGeometryProxy(block).translated(contentOffsetProxy()).top());
+    int bottom = top + static_cast<int>(blockBoundingRectProxy(block).height());
+    const QRect full = event->rect();
+    while (block.isValid() && (top <= full.bottom())) {
+        if (block.isVisible() && (bottom >= full.top())) {
+            // each indent for 1 line
+            setCursorPosition(cursor, 1, i + 1);
+            const QString lineContent = getLineUnderCursor(cursor);
+            const int times = countSpaceTabs(lineContent, 4);
+            // skip if there is only one indent (it is done similarly everywhere)
+            if(times == 1)
+                goto skip;
+            // TODO: skip also last one, when is draw new the text (times - 1)
+            for(int z = 1; z <= times; z++) {
+                painter.drawLine(indent * z, top, indent * z, bottom);
+            }
+        }
+        skip:
+        block = block.next();
+        top = bottom;
+        bottom = (top + static_cast<int>(blockBoundingRectProxy(block).height()));
+        ++i;
+    }
 }
 
 void PlainTextEdit::resizeEvent(QResizeEvent *event) {
@@ -1794,7 +1859,7 @@ LineNumberArea::LineNumberArea(PlainTextEdit *edit, QWidget *parent) : QWidget(e
     setUpdatesEnabled(true);
 
     const int xWidth = m_Edit->breakPointArea->sizeHint().width() + m_Edit->codeNotifyArea->sizeHint().width();
-    setGeometry(xWidth, 0, sizeHint().width(), m_Edit->height());
+    setGeometry(xWidth, m_Edit->statusArea->sizeHint().height(), sizeHint().width(), m_Edit->height());
 }
 
 void LineNumberArea::leaveEvent(QEvent *e)
@@ -1809,7 +1874,8 @@ void LineNumberArea::paintEvent(QPaintEvent *e)
     QPainter painter(this);
     QTextBlock block = m_Edit->firstVisibleBlockProxy();
     int i = block.blockNumber();
-    int top = static_cast<int>(m_Edit->blockBoundingGeometryProxy(block).translated(m_Edit->contentOffsetProxy()).top());
+    // add top are to push down left side widgets
+    int top = static_cast<int>(m_Edit->blockBoundingGeometryProxy(block).translated(m_Edit->contentOffsetProxy()).top() + m_Edit->statusArea->sizeHint().height());
     int bottom = top + static_cast<int>(m_Edit->blockBoundingRectProxy(block).height());
     const QRect full = e->rect();
     painter.fillRect(full, palette().color(QPalette::Base));
@@ -1893,7 +1959,7 @@ BreakPointArea::BreakPointArea(PlainTextEdit *edit, QWidget *parent) : QWidget(e
     breakpoint.load(IconFactory::BreakPoint);
     // setFixedWidth(breakpoint.width());
     B_blocks.reserve(5);
-    setGeometry(0, 0, sizeHint().width(), m_Edit->height());
+    setGeometry(0, m_Edit->statusArea->sizeHint().height(), sizeHint().width(), m_Edit->height());
 }
 
 bool BreakPointArea::containBlock(const int& line) {
@@ -1999,7 +2065,7 @@ ArrowArea::ArrowArea(PlainTextEdit *edit, QWidget *parent) : QWidget(edit), m_Ed
 
     const int xWidth = m_Edit->breakPointArea->sizeHint().width() + m_Edit->codeNotifyArea->sizeHint().width() +
                        m_Edit->lineNumberArea->sizeHint().width();
-    setGeometry(xWidth, 0, sizeHint().width(), m_Edit->height());
+    setGeometry(xWidth, m_Edit->statusArea->sizeHint().height(), sizeHint().width(), m_Edit->height());
 }
 
 void ArrowArea::collapseOrExpand(const int &line) {
@@ -2101,7 +2167,7 @@ CodeNotifyArea::CodeNotifyArea(PlainTextEdit *edit, QWidget *parent) : QWidget(e
     WH.setY(m_Edit->fontMetrics().height());
 
     // next to breakpoints
-    setGeometry(m_Edit->breakPointArea->sizeHint().width(), 0, WH.x(), m_Edit->height());  // instead of paint event
+    setGeometry(m_Edit->breakPointArea->sizeHint().width(), m_Edit->statusArea->sizeHint().height(), WH.x(), m_Edit->height());  // instead of paint event
 
     error.load(IconFactory::Error);
     warning.load(IconFactory::Warning);
@@ -2398,7 +2464,7 @@ void ScrollBar::calculateAndSetSmallEditGeometry(const int &posY) {
 StatusArea::StatusArea(PlainTextEdit *edit, QWidget *parent) : QWidget(edit), m_Edit(edit) {
     createWindow();
     setFixedHeight(20);
-    setStyleSheet("padding: 0px; border: 1px solid black;");
+    setStyleSheet("padding: 0px; margin: 0px; border: 1px solid black; backround-color: green;");
 
     setGeometry(0, 0, edit->width(), 20);
 }
@@ -2421,12 +2487,12 @@ void StatusArea::createWindow() {
     expandAllScopes->setToolTip("Expand All Scopes");
     currentFunction->setMinimumWidth(100);
     encoding->setText("UTF-8");
-    encoding->setFixedWidth(35);
+    encoding->setFixedWidth(50);
     lineColumn->setFixedWidth(40);
     documentCode->setText("doc");
-    documentCode->setFixedWidth(35);
+    documentCode->setFixedWidth(50);
     commentTagsforThisFile->setText("Comment Tags");
-    commentTagsforThisFile->setFixedWidth(70);
+    commentTagsforThisFile->setFixedWidth(115);
 
     connect(lineColumn, &QAbstractButton::clicked, this, [=](){
        goToLineColumn->show();

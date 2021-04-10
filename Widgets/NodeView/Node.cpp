@@ -25,7 +25,7 @@ Node::Node(NodeScene *scene) : scene(scene) {
 void Node::addPort(const Node::PortPosition& position) {
     // first consider only left
     // TODO: port
-    const auto rect = boundingRect();
+    const QRectF rect = boundingRect();
     // width, height is 10x10
 
     switch (position) {
@@ -94,8 +94,6 @@ void Node::createWindow() {
 }
 
 void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
-    Q_UNUSED(option);
-    Q_UNUSED(widget);
     QGraphicsWidget::paint(painter, option, widget);
 
     QPen pen(Qt::darkGray, 3);
