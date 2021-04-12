@@ -1,5 +1,6 @@
 #include "Widgets/PlainTextEdit/plaintextedit.h"
 #include "Clang/ClangBridge.h"
+#include "Node.h"
 #include "TextNodeRelationManager.h"
 
 TextNodeRelationManager::TextNodeRelationManager() {
@@ -68,27 +69,27 @@ void TextNodeRelationManager::formatNode(NodeData *node) {
 }
 
 
-int TextNodeRelationManager::getNodeIDFromBlock(const QPoint &pos) const {
+Node* TextNodeRelationManager::getNodeIDFromBlock(const QPoint &pos) const {
     const QString filepath = edit->getFilePath();
 
     for (const auto &TUD : TUScopesData) {
         if (TUD.filePath == filepath) {
             for (const auto &SC : TUD.scopes) {
                 if (SC.range.contains(clang::clangd::Position{pos.y(), pos.x()})) {
-                    return SC.nodeID;
+                    return SC.node;
                 }
             }
         }
     }
 }
 
-QPair<QString, int> TextNodeRelationManager::getTextPostitionFromNode(const int &nodeID) const {
+QPair<QString, int> TextNodeRelationManager::getTextPostitionFromNode(Node *node) const {
     QString filepath;
 
     for (const auto &TUD : TUScopesData) {
         if (TUD.filePath == filepath) {
             for (const auto &SC : TUD.scopes) {
-                if (SC.nodeID == nodeID) {
+                if (SC.node == node) {
                     return QPair(TUD.filePath, SC.range.start.line);
                 }
             }

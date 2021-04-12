@@ -50,7 +50,7 @@ public:
     void showNodeFromBlock(const QPoint &pos);
 
     // from node
-    void showTextFromNode(const int &nodeID);
+    void showTextFromNode(Node *node);
 
 
 private:
@@ -88,6 +88,11 @@ protected:
     void drawBackground(QPainter* painter, const QRectF& r) override;
     void showEvent(QShowEvent *event) override;
     void dropEvent(QDropEvent *event) override;
+    /*
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dragLeaveEvent(QDragLeaveEvent *event) override;
+    void dragMoveEvent(QDragMoveEvent *event) override;
+    */
 
 
 signals:

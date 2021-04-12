@@ -9,11 +9,47 @@
 CatchUnitTest::CatchUnitTest(PlainTextEdit *e) : edit(e) {
     setVisible(false);
     setMinimumSize(300, 200);
+    setWindowFlags(Qt::Dialog);
 
     createWindow();
 }
 
 void CatchUnitTest::createWindow() {
+    MainLayout = new QHBoxLayout();
+    elements = new QTreeWidget(this);
+    accessibleSymbols = new QListWidget(this);
+    preview = new QPlainTextEdit(this);
+    insert = new QPushButton(this);
+
+    insert->setFixedWidth(60);
+    preview->setWordWrapMode(QTextOption::NoWrap);
+    preview->setReadOnly(true);
+
+    MainLayout->setContentsMargins(0, 0, 0, 0);
+    MainLayout->setSpacing(0);
+
+    MainLayout->addWidget(elements);
+    MainLayout->addWidget(accessibleSymbols);
+    MainLayout->addWidget(preview);
+
+    OveralLayout = new QVBoxLayout(this);
+
+    OveralLayout->setContentsMargins(0, 0, 0, 0);
+    OveralLayout->setSpacing(0);
+
+    OveralLayout->addLayout(MainLayout);
+    OveralLayout->addWidget(insert, 0, Qt::AlignRight);
+
+
+
+    // fill elements
+    auto *require = new QTreeWidgetItem();
+    require->setText(0, "Require");
+    elements->addTopLevelItem(require);
+
+    auto *test_case = new QTreeWidgetItem();
+    test_case->setText(0, "TEST_CASE");
+    elements->addTopLevelItem(test_case);
 
 }
 

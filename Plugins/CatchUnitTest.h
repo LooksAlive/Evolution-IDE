@@ -3,6 +3,11 @@
 
 
 #include <QWidget>
+#include <QPushButton>
+#include <QTreeWidget>
+#include <QListWidget>
+#include <QPlainTextEdit>
+#include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QFormLayout>
 #include <QPushButton>
@@ -35,6 +40,18 @@ private:
     void createWindow();
     PlainTextEdit *edit;
 
+    QHBoxLayout *MainLayout;
+    QTreeWidget *elements;
+    QListWidget *accessibleSymbols;
+    QPlainTextEdit *preview;
+
+    QVBoxLayout *OveralLayout;
+    QPushButton *insert;
+
+    // symbol:element item(text)    :    code(condition)   (already filled with some logic)
+    //QFormLayout *structuredDataView;
+
+    // if downloaded, loaded haeder, macro, etc.
     void checkCatchStatus();
 
 };

@@ -25,6 +25,7 @@
 
 
 class PlainTextEdit;
+//class PlainTextEditExtra;
 
 class DocumentationHelper : public QWidget
 {
@@ -34,6 +35,7 @@ public:
     ~DocumentationHelper() = default;
 
     void setEdit(PlainTextEdit *e) { edit = e; }
+    // void setEdit(PlainTextEditExtra *e) { editExtra = e; }
 
     // position and params to describe them
     // enums are done differently, but also contains main overview comment above; void ... no return
@@ -44,7 +46,9 @@ public:
 
 
 private:
-    PlainTextEdit *edit;
+    PlainTextEdit *edit = nullptr;
+    //PlainTextEditExtra *editExtra = nullptr;
+
     QVBoxLayout *MLayout;
     QFormLayout *MainLayout;
     // manipulating view, adding, removing them.

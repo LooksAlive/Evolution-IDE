@@ -11,9 +11,9 @@
 #include "Clang/ClangBridge.h"
 #include "Widgets/CodeInfoDock/CodeInfoDock.h"
 #include "Widgets/NodeView/NodeView.h"
-#include "plaintextedit.h"
+#include "PlainTextEditExtra.h"
 
-PlainTextEdit::PlainTextEdit(QWidget *parent)
+PlainTextEditExtra::PlainTextEditExtra(QWidget *parent)
         : QPlainTextEdit(parent) {
     SetupAdditionalWidgets();
 
@@ -66,10 +66,10 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
     touchTimer->start();
     */
     // LineArea
-    connect(this, &QPlainTextEdit::cursorPositionChanged, this, &PlainTextEdit::slotHighlightCurrentLine);
-    connect(this, &QPlainTextEdit::blockCountChanged, this, &PlainTextEdit::slotBlockCountChanged);
-    connect(this, &QPlainTextEdit::textChanged, this, &PlainTextEdit::slotTextChanged);
-    connect(this, &QPlainTextEdit::updateRequest, this, &PlainTextEdit::slotUpdateRequest);
+    connect(this, &QPlainTextEdit::cursorPositionChanged, this, &PlainTextEditExtra::slotHighlightCurrentLine);
+    connect(this, &QPlainTextEdit::blockCountChanged, this, &PlainTextEditExtra::slotBlockCountChanged);
+    connect(this, &QPlainTextEdit::textChanged, this, &PlainTextEditExtra::slotTextChanged);
+    connect(this, &QPlainTextEdit::updateRequest, this, &PlainTextEditExtra::slotUpdateRequest);
 
     // BreakpointArea
 
@@ -100,25 +100,25 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
     arrowArea->expanded.push_back(3);   // first line
 }
 
-QRectF PlainTextEdit::blockBoundingGeometryProxy(const QTextBlock &block) const {
+QRectF PlainTextEditExtra::blockBoundingGeometryProxy(const QTextBlock &block) const {
     return blockBoundingGeometry(block);
 }
 
-QRectF PlainTextEdit::blockBoundingRectProxy(const QTextBlock &block) const {
+QRectF PlainTextEditExtra::blockBoundingRectProxy(const QTextBlock &block) const {
     return blockBoundingRect(block);
 }
 
-QPointF PlainTextEdit::contentOffsetProxy() const {
+QPointF PlainTextEditExtra::contentOffsetProxy() const {
     return contentOffset();
 }
 
 
-QTextBlock PlainTextEdit::firstVisibleBlockProxy() const {
+QTextBlock PlainTextEditExtra::firstVisibleBlockProxy() const {
     return firstVisibleBlock();
 }
 
 
-void PlainTextEdit::setCursorPosition(const int &x, const int &y) {
+void PlainTextEditExtra::setCursorPosition(const int &x, const int &y) {
     doNotSetSelections = true;
     // no idea why -1 for both coords, but works that way ... in searching
     if (!isReadOnly()) {
@@ -143,12 +143,12 @@ void PlainTextEdit::setCursorPosition(const int &x, const int &y) {
 }
 
 // cursor
-void PlainTextEdit::setCursorPosition(QTextCursor &cursor, const int &x, const int &y) {
+void PlainTextEditExtra::setCursorPosition(QTextCursor &cursor, const int &x, const int &y) {
     cursor.setPosition(document()->findBlockByNumber(y - 1).position());
     cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, x - 1);
 }
 
-QPoint PlainTextEdit::getCursorPosition() {
+QPoint PlainTextEditExtra::getCursorPosition() {
     QTextCursor cursor = textCursor();
     // there is no 0 col or row in view but it is acts like it is
     const int y = cursor.blockNumber() + 1;
@@ -157,7 +157,7 @@ QPoint PlainTextEdit::getCursorPosition() {
     return QPoint(x, y);
 }
 
-QPoint PlainTextEdit::getCursorPosition(QTextCursor &cursor) {
+QPoint PlainTextEditExtra::getCursorPosition(QTextCursor &cursor) {
     // there is no 0 col or row in view but it is acts like it is
     const int y = cursor.blockNumber() + 1;
     const int x = cursor.columnNumber() + 1;
@@ -165,12 +165,12 @@ QPoint PlainTextEdit::getCursorPosition(QTextCursor &cursor) {
     return QPoint(x, y);
 }
 
-void PlainTextEdit::setCursorAtLine(const int &line) {
+void PlainTextEditExtra::setCursorAtLine(const int &line) {
     setCursorPosition(1, line);// +1 ; yet no idea how ? jumps as it wants
 }
 
 // text manipulation
-void PlainTextEdit::selectLineUnderCursor() {
+void PlainTextEditExtra::selectLineUnderCursor() {
     QTextCursor cur = textCursor();
     cur.movePosition(QTextCursor::StartOfLine, QTextCursor::MoveAnchor);
     cur.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
@@ -178,12 +178,12 @@ void PlainTextEdit::selectLineUnderCursor() {
     ensureCursorVisible();
 }
 
-void PlainTextEdit::selectLineUnderCursor(QTextCursor &cursor) {
+void PlainTextEditExtra::selectLineUnderCursor(QTextCursor &cursor) {
     cursor.movePosition(QTextCursor::StartOfLine, QTextCursor::MoveAnchor);
     cursor.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
 }
 
-QString PlainTextEdit::getLineUnderCursor() {
+QString PlainTextEditExtra::getLineUnderCursor() {
     //selectLineUnderCursor();
     QTextCursor cur = textCursor();
     cur.select(QTextCursor::LineUnderCursor);
@@ -194,14 +194,14 @@ QString PlainTextEdit::getLineUnderCursor() {
     return line;
 }
 
-QString PlainTextEdit::getLineUnderCursor(QTextCursor &cursor) {
+QString PlainTextEditExtra::getLineUnderCursor(QTextCursor &cursor) {
     selectLineUnderCursor(cursor);
     QString line = cursor.selectedText();
     cursor.clearSelection();
     return line;
 }
 
-QString PlainTextEdit::getLineContent(const int &row, const bool &setCursor) {
+QString PlainTextEditExtra::getLineContent(const int &row, const bool &setCursor) {
     if (!setCursor) {
         QTextCursor cursor = textCursor();
         setCursorPosition(cursor, 1, row);
@@ -211,7 +211,7 @@ QString PlainTextEdit::getLineContent(const int &row, const bool &setCursor) {
     return getLineUnderCursor();
 }
 
-void PlainTextEdit::selectWordUnderCursor() {
+void PlainTextEditExtra::selectWordUnderCursor() {
     QTextCursor cur = textCursor();
     cur.movePosition(QTextCursor::StartOfWord, QTextCursor::MoveAnchor);
     cur.movePosition(QTextCursor::EndOfWord, QTextCursor::KeepAnchor);
@@ -219,7 +219,7 @@ void PlainTextEdit::selectWordUnderCursor() {
     ensureCursorVisible();
 }
 
-QString PlainTextEdit::getWordUnderCursor(){
+QString PlainTextEditExtra::getWordUnderCursor(){
     //selectWordUnderCursor();
     QTextCursor cur = textCursor();
     cur.select(QTextCursor::WordUnderCursor);
@@ -230,7 +230,7 @@ QString PlainTextEdit::getWordUnderCursor(){
     return word;
 }
 
-void PlainTextEdit::completerInsertText(const QString &text) {
+void PlainTextEditExtra::completerInsertText(const QString &text) {
     if (completer->widget() != this)
         return;
     QTextCursor tc = textCursor();
@@ -241,7 +241,7 @@ void PlainTextEdit::completerInsertText(const QString &text) {
     setTextCursor(tc);
 }
 
-void PlainTextEdit::slotInsertSuggestion(QListWidgetItem *item) {
+void PlainTextEditExtra::slotInsertSuggestion(QListWidgetItem *item) {
     const QString newWord = item->text();
     QTextCursor cursor = textCursor();
     cursor.select(QTextCursor::WordUnderCursor);
@@ -250,14 +250,14 @@ void PlainTextEdit::slotInsertSuggestion(QListWidgetItem *item) {
     setTextCursor(cursor);
 }
 
-void PlainTextEdit::slotInsertTagComment(QListWidgetItem *item) {
+void PlainTextEditExtra::slotInsertTagComment(QListWidgetItem *item) {
     const QString newWord = item->text();
     QTextCursor cursor = textCursor();
     cursor.insertText("// " + newWord);
     setTextCursor(cursor);
 }
 
-void PlainTextEdit::deleteLine() {
+void PlainTextEditExtra::deleteLine() {
     selectLineUnderCursor();
     QTextCursor cur = textCursor();
     if (cur.selectedText() != "") {
@@ -266,7 +266,7 @@ void PlainTextEdit::deleteLine() {
     setTextCursor(cur);
 }
 
-void PlainTextEdit::deleteLine(QTextCursor &cursor) {
+void PlainTextEditExtra::deleteLine(QTextCursor &cursor) {
     selectLineUnderCursor(cursor);
     if (cursor.selectedText() != "") {
         cursor.removeSelectedText();
@@ -274,7 +274,7 @@ void PlainTextEdit::deleteLine(QTextCursor &cursor) {
     setTextCursor(cursor);
 }
 
-void PlainTextEdit::toggleComment() {
+void PlainTextEditExtra::toggleComment() {
 
     //QString file_extension;  // default is cpp
     QTextCursor cur = textCursor();
@@ -388,7 +388,7 @@ void PlainTextEdit::toggleComment() {
     setTextCursor(cur);
 }
 
-int PlainTextEdit::indentSize(const QString &text)
+int PlainTextEditExtra::indentSize(const QString &text)
 {
     int count = 0;
     int i = 0;
@@ -416,7 +416,7 @@ int PlainTextEdit::indentSize(const QString &text)
     return count;
 }
 
-bool PlainTextEdit::indentText(const bool &forward)
+bool PlainTextEditExtra::indentText(const bool &forward)
 {
     QTextCursor cursor = textCursor();
     QTextCursor clone = cursor;
@@ -464,7 +464,7 @@ bool PlainTextEdit::indentText(const bool &forward)
     return true;
 }
 
-QString PlainTextEdit::indentText(QString text, int count) const
+QString PlainTextEditExtra::indentText(QString text, int count) const
 {
     if (text.isEmpty()) {
         return text;
@@ -482,7 +482,7 @@ QString PlainTextEdit::indentText(QString text, int count) const
     return text;
 }
 
-bool PlainTextEdit::autoEnterTextIndentation() {
+bool PlainTextEditExtra::autoEnterTextIndentation() {
     QTextCursor cursor = textCursor();
     // we are at line we were before enter, return, just with pointer
     // get line content
@@ -524,7 +524,7 @@ bool PlainTextEdit::autoEnterTextIndentation() {
     }
 }
 
-void PlainTextEdit::autoBlankLineDeletion() {
+void PlainTextEditExtra::autoBlankLineDeletion() {
     QTextCursor cursor = textCursor();
     // get line content
     const QString lineContent = getLineUnderCursor(cursor);
@@ -544,7 +544,7 @@ void PlainTextEdit::autoBlankLineDeletion() {
     setTextCursor(cursor);
 }
 
-bool PlainTextEdit::autoTextSurrounding(QTextCursor &cursor, const QString &pair) {
+bool PlainTextEditExtra::autoTextSurrounding(QTextCursor &cursor, const QString &pair) {
     const QString selectedText = cursor.selectedText();
     if (selectedText.isEmpty()) {
         return false;
@@ -602,7 +602,7 @@ bool PlainTextEdit::autoTextSurrounding(QTextCursor &cursor, const QString &pair
     return false;
 }
 
-void PlainTextEdit::moveCursor(const bool &end) {
+void PlainTextEditExtra::moveCursor(const bool &end) {
     QTextCursor cursor = textCursor();
     int length = cursor.block().text().length();
     if (length != 0) {
@@ -642,7 +642,7 @@ void PlainTextEdit::moveCursor(const bool &end) {
 }
 
 /* moving selected text arround */
-void PlainTextEdit::moveSelection(const bool &up)
+void PlainTextEditExtra::moveSelection(const bool &up)
 {
     QTextCursor original = textCursor();
     QTextCursor moved = original;
@@ -687,7 +687,7 @@ void PlainTextEdit::moveSelection(const bool &up)
     setTextCursor(moved);
 }
 
-void PlainTextEdit::transformText(const bool &upper)
+void PlainTextEditExtra::transformText(const bool &upper)
 {
     QTextCursor cursor = textCursor();
     if (!cursor.hasSelection()) {
@@ -704,7 +704,7 @@ void PlainTextEdit::transformText(const bool &upper)
     }
 }
 
-void PlainTextEdit::highlight(QList<QTextEdit::ExtraSelection> &selections, const bool &Background, const int &line,
+void PlainTextEditExtra::highlight(QList<QTextEdit::ExtraSelection> &selections, const bool &Background, const int &line,
                               const QColor &color)
 {
     if(!isReadOnly())
@@ -726,7 +726,7 @@ void PlainTextEdit::highlight(QList<QTextEdit::ExtraSelection> &selections, cons
 }
 
 // search
-void PlainTextEdit::findStoreAndSelectAll(const QString &search, const QTextDocument::FindFlags &find_options)
+void PlainTextEditExtra::findStoreAndSelectAll(const QString &search, const QTextDocument::FindFlags &find_options)
 {
     // ensure no other selections are here
     extra_selections_search_results.clear();
@@ -759,7 +759,7 @@ void PlainTextEdit::findStoreAndSelectAll(const QString &search, const QTextDocu
     updateExtraSelections();
 }
 
-bool PlainTextEdit::find(const QString &search, const QTextDocument::FindFlags &find_options) {
+bool PlainTextEditExtra::find(const QString &search, const QTextDocument::FindFlags &find_options) {
     doNotSetSelections = true;
     QTextCursor cursor = textCursor();
     cursor = document()->find(search, cursor, find_options);
@@ -773,7 +773,7 @@ bool PlainTextEdit::find(const QString &search, const QTextDocument::FindFlags &
     }
 }
 
-bool PlainTextEdit::find(QTextCursor &cursor, const QString &search, const QTextDocument::FindFlags &find_options) {
+bool PlainTextEditExtra::find(QTextCursor &cursor, const QString &search, const QTextDocument::FindFlags &find_options) {
     doNotSetSelections = true;
     cursor = document()->find(search, cursor, find_options);
     if (!cursor.isNull()) {
@@ -783,7 +783,7 @@ bool PlainTextEdit::find(QTextCursor &cursor, const QString &search, const QText
     }
 }
 
-void PlainTextEdit::findNext(const QString &search, const QTextDocument::FindFlags &find_options) {
+void PlainTextEditExtra::findNext(const QString &search, const QTextDocument::FindFlags &find_options) {
     doNotSetSelections = true;
     // findStoreAndSelectAll(search, find_options); // find all results and select them first
 
@@ -806,7 +806,7 @@ void PlainTextEdit::findNext(const QString &search, const QTextDocument::FindFla
     }
 }
 
-void PlainTextEdit::replace(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options) {
+void PlainTextEditExtra::replace(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options) {
     doNotSetSelections = true;
     QTextCursor cursor = textCursor();
     findNext(oldText, find_options);
@@ -820,13 +820,13 @@ void PlainTextEdit::replace(const QString &oldText, const QString &newText, cons
     }
 }
 
-void PlainTextEdit::replaceAndFind(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options) {
+void PlainTextEditExtra::replaceAndFind(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options) {
     doNotSetSelections = true;
     replace(oldText, newText, find_options);
     findNext(oldText, find_options);
 }
 
-int PlainTextEdit::replaceAll(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options) {
+int PlainTextEditExtra::replaceAll(const QString &oldText, const QString &newText, const QTextDocument::FindFlags &find_options) {
     doNotSetSelections = true;
     int count = 0;
     //textCursor().movePosition(QTextCursor::Start); // on start, works yet only with one file
@@ -840,7 +840,7 @@ int PlainTextEdit::replaceAll(const QString &oldText, const QString &newText, co
 }
 
 // other
-void PlainTextEdit::createMenu() {
+void PlainTextEditExtra::createMenu() {
     viewMenu = new QMenu(this);
 
     viewMenu->addAction(QIcon(IconFactory::Copy), "Copy", this, SLOT(copy()), Qt::CTRL + Qt::Key_C);
@@ -872,7 +872,7 @@ void PlainTextEdit::createMenu() {
     connect(this, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(slotShowMenu(const QPoint&)));
 }
 
-void PlainTextEdit::SetupAdditionalWidgets() {
+void PlainTextEditExtra::SetupAdditionalWidgets() {
     hoverInfo = new HoverInfoWidget(this);
 
     QStringList words;
@@ -929,14 +929,14 @@ void PlainTextEdit::SetupAdditionalWidgets() {
     documentationHelper->setEdit(this);
 }
 
-void PlainTextEdit::showMessage(const QString &message) {
+void PlainTextEditExtra::showMessage(const QString &message) {
     infoMessage->setGeometry(cursorRect());
     infoMessage->setMessage(message);
     infoMessage->show();
     QTimer::singleShot(3000, this, [=]() { infoMessage->hide(); });
 }
 
-int PlainTextEdit::countSpaceTabs(const QString &lineContent, const int &indentation) {
+int PlainTextEditExtra::countSpaceTabs(const QString &lineContent, const int &indentation) {
     int spaces = 0;
     int tabs = 0;
     for(const auto& ch : lineContent) {
@@ -962,7 +962,7 @@ int PlainTextEdit::countSpaceTabs(const QString &lineContent, const int &indenta
     return 0;
 }
 
-void PlainTextEdit::setFileExtension(const QString &extension) {
+void PlainTextEditExtra::setFileExtension(const QString &extension) {
     file_extension = extension;
     // TODO: move this where this function is called, extension set...
     if (file_extension == "cpp" || file_extension == "h") {
@@ -976,25 +976,25 @@ void PlainTextEdit::setFileExtension(const QString &extension) {
     }
 }
 
-void PlainTextEdit::setFilePath(const QString &file_path) {
+void PlainTextEditExtra::setFilePath(const QString &file_path) {
     filepath = file_path;
     if (QFileInfo(filepath).fileName() == "CmakeLists.txt") {
         completer->defaultCompletionData = cmakeCommands;
     }
 }
 
-QString PlainTextEdit::getFilePath() const {
+QString PlainTextEditExtra::getFilePath() const {
     return filepath;
 }
 
-bool PlainTextEdit::toggleBreakPoint(const int& line) const {
+bool PlainTextEditExtra::toggleBreakPoint(const int& line) const {
     if (breakPointArea->containBlock(line - 1)) {
         return false;
     }
     return true;
 }
 
-void PlainTextEdit::searchPairsSelections(QTextCursor &cursor, const QString &first) {
+void PlainTextEditExtra::searchPairsSelections(QTextCursor &cursor, const QString &first) {
     QString second;
     if (first == "(")
         second = ")";
@@ -1072,7 +1072,7 @@ void PlainTextEdit::searchPairsSelections(QTextCursor &cursor, const QString &fi
     */
 }
 
-void PlainTextEdit::setLineSelection(const int &line, const PlainTextEdit::selectionType &type, const bool &removeAll) {
+void PlainTextEditExtra::setLineSelection(const int &line, const PlainTextEditExtra::selectionType &type, const bool &removeAll) {
     QTextEdit::ExtraSelection selection;
     QTextCursor cursor = textCursor();
     setCursorPosition(cursor, 1, line);
@@ -1118,7 +1118,7 @@ void PlainTextEdit::setLineSelection(const int &line, const PlainTextEdit::selec
     updateExtraSelections();
 }
 
-void PlainTextEdit::setUnderLineSelection(const QPoint &start, const QPoint &end, const selectionType &type) {
+void PlainTextEditExtra::setUnderLineSelection(const QPoint &start, const QPoint &end, const selectionType &type) {
     QTextEdit::ExtraSelection selection;
     QTextCursor cursor = textCursor();
     setCursorPosition(cursor, start.x(), start.y());
@@ -1157,7 +1157,7 @@ void PlainTextEdit::setUnderLineSelection(const QPoint &start, const QPoint &end
     updateExtraSelections();
 }
 
-void PlainTextEdit::setCollapsableText(const QPoint &start, const QPoint &end) {
+void PlainTextEditExtra::setCollapsableText(const QPoint &start, const QPoint &end) {
     QTextCursor cursor = textCursor();
     setCursorPosition(cursor, start.x(), start.y());
     const int pos = document()->findBlockByNumber(end.y() - 1).position() + end.x();
@@ -1169,7 +1169,7 @@ void PlainTextEdit::setCollapsableText(const QPoint &start, const QPoint &end) {
     setTextCursor(cursor);
 }
 
-void PlainTextEdit::updateExtraSelections() {
+void PlainTextEditExtra::updateExtraSelections() {
     setExtraSelections(extra_selections_current_line + extra_selections_search_results +
                        extra_selections_search_touched_results +
                        extra_selections_line + extra_selections_underline);
@@ -1178,17 +1178,17 @@ void PlainTextEdit::updateExtraSelections() {
 
 /* slots
  ------------------------------------------------------------------------- */
-void PlainTextEdit::slotShowMenu(const QPoint &pos) {
+void PlainTextEditExtra::slotShowMenu(const QPoint &pos) {
     viewMenu->exec(viewport()->mapToGlobal(pos));
 }
 
-void PlainTextEdit::slotShowNewSampleWindow() {
+void PlainTextEditExtra::slotShowNewSampleWindow() {
     newSampleWindow = new NewSampleWindow(this);
     newSampleWindow->newUserSampleWindow();
     connect(newSampleWindow, SIGNAL(sampleNameRegisterDestroyed()), this, SLOT(slotCreateSample()));
 }
 
-void PlainTextEdit::slotCreateSample() {
+void PlainTextEditExtra::slotCreateSample() {
     const QString content = textCursor().selectedText();
     const QString sampleName = newSampleWindow->newSampleName;
     if (content.isEmpty() || sampleName.isEmpty()) {
@@ -1198,37 +1198,37 @@ void PlainTextEdit::slotCreateSample() {
     education->addUserSample(content, sampleName);
 }
 
-void PlainTextEdit::slotToggleBreakPoint() {
+void PlainTextEditExtra::slotToggleBreakPoint() {
     breakPointArea->containBlock(getCursorPosition().y() - 1);
 }
 
-void PlainTextEdit::formatFile() const {
+void PlainTextEditExtra::formatFile() const {
     code_info->runAction(CodeInfoDock::FormatFile);
 }
 
-void PlainTextEdit::slotGenerate() const {
+void PlainTextEditExtra::slotGenerate() const {
     code_info->runAction(CodeInfoDock::Generate);
 }
 
-void PlainTextEdit::slotGoToDefinition() const {
+void PlainTextEditExtra::slotGoToDefinition() const {
     code_info->runAction(CodeInfoDock::GoToDefinition);
 }
 
-void PlainTextEdit::slotFindReferences() const {
+void PlainTextEditExtra::slotFindReferences() const {
     code_info->runAction(CodeInfoDock::FindReferences);
 }
 
-void PlainTextEdit::slotShowCommentTags() const {
+void PlainTextEditExtra::slotShowCommentTags() const {
     tagReminder->fillView(filepath);
     tagReminder->show();
 }
 
-void PlainTextEdit::slotShowInNodeView() {
+void PlainTextEditExtra::slotShowInNodeView() {
     nodeView->showNodeFromBlock(getCursorPosition());
     // CHECK: this should set also to right node
 }
 
-void PlainTextEdit::slotAddCommentTags() {
+void PlainTextEditExtra::slotAddCommentTags() {
     QTextCursor cursor = textCursor();
     cursor.select(QTextCursor::LineUnderCursor);
     const QString text = cursor.selectedText();
@@ -1250,16 +1250,16 @@ void PlainTextEdit::slotAddCommentTags() {
     tagListPopup->setFocus();
 }
 
-void PlainTextEdit::slotExpand() {
+void PlainTextEditExtra::slotExpand() {
     indentText(true);
 }
 
-void PlainTextEdit::slotCollapse() {
+void PlainTextEditExtra::slotCollapse() {
     indentText(false);
 }
 
 // increase size when number are 10, 100, 1000, ...
-void PlainTextEdit::slotBlockCountChanged(const int &count) {
+void PlainTextEditExtra::slotBlockCountChanged(const int &count) {
     Q_UNUSED(count)
     // BreakpointArea->sizeHint().width() + codeNotifiArea->sizeHint().width() +
     // lineNumberArea->sizeHint().width() + arrowArea->sizeHint().width()
@@ -1273,7 +1273,7 @@ void PlainTextEdit::slotBlockCountChanged(const int &count) {
                 statusArea->sizeHint().height(), 0, 0);
 }
 
-void PlainTextEdit::slotHighlightCurrentLine()
+void PlainTextEditExtra::slotHighlightCurrentLine()
 {
     extra_selections_current_line.clear();
     if (!isReadOnly()) {
@@ -1306,12 +1306,12 @@ void PlainTextEdit::slotHighlightCurrentLine()
         touchTimer->start();
     }
     */
-    //QTimer::singleShot(3000, this, &PlainTextEdit::searchByMouseTouch);
+    //QTimer::singleShot(3000, this, &PlainTextEditExtra::searchByMouseTouch);
     // code_info->updateDocks();
 }
 
 // update automatically whole view -> all widgets contained
-void PlainTextEdit::slotUpdateRequest(const QRect &rect, const int column) {
+void PlainTextEditExtra::slotUpdateRequest(const QRect &rect, const int column) {
     if (column) {
         lineNumberArea->scroll(0, column);
         breakPointArea->scroll(0, column);
@@ -1331,7 +1331,7 @@ void PlainTextEdit::slotUpdateRequest(const QRect &rect, const int column) {
     }
 }
 
-void PlainTextEdit::slotTextChanged()
+void PlainTextEditExtra::slotTextChanged()
 {
     slotHighlightCurrentLine();
     slotBlockCountChanged(0);
@@ -1343,7 +1343,7 @@ void PlainTextEdit::slotTextChanged()
     }
 }
 
-void PlainTextEdit::searchByMouseTouch() {
+void PlainTextEditExtra::searchByMouseTouch() {
     qDebug() << "activated with " + wordUnderCursor;
     QTextCursor cursor = textCursor();
     wordUnderCursor = getWordUnderCursor();
@@ -1382,15 +1382,15 @@ void PlainTextEdit::searchByMouseTouch() {
 }
 
 
-/* PlainTextEdit protected functions
+/* PlainTextEditExtra protected functions
 ------------------------------------------------------------------------- */
 
-void PlainTextEdit::dropEvent(QDropEvent *e){
+void PlainTextEditExtra::dropEvent(QDropEvent *e){
     e->acceptProposedAction();
     QPlainTextEdit::dropEvent(e);
 }
 
-void PlainTextEdit::mousePressEvent(QMouseEvent *event) {
+void PlainTextEditExtra::mousePressEvent(QMouseEvent *event) {
     anchor = anchorAt(event->pos());
     if (!anchor.isEmpty())
         QApplication::setOverrideCursor(Qt::PointingHandCursor);
@@ -1406,7 +1406,7 @@ void PlainTextEdit::mousePressEvent(QMouseEvent *event) {
     QPlainTextEdit::mousePressEvent(event);
 }
 
-void PlainTextEdit::mouseReleaseEvent(QMouseEvent *event) {
+void PlainTextEditExtra::mouseReleaseEvent(QMouseEvent *event) {
     if (!anchor.isEmpty()) {
         // this is for web
         //QDesktopServices::openUrl(QUrl(anchor));
@@ -1426,7 +1426,7 @@ void PlainTextEdit::mouseReleaseEvent(QMouseEvent *event) {
     QPlainTextEdit::mouseReleaseEvent(event);
 }
 
-void PlainTextEdit::mouseMoveEvent(QMouseEvent *event) {
+void PlainTextEditExtra::mouseMoveEvent(QMouseEvent *event) {
 
     // TODO: check rect position if we are not in hoverInfoWidget if later
     // TODO: we will want to add some more functionalities or for now add
@@ -1441,7 +1441,7 @@ void PlainTextEdit::mouseMoveEvent(QMouseEvent *event) {
 }
 
 // increasing, decreasing text point size
-void PlainTextEdit::wheelEvent(QWheelEvent *event) {
+void PlainTextEditExtra::wheelEvent(QWheelEvent *event) {
     if (event->modifiers() & Qt::ControlModifier) {
         const int delta = event->delta();
         if (delta > 0) {
@@ -1454,7 +1454,7 @@ void PlainTextEdit::wheelEvent(QWheelEvent *event) {
     }
 }
 
-void PlainTextEdit::paintEvent(QPaintEvent *event) {
+void PlainTextEditExtra::paintEvent(QPaintEvent *event) {
     // write content first as it was
     QPlainTextEdit::paintEvent(event);
 
@@ -1510,7 +1510,7 @@ void PlainTextEdit::paintEvent(QPaintEvent *event) {
     }
 }
 
-void PlainTextEdit::resizeEvent(QResizeEvent *event) {
+void PlainTextEditExtra::resizeEvent(QResizeEvent *event) {
     // whole text edit rect
     const QRect rect = contentsRect();
     // LineArea->setGeometry(QRect(rect.left(), rect.top(), LineArea->sizeHint().width(), rect.height()));
@@ -1532,7 +1532,7 @@ void PlainTextEdit::resizeEvent(QResizeEvent *event) {
     QPlainTextEdit::resizeEvent(event);
 }
 
-void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
+void PlainTextEditExtra::keyReleaseEvent(QKeyEvent *event) {
     QTextCursor cursor = textCursor();
 
     /*
@@ -1550,7 +1550,7 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
     bool isShortcut = ((event->modifiers() && Qt::ControlModifier) && event->key() == Qt::Key_Space);
     if (!completer || !isShortcut) // do not process the shortcut when we have a completer
     {
-        QPlainTextEdit::keyReleaseEvent(event);
+        QPlainTextEditExtra::keyReleaseEvent(event);
     }
     if (!isShortcut && (hasModifier || event->text().isEmpty()|| completionPrefix.length() < 3
                         || eow.contains(event->text().right(1)))) {
@@ -1678,7 +1678,7 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
     QPlainTextEdit::keyReleaseEvent(event);
 }
 
-void PlainTextEdit::keyPressEvent(QKeyEvent *event) {
+void PlainTextEditExtra::keyPressEvent(QKeyEvent *event) {
 
     // setToolTip(getWordUnderCursor());
     const QString completionPrefix = getWordUnderCursor();
@@ -1750,11 +1750,11 @@ void PlainTextEdit::keyPressEvent(QKeyEvent *event) {
             break;
     }
 
-    // QPlainTextEdit::keyPressEvent(event);
+    // QPlainTextEditExtra::keyPressEvent(event);
 }
 
 
-void PlainTextEdit::focusInEvent(QFocusEvent *e) {
+void PlainTextEditExtra::focusInEvent(QFocusEvent *e) {
     /*
     if (completer) {
         completer->setWidget(this);
@@ -1770,7 +1770,7 @@ void PlainTextEdit::focusInEvent(QFocusEvent *e) {
 
 // cursor continues to be shown when menu pop up
 // or simply when it pop up this->setFocus() to menu
-void PlainTextEdit::focusOutEvent(QFocusEvent *e) {
+void PlainTextEditExtra::focusOutEvent(QFocusEvent *e) {
     const Qt::FocusReason r = e->reason();
     if ((r == Qt::PopupFocusReason) ||
         (r == Qt::MenuBarFocusReason)) {
@@ -1780,7 +1780,7 @@ void PlainTextEdit::focusOutEvent(QFocusEvent *e) {
 }
 
 // Hover Information label
-bool PlainTextEdit::event(QEvent *event) {
+bool PlainTextEditExtra::event(QEvent *event) {
     // TODO: for this purpose try to get all data for text positions
     // TODO: and if we will going to show, can avoid action thread run (run it just once for all file)
     if (event->type() == QEvent::ToolTip) {
@@ -1854,7 +1854,7 @@ bool PlainTextEdit::event(QEvent *event) {
 /* LineNumberArea widget
 ------------------------------------------------------------------------- */
 
-LineNumberArea::LineNumberArea(PlainTextEdit *edit, QWidget *parent) : QWidget(edit), m_Edit(edit) {
+LineNumberArea::LineNumberArea(PlainTextEditExtra *edit, QWidget *parent) : QWidget(edit), m_Edit(edit) {
     setStyleSheet("background-color: rgb(47, 47, 47)");
     setUpdatesEnabled(true);
 
@@ -1954,7 +1954,7 @@ void LineNumberArea::wheelEvent(QWheelEvent *e) {
 /* BreakPointArea widget
 ------------------------------------------------------------------------- */
 
-BreakPointArea::BreakPointArea(PlainTextEdit *edit, QWidget *parent) : QWidget(edit), m_Edit(edit) {
+BreakPointArea::BreakPointArea(PlainTextEditExtra *edit, QWidget *parent) : QWidget(edit), m_Edit(edit) {
     setUpdatesEnabled(true);
     breakpoint.load(IconFactory::BreakPoint);
     // setFixedWidth(breakpoint.width());
@@ -2056,7 +2056,7 @@ void BreakPointArea::paintEvent(QPaintEvent *event) {
 }
 
 
-ArrowArea::ArrowArea(PlainTextEdit *edit, QWidget *parent) : QWidget(edit), m_Edit(edit) {
+ArrowArea::ArrowArea(PlainTextEditExtra *edit, QWidget *parent) : QWidget(edit), m_Edit(edit) {
     setUpdatesEnabled(true);
     arrowCollapse.load(IconFactory::ScrollUp);
     arrowExpand.load(IconFactory::ScrollDown);
@@ -2162,7 +2162,7 @@ void ArrowArea::paintEvent(QPaintEvent *event) {
 }
 
 
-CodeNotifyArea::CodeNotifyArea(PlainTextEdit *edit, QWidget *parent) : QWidget(edit), m_Edit(edit) {
+CodeNotifyArea::CodeNotifyArea(PlainTextEditExtra *edit, QWidget *parent) : QWidget(edit), m_Edit(edit) {
     WH.setX(m_Edit->fontMetrics().horizontalAdvance("88"));
     WH.setY(m_Edit->fontMetrics().height());
 
@@ -2290,7 +2290,7 @@ void CodeNotifyArea::mousePressEvent(QMouseEvent *event) {
 
 
 // https://stackoverflow.com/questions/22606122/draw-text-on-scrollbar
-ScrollBar::ScrollBar(PlainTextEdit *edit, QWidget *parent) : QScrollBar(edit), m_Edit(edit) {
+ScrollBar::ScrollBar(PlainTextEditExtra *edit, QWidget *parent) : QScrollBar(edit), m_Edit(edit) {
     setOrientation(Qt::Vertical);
     setMouseTracking(true);
     smallEdit = new SmallRoundedEdit(m_Edit);
@@ -2461,7 +2461,7 @@ void ScrollBar::calculateAndSetSmallEditGeometry(const int &posY) {
 
 
 
-StatusArea::StatusArea(PlainTextEdit *edit, QWidget *parent) : QWidget(edit), m_Edit(edit) {
+StatusArea::StatusArea(PlainTextEditExtra *edit, QWidget *parent) : QWidget(edit), m_Edit(edit) {
     createWindow();
     setFixedHeight(20);
 

@@ -6,12 +6,14 @@
 #include <QFormLayout>
 #include <QString>
 
+//class PlainTextEditExtra;
 class PlainTextEdit;
 
 class GoToLineColumn : public QWidget {
 Q_OBJECT
 public:
-    explicit GoToLineColumn(PlainTextEdit *textEdit, QWidget *parent = nullptr);
+    explicit GoToLineColumn(PlainTextEdit *textEdit);
+    //explicit GoToLineColumn(PlainTextEditExtra *textEdit);
     ~GoToLineColumn() = default;
 
 private:
@@ -20,6 +22,7 @@ private:
     void createWindow();
 
     PlainTextEdit *edit = nullptr;
+    //PlainTextEditExtra *editExtra = nullptr;
 
 private slots:
     void storeData();

@@ -21,8 +21,8 @@
  * diff ::::: https://www.techiedelight.com/implement-diff-utility/
 */
 class ClangBridge;
-
 class PlainTextEdit;
+class Node;
 
 class TextNodeRelationManager {
 public:
@@ -42,7 +42,7 @@ public:
     // nodeID related to text range
     struct NodeData {
         clang::clangd::Range range;
-        int nodeID;
+        Node *node;
     };
 
     // ranges for scopes in 1 TU
@@ -79,10 +79,10 @@ public:
 
 
     // from text
-    int getNodeIDFromBlock(const QPoint &pos) const;
+    Node* getNodeIDFromBlock(const QPoint &pos) const;
 
     // from node         returns block/line
-    QPair<QString, int> getTextPostitionFromNode(const int &nodeID) const;
+    QPair<QString, int> getTextPostitionFromNode(Node *node) const;
 
 
 private:

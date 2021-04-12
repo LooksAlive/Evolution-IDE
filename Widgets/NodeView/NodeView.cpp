@@ -75,13 +75,13 @@ void NodeView::connectAll() {
 
 void NodeView::showNodeFromBlock(const QPoint &pos) {
     textNodeManager.createNodesFromAST();
-    const int nodeID = textNodeManager.getNodeIDFromBlock(pos);
+    Node* node = textNodeManager.getNodeIDFromBlock(pos);
 
     // TODO: show it to main screen
 }
 
-void NodeView::showTextFromNode(const int &nodeID) {
-    const QPair<QString, int> data = textNodeManager.getTextPostitionFromNode(nodeID);
+void NodeView::showTextFromNode(Node *node) {
+    const QPair<QString, int> data = textNodeManager.getTextPostitionFromNode(node);
     // connect OpenFile() outside
     emit openFile(data.first, data.second);
 }
@@ -257,7 +257,7 @@ void NodeView::dropEvent(QDropEvent *event) {
         lWidget->currentItem()->text(0);
         qDebug() << "tree....";
     }
-    // QGraphicsView::dropEvent(event);
+    QGraphicsView::dropEvent(event);
 }
 
 

@@ -69,12 +69,12 @@ class NotifyWidget;
 
 class CodeInfoDock;
 
-class PlainTextEdit : public QPlainTextEdit {
+class PlainTextEditExtra : public QPlainTextEdit {
 Q_OBJECT
 public:
-    explicit PlainTextEdit(QWidget *parent = nullptr);
+    explicit PlainTextEditExtra(QWidget *parent = nullptr);
 
-    ~PlainTextEdit() = default;
+    ~PlainTextEditExtra() = default;
 
     BreakPointArea *breakPointArea;
     LineNumberArea *lineNumberArea;
@@ -348,7 +348,7 @@ class LineNumberArea : public QWidget
 {
     Q_OBJECT
 public:
-    explicit LineNumberArea(PlainTextEdit *edit, QWidget *parent = nullptr);
+    explicit LineNumberArea(PlainTextEditExtra *edit, QWidget *parent = nullptr);
 
     ~LineNumberArea() = default;
     // reprezents height, width or area even while changing its dimensions
@@ -365,7 +365,7 @@ protected:
     void wheelEvent(QWheelEvent *event) override;
 
 private:
-    PlainTextEdit *m_Edit;
+    PlainTextEditExtra *m_Edit;
 };
 
 
@@ -373,7 +373,7 @@ class BreakPointArea : public QWidget
 {
 Q_OBJECT
 public:
-    explicit BreakPointArea(PlainTextEdit *edit, QWidget *parent = nullptr);
+    explicit BreakPointArea(PlainTextEditExtra *edit, QWidget *parent = nullptr);
 
     ~BreakPointArea() = default;
     // represents height, width or area even while changing its dimensions
@@ -391,7 +391,7 @@ signals:
     void breakPointRemoved(const int &line);
 
 private:
-    PlainTextEdit *m_Edit;
+    PlainTextEditExtra *m_Edit;
 
     // TODO: consider widgets [ setting their postition ]
     QPixmap breakpoint;
@@ -411,7 +411,7 @@ protected:
 class ArrowArea : public QWidget {
 Q_OBJECT
 public:
-    explicit ArrowArea(PlainTextEdit *edit, QWidget *parent = nullptr);
+    explicit ArrowArea(PlainTextEditExtra *edit, QWidget *parent = nullptr);
 
     ~ArrowArea() = default;
 
@@ -429,7 +429,7 @@ protected:
     void paintEvent(QPaintEvent *event) override;
 
 private:
-    PlainTextEdit *m_Edit;
+    PlainTextEditExtra *m_Edit;
 
     QPixmap arrowCollapse;
     QPixmap arrowExpand;
@@ -437,7 +437,7 @@ private:
 
     // this is similarly done by links, so it is connected
     // if so, ... get line href(word at the end) and expand by anchor href + rm, same algorithm
-    // for collapsing use PlainTextEdit::setCollapsableText() with boundings from clang + change arrow
+    // for collapsing use PlainTextEditExtra::setCollapsableText() with boundings from clang + change arrow
     // called when switching from one to other
     void collapseOrExpand(const int &line);
 
@@ -453,7 +453,7 @@ private:
 class CodeNotifyArea : public QWidget {
 Q_OBJECT
 public:
-    explicit CodeNotifyArea(PlainTextEdit *edit, QWidget *parent = nullptr);
+    explicit CodeNotifyArea(PlainTextEditExtra *edit, QWidget *parent = nullptr);
 
     ~CodeNotifyArea() = default;
 
@@ -484,7 +484,7 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
 
 private:
-    PlainTextEdit *m_Edit;
+    PlainTextEditExtra *m_Edit;
 
     // width and height for line, solved increasing view
     QPoint WH;
@@ -518,7 +518,7 @@ private:
 class ScrollBar : public QScrollBar {
 Q_OBJECT
 public:
-    explicit ScrollBar(PlainTextEdit *edit, QWidget *parent = nullptr);
+    explicit ScrollBar(PlainTextEditExtra *edit, QWidget *parent = nullptr);
 
     ~ScrollBar() = default;
 
@@ -547,7 +547,7 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
 
 private:
-    PlainTextEdit *m_Edit;
+    PlainTextEditExtra *m_Edit;
     SmallRoundedEdit *smallEdit;
 
     // indicates wheather we are still in scrollBar widget
@@ -573,7 +573,7 @@ private:
 class StatusArea : public QWidget {
 Q_OBJECT
 public:
-    explicit StatusArea(PlainTextEdit *edit, QWidget *parent = nullptr);
+    explicit StatusArea(PlainTextEditExtra *edit, QWidget *parent = nullptr);
     ~StatusArea() = default;
 
     // QSize sizeHint() const override;
@@ -583,7 +583,7 @@ public:
 
 
 private:
-    PlainTextEdit *m_Edit;
+    PlainTextEditExtra *m_Edit;
     GoToLineColumn *goToLineColumn;
 
     QHBoxLayout *MainLayout;

@@ -329,6 +329,8 @@ set(SOURCE_FILES
         Widgets/Notifier/ContactDeveloper.h
         Widgets/PlainTextEdit/HoverInfoWidget.cpp
         Widgets/PlainTextEdit/HoverInfoWidget.h
+        #Widgets/PlainTextEdit/PlainTextEditExtra.cpp
+        #Widgets/PlainTextEdit/PlainTextEditExtra.h
         Widgets/CommentTagsReminder/CommentTagsReminder.cpp
         Widgets/CommentTagsReminder/CommentTagsReminder.h
         Widgets/PlainTextEdit/CommentTagList.cpp

@@ -6,6 +6,8 @@
 
 
 class PlainTextEdit;
+// class PlainTextEditExtra;
+
 
 /*
  * shows collapsed code like edit
@@ -15,7 +17,8 @@ class PlainTextEdit;
 class SmallRoundedEdit : public QPlainTextEdit {
 Q_OBJECT
 public:
-    explicit SmallRoundedEdit(PlainTextEdit *edit, QWidget *parent = nullptr);
+    explicit SmallRoundedEdit(PlainTextEdit *edit);
+    // explicit SmallRoundedEdit(PlainTextEditExtra *edit);
 
     ~SmallRoundedEdit() = default;
 
@@ -23,7 +26,8 @@ public:
     int timesAplified = 1;
 
 private:
-    PlainTextEdit *m_Edit;
+    PlainTextEdit *m_Edit = nullptr;
+    // PlainTextEditExtra *editExtra = nullptr;
 
 
 protected:

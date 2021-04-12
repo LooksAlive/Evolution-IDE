@@ -1,7 +1,7 @@
 #include "SmallRoundedEdit.h"
 
 
-SmallRoundedEdit::SmallRoundedEdit(PlainTextEdit *edit, QWidget *parent) : QPlainTextEdit(parent), m_Edit(edit) {
+SmallRoundedEdit::SmallRoundedEdit(PlainTextEdit *edit) : m_Edit(edit) {
     setStyleSheet("border-radius: 15px; border: 3px solid gray; background-color: gray;");
     // background:transparent;      cause no background
     setVisible(false);
@@ -9,7 +9,16 @@ SmallRoundedEdit::SmallRoundedEdit(PlainTextEdit *edit, QWidget *parent) : QPlai
     // setAttribute(Qt::WA_TranslucentBackground);
     setWindowFlags(Qt::FramelessWindowHint);
 }
+/*
+SmallRoundedEdit::SmallRoundedEdit(PlainTextEditExtra *edit) : editExtra(edit) {
+    setStyleSheet("border-radius: 15px; border: 3px solid gray; background-color: gray;");
+    // background:transparent;      cause no background
+    setVisible(false);
 
+    // setAttribute(Qt::WA_TranslucentBackground);
+    setWindowFlags(Qt::FramelessWindowHint);
+}
+*/
 void SmallRoundedEdit::enterEvent(QEvent *event) {
     inWidget = true;
     QWidget::enterEvent(event);

@@ -3,7 +3,7 @@
 
 HoverInfoWidget::HoverInfoWidget(QWidget *parent) : QWidget(parent) {
     setVisible(false);
-    setMouseTracking(true);
+    // setMouseTracking(true);
     //setTabletTracking(true);
 
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);

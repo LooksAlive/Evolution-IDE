@@ -1,12 +1,17 @@
-#include <Widgets/PlainTextEdit/plaintextedit.h>
+#include "plaintextedit.h"
 
 #include "GoToLineColumn.h"
 
-GoToLineColumn::GoToLineColumn(PlainTextEdit *textEdit, QWidget *parent) : QWidget(parent), edit(textEdit){
+GoToLineColumn::GoToLineColumn(PlainTextEdit *textEdit) : edit(textEdit) {
     setWindowFlags(Qt::Dialog);
     createWindow();
 }
-
+/*
+GoToLineColumn::GoToLineColumn(PlainTextEditExtra *textEdit) : editExtra(textEdit) {
+    setWindowFlags(Qt::Dialog);
+    createWindow();
+}
+*/
 
 void GoToLineColumn::createWindow() {
     MainLayout = new QFormLayout();
@@ -19,12 +24,13 @@ void GoToLineColumn::createWindow() {
 
 void GoToLineColumn::storeData() {
     int line = line_input->text().toLatin1().toInt();
-    edit->setCursorAtLine(line);
+    if(edit) {
+        edit->setCursorAtLine(line);
+    }
+    //if(editExtra) {
+        // editExtra
+        //editExtra->setCursorAtLine(line);
+    //}
     close();
     deleteLater();
 }
-
-
-
-
-
