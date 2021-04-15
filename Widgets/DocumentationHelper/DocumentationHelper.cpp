@@ -1,5 +1,4 @@
 #include "Widgets/PlainTextEdit/plaintextedit.h"
-#include "Widgets/PlainTextEdit/PlainTextEditExtra.h"
 #include "icons/IconFactory.h"
 #include "DocumentationHelper.h"
 

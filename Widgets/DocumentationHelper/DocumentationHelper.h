@@ -25,7 +25,6 @@
 
 
 class PlainTextEdit;
-//class PlainTextEditExtra;
 
 class DocumentationHelper : public QWidget
 {
@@ -47,7 +46,6 @@ public:
 
 private:
     PlainTextEdit *edit = nullptr;
-    //PlainTextEditExtra *editExtra = nullptr;
 
     QVBoxLayout *MLayout;
     QFormLayout *MainLayout;

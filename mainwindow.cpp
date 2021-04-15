@@ -40,7 +40,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     //CreateFile();
     SetupStatusBar();
-    SetupTagsReminder();
+    SetupTagsReminderAndHelpMessage();
 
     SetupDockWidgetsLayering();
 
@@ -598,13 +598,19 @@ void MainWindow::SetupFileDocker() {
     addDockWidget(Qt::LeftDockWidgetArea, Docker);
 }
 
-void MainWindow::SetupTagsReminder() {
+void MainWindow::SetupTagsReminderAndHelpMessage() {
     tagReminder = new CommentTagsReminder(this);
     tagReminder->setSources(file_manager.source_files);
     tagReminder->searchEverywhere();
 
     connect(tagReminder->view, SIGNAL(itemDoubleClicked(QTreeWidgetItem * , int)), this,
             SLOT(openCommentTag(QTreeWidgetItem * , int)));
+
+    helpMessage = new HelpIDEMessage(this);
+
+    connect(helpMessage->contact, &QAbstractButton::clicked, this, [=] {
+        contactDeveloper->show();
+    });
 }
 
 void MainWindow::openCommentTag(QTreeWidgetItem *item, int column) {
@@ -665,6 +671,12 @@ void MainWindow::slotFind() {
         searchBox->lineEdit->setText(text);
         searchBox->slotNext();
     }
+    /*
+    helpMessage->setGeometry(centralWidget()->geometry().x() + currentWidget->lineNumberArea->width(),
+                             centralWidget()->geometry().y() + Tabs->tabBar()->height(), 300, 70);
+    helpMessage->show();
+    */
+
     /*
     searchBox->move(vertical_bar->width(), menuBar->height() + topToolBar->height() + Tabs->height());
     searchBox->setStyleSheet("QWidget{border: 2px solid; background-color: grey;}");

@@ -329,8 +329,6 @@ set(SOURCE_FILES
         Widgets/Notifier/ContactDeveloper.h
         Widgets/PlainTextEdit/HoverInfoWidget.cpp
         Widgets/PlainTextEdit/HoverInfoWidget.h
-        #Widgets/PlainTextEdit/PlainTextEditExtra.cpp
-        #Widgets/PlainTextEdit/PlainTextEditExtra.h
         Widgets/CommentTagsReminder/CommentTagsReminder.cpp
         Widgets/CommentTagsReminder/CommentTagsReminder.h
         Widgets/PlainTextEdit/CommentTagList.cpp
@@ -364,6 +362,9 @@ set(SOURCE_FILES
         Widgets/NodeView/ElementsList.h
         Widgets/NodeView/StructureTree.cpp
         Widgets/NodeView/StructureTree.h
+
+        Widgets/Notifier/HelpIDEMessage.cpp
+        Widgets/Notifier/HelpIDEMessage.h
         )
 
 #set(Qt5Core_DIR "/opt/Qt/5.9.3/gcc_64/lib/cmake/Qt5Core/")

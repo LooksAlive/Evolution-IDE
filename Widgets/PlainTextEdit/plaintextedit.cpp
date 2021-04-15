@@ -933,7 +933,78 @@ void PlainTextEdit::showMessage(const QString &message) {
     infoMessage->setGeometry(cursorRect());
     infoMessage->setMessage(message);
     infoMessage->show();
-    QTimer::singleShot(3000, this, [=]() { infoMessage->hide(); });
+    QTimer::singleShot(3000, this, [=] { infoMessage->hide(); });
+}
+
+QString PlainTextEdit::indentText(const QString &text) {
+    QString newText;
+
+    // indentText(QString text, int count)
+
+    if(indentSize(text) > indentationSize) {
+        indentText(false);
+    }
+    else {
+        indentText(true);
+    }
+
+    return newText;
+}
+
+QString PlainTextEdit::pasteFormatText(const QString &text) {
+    QString newText;
+
+    newText = findStoreUrlsInText(text);
+    newText = indentText(text);
+
+    return newText;
+}
+
+QString PlainTextEdit::findStoreUrlsInText(const QString &text) {
+    QRegularExpression re(
+      "^"
+      "(?:(?:https?|ftp)://)"
+      "(?:\\S+(?::\\S*)?@)?"
+      "(?:"
+      "(?!(?:10|127)(?:\\.\\d{1,3}){3})"
+      "(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})"
+      "(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})"
+      "(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])"
+      "(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}"
+      "(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))"
+      "|"
+      "(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)"
+      "(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*"
+      "(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))"
+      "\\.?"
+      ")"
+      "(?::\\d{2,5})?"
+      "(?:[/?#]\\S*)?"
+      "$"
+    );
+
+    re.setPatternOptions(QRegularExpression::MultilineOption |
+                       QRegularExpression::DotMatchesEverythingOption |
+                       QRegularExpression::CaseInsensitiveOption);
+
+    auto match = re.globalMatch(text);
+    /*
+    if ( match.hasMatch()) {
+      qDebug() << match.captured(0);
+    } else {
+      qDebug() << "Nothing found";
+    }
+    */
+
+    // set them into link
+    QString newText;
+
+    while(match.hasNext()) {
+        const auto m = match.next();
+        m.captured();
+    }
+
+    return newText;
 }
 
 int PlainTextEdit::countSpaceTabs(const QString &lineContent, const int &indentation) {

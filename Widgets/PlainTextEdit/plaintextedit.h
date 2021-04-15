@@ -73,8 +73,11 @@ class PlainTextEdit : public QPlainTextEdit {
 Q_OBJECT
 public:
     explicit PlainTextEdit(QWidget *parent = nullptr);
-
     ~PlainTextEdit() = default;
+
+    // if false -> features are minimized (no top bar)
+    bool isComplexEditor = true;
+    int indentationSize = 4;
 
     BreakPointArea *breakPointArea;
     LineNumberArea *lineNumberArea;
@@ -231,6 +234,17 @@ public:
                    const QColor &color = QColor::fromRgb(0, 255, 0));
 
     void showMessage(const QString &message);
+
+    // simple text indentation, not formating just add, remove spaces
+    // can be used for whole file
+    QString indentText(const QString& text);
+
+    // paste operation, formating text, etc.
+    QString pasteFormatText(const QString& text);
+
+    // mostly used for parial, when text changed, in paste operations, but also at begining
+    // to set hrefs for links
+    QString findStoreUrlsInText(const QString& text);
 
 protected:
     bool event(QEvent *event) override;

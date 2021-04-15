@@ -86,6 +86,8 @@
 #include "Debugger/DebugWatchDock.h"
 #include "Debugger/DebuggerDock.h"
 
+#include "Widgets/Notifier/HelpIDEMessage.h"
+
 #include <QDebug>
 #include <QAction>
 
@@ -141,6 +143,8 @@ private:
     CommandLineExecutor *executor;
 
     CommentTagsReminder *tagReminder;
+
+    HelpIDEMessage *helpMessage;
 
     // top tool bar
     QToolBar *topToolBar;
@@ -216,7 +220,7 @@ private:
 
     void SetupGitDock();
 
-    void SetupTagsReminder();
+    void SetupTagsReminderAndHelpMessage();
 
     void SetupVerticalBar();
     void SetupNodeView();
