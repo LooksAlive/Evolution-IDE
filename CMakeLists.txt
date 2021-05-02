@@ -341,12 +341,14 @@ set(SOURCE_FILES
         Widgets/PlainTextEdit/ScrollBarMap.h
         Widgets/ProcessDataPlot/ProcessDataPlot.cpp
         Widgets/ProcessDataPlot/ProcessDataPlot.h
-        Widgets/ErrorCodeList/ErrorCodeList.cpp
-        Widgets/ErrorCodeList/ErrorCodeList.h
+        Widgets/UnitTesting/ErrorCodeList.cpp
+        Widgets/UnitTesting/ErrorCodeList.h
         Widgets/DocumentationHelper/DocumentationHelper.cpp
         Widgets/DocumentationHelper/DocumentationHelper.h
-        Plugins/CatchUnitTest.cpp
-        Plugins/CatchUnitTest.h
+        Widgets/UnitTesting/CatchUnitTest.cpp
+        Widgets/UnitTesting/CatchUnitTest.h
+        Widgets/Fuzzing/FuzzerInterface.cpp
+        Widgets/Fuzzing/FuzzerInterface.h
         # NodeView
         Widgets/NodeView/NodeView.cpp
         Widgets/NodeView/NodeView.h

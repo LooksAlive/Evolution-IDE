@@ -863,7 +863,7 @@ void PlainTextEdit::createMenu() {
     viewMenu->addAction("Find References", this, SLOT(slotFindReferences()), Qt::CTRL + Qt::SHIFT + Qt::Key_F);
 
     viewMenu->addAction("Add comment tag", this, SLOT(slotAddCommentTags()),
-                        Qt::CTRL + Qt::SHIFT + Qt::Key_T + Qt::Key_T);
+                        Qt::CTRL + Qt::SHIFT + Qt::Key_T);
     viewMenu->addAction("Comment tags", this, SLOT(slotShowCommentTags()), Qt::CTRL + Qt::SHIFT + Qt::Key_T);
 
     viewMenu->addAction("Show in nodes", this, SLOT(slotShowInNodeView()));
@@ -1362,7 +1362,8 @@ void PlainTextEdit::slotHighlightCurrentLine()
 
     // line column widget update
     const QPoint pos = getCursorPosition();
-    statusArea->lineColumn->setText(QString::number(pos.y()) + ":" + QString::number(pos.x()));
+    if(lineButton)
+        lineButton->setText(QString::number(pos.y()) + ":" + QString::number(pos.x()));
 
 
     //  ++++ cursor is changing...
@@ -2134,9 +2135,30 @@ ArrowArea::ArrowArea(PlainTextEdit *edit, QWidget *parent) : QWidget(edit), m_Ed
     setFixedWidth(arrowCollapse.width());
     setToolTip("arrow area");
 
+    viewMenu = new QMenu(this);
+
+    viewMenu->addAction("Expand All Scopes", this, SLOT(slotExpandAllScopes()));
+    viewMenu->addAction("Collapse All Scopes", this, SLOT(slotCollapseAllScopes()));
+
+    setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(this, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(slotShowMenu(const QPoint&)));
+
+
     const int xWidth = m_Edit->breakPointArea->sizeHint().width() + m_Edit->codeNotifyArea->sizeHint().width() +
                        m_Edit->lineNumberArea->sizeHint().width();
     setGeometry(xWidth, m_Edit->statusArea->sizeHint().height(), sizeHint().width(), m_Edit->height());
+}
+
+void ArrowArea::slotShowMenu(const QPoint &pos) {
+    viewMenu->exec(mapToGlobal(pos));
+}
+
+void ArrowArea::slotExpandAllScopes() {
+
+}
+
+void ArrowArea::slotCollapseAllScopes() {
+
 }
 
 void ArrowArea::collapseOrExpand(const int &line) {

@@ -148,6 +148,8 @@ private:
 
     // top tool bar
     QToolBar *topToolBar;
+    QComboBox *currentSymbolBox;
+
     SearchBox *searchBox;
 
     /* toolbar -> views */
@@ -161,6 +163,14 @@ private:
 
     // Status Bar
     QStatusBar *statusbar;
+    QToolButton *encoding;
+
+    QToolButton *lineColumn;
+    GoToLineColumn *goToLineColumn;
+
+    QToolButton *documentCode;
+    QToolButton *unitTest;
+    QToolButton *fuzzing;
     ProgressBar *progress_bar;
     QToolButton *github_branch;
 
@@ -376,6 +386,8 @@ private slots:
     void slotOpenFileFromNode(const QString &, const int &);
 
 private:
+    // when dock is shown
+    void updateAdditionalWidgetGeometry();
     // files operation variables
     bool CHANGES_IN_PROJECT = false;
     bool ALWAYS_SAVE = false;

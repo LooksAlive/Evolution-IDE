@@ -222,10 +222,17 @@ void MainWindow::SetupStatusBar() {
     locate_open_file = new QLineEdit(this);
     locate_completer = new QCompleter(this);
     btn_comment_tags = new QToolButton(this);
+    encoding = new QToolButton(this);
+    documentCode = new QToolButton(this);
+    unitTest = new QToolButton(this);
+    fuzzing = new QToolButton(this);
+
+    goToLineColumn = new GoToLineColumn(currentWidget);
+    lineColumn = new QToolButton(this);
 
     statusbar->layout()->setContentsMargins(0, 0, 0, 0);
-    statusbar->setFixedHeight(25);
-    statusbar->setMouseTracking(true);
+    statusbar->setFixedHeight(30);
+    // statusbar->setMouseTracking(true);
     github_branch->setFixedWidth(70);
     github_branch->setToolButtonStyle(Qt::ToolButtonFollowStyle);
     github_branch->setToolTip("git branch");
@@ -236,17 +243,43 @@ void MainWindow::SetupStatusBar() {
     btn_comment_tags->setFixedWidth(70);
     btn_comment_tags->setToolButtonStyle(Qt::ToolButtonFollowStyle);
     btn_comment_tags->setText("Tags");
+    btn_comment_tags->setToolButtonStyle(Qt::ToolButtonFollowStyle);
     btn_comment_tags->setToolTip("Show comment tags");
-    connect(btn_comment_tags, &QToolButton::clicked, this, [=]() { tagReminder->show(); });
+    connect(btn_comment_tags, &QToolButton::clicked, this, [=] {
+        if(currentWidget)
+            tagReminder->fillView(currentWidget->getFilePath());    // set for current openned file
+        tagReminder->show();
+
+    });
     locate_open_file->setCompleter(locate_completer);
     // locate_open_file->setMinimumWidth(100);
     locate_open_file->setMaximumWidth(200);
     locate_open_file->setPlaceholderText("look up file");
+    // TODO: update model class for whole IDE updating ...
     locate_completer->setModel(new QStringListModel(file_manager.source_files_names, locate_completer));
     locate_completer->setMaxVisibleItems(12);
     locate_completer->setCompletionMode(QCompleter::PopupCompletion);
     locate_completer->setFilterMode(Qt::MatchContains);
     connect(locate_completer, SIGNAL(activated(const QString &)), this, SLOT(slotOpenLocateFile(const QString &)));
+
+    connect(lineColumn, &QAbstractButton::clicked, this, [=](){
+       goToLineColumn->show();
+    });
+
+    documentCode->setText("Documentation");
+    documentCode->setFixedWidth(120);
+
+    connect(documentCode, &QToolButton::clicked, this, [=](){
+       if(!currentWidget) return;
+       // TODO: with clang get right position offset and params + type(void, non-void, enum)
+       currentWidget->documentationHelper->setDocData(currentWidget->getCursorPosition(), QStringList() << "mmmm" << "nnnn");
+       currentWidget->documentationHelper->show();
+    });
+
+    encoding->setText("UTF-8");
+    unitTest->setText("UnitTest");
+    fuzzing->setText("Fuzzing");
+
 
     statusbar->setWindowFlags(Qt::FramelessWindowHint);
     statusbar->setAttribute(Qt::WA_NoSystemBackground, true);
@@ -256,8 +289,16 @@ void MainWindow::SetupStatusBar() {
     // TODO: update available with showMessage for some time
     statusbar->addWidget(locate_open_file); // to left
     statusbar->addWidget(btn_comment_tags);
+    statusbar->addWidget(documentCode);
+    statusbar->addWidget(unitTest);
+    statusbar->addWidget(fuzzing);
+
+    statusbar->addPermanentWidget(lineColumn);
+    statusbar->addPermanentWidget(encoding);
+
     statusbar->addPermanentWidget(progress_bar);// align right with permanent widget
     statusbar->addPermanentWidget(github_branch);
+
     setStatusBar(statusbar);
 }
 
@@ -375,6 +416,7 @@ void MainWindow::SetupToolBar() {
     topToolBar = new QToolBar(this);
     topToolBar->setWindowTitle("Top ToolBar");
     topToolBar->setMovable(false);
+    topToolBar->setFixedHeight(30);
     addToolBar(Qt::TopToolBarArea, topToolBar);
 
     // ":/icons/new_file.png"
@@ -397,6 +439,16 @@ void MainWindow::SetupToolBar() {
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     topToolBar->addWidget(spacer);
+
+    currentSymbolBox = new QComboBox(this);
+    currentSymbolBox->setMinimumWidth(100);
+    currentSymbolBox->setMaxVisibleItems(15);
+    currentSymbolBox->addItems(QStringList() << "myitem" << "youritem" << "ouritem");
+
+    topToolBar->addWidget(currentSymbolBox);
+    topToolBar->addSeparator();
+    topToolBar->addSeparator();
+
     topToolBar->addAction(QIcon(IconFactory::Build), "Build", this, SLOT(slotBuild()));
     topToolBar->addAction(QIcon(IconFactory::Run), "Run", this, SLOT(slotRun()));
     topToolBar->addAction(QIcon(IconFactory::Stop), "Stop Process", this, SLOT(slotStopProcess()));
@@ -822,6 +874,8 @@ void MainWindow::SetupEducationDock() {
 void MainWindow::SetupGitDock() {
     gitDock = new GitDock();
     addDockWidget(Qt::RightDockWidgetArea, gitDock);
+
+    // TODO: set data from registry
 }
 
 void MainWindow::SetupNodeView() {
@@ -838,6 +892,10 @@ void MainWindow::slotOpenFileFromNode(const QString &filepath, const int &line) 
     if (OpenFile(filepath)) {
         currentWidget->setCursorAtLine(line);
     }
+}
+
+void MainWindow::updateAdditionalWidgetGeometry() {
+
 }
 
 void MainWindow::SetupDebuggerView() {

@@ -90,6 +90,7 @@ public:
     // parsing
     ClangBridge *clang;
     NodeView *nodeView;
+    QToolButton *lineButton = nullptr;
     // TODO: add option for sample creation into menu
     Education *education;
     NewSampleWindow *newSampleWindow;
@@ -117,6 +118,8 @@ public:
     void setEducation(Education *edu) { education = edu; }
 
     void setTagReminder(CommentTagsReminder *reminder) { tagReminder = reminder; }
+
+    void setLineButton(QToolButton *Lbtn) { lineButton = Lbtn;}
 
     // tab width
     static constexpr unsigned int TAB_STOP_WIDTH = 4;
@@ -442,11 +445,20 @@ protected:
 
     void paintEvent(QPaintEvent *event) override;
 
+private slots:
+    void slotShowMenu(const QPoint&);
+
+    // TODO: implement these.
+    void slotExpandAllScopes();
+    void slotCollapseAllScopes();
+
 private:
     PlainTextEdit *m_Edit;
 
     QPixmap arrowCollapse;
     QPixmap arrowExpand;
+
+    QMenu *viewMenu;
 
 
     // this is similarly done by links, so it is connected
