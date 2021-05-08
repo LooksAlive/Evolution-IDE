@@ -18,7 +18,6 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
     SetupAdditionalWidgets();
 
     // queue is critical for geometry
-    statusArea = new StatusArea(this);
     breakPointArea = new BreakPointArea(this);
     codeNotifyArea = new CodeNotifyArea(this);
     lineNumberArea = new LineNumberArea(this);
@@ -1339,9 +1338,7 @@ void PlainTextEdit::slotBlockCountChanged(const int &count) {
     setViewportMargins(
                 /* left */
                 breakPointArea->sizeHint().width() + codeNotifyArea->sizeHint().width() +
-                lineNumberArea->sizeHint().width() + arrowArea->sizeHint().width(),
-                /* top */
-                statusArea->sizeHint().height(), 0, 0);
+                lineNumberArea->sizeHint().width() + arrowArea->sizeHint().width(), 0, 0, 0);
 }
 
 void PlainTextEdit::slotHighlightCurrentLine()
@@ -1395,7 +1392,6 @@ void PlainTextEdit::slotUpdateRequest(const QRect &rect, const int column) {
     lineNumberArea->update();
     breakPointArea->update();
     arrowArea->update();
-    statusArea->update();
     codeNotifyArea->update();
 
     if (rect.contains(viewport()->rect())) {
@@ -1931,7 +1927,7 @@ LineNumberArea::LineNumberArea(PlainTextEdit *edit, QWidget *parent) : QWidget(e
     setUpdatesEnabled(true);
 
     const int xWidth = m_Edit->breakPointArea->sizeHint().width() + m_Edit->codeNotifyArea->sizeHint().width();
-    setGeometry(xWidth, m_Edit->statusArea->sizeHint().height(), sizeHint().width(), m_Edit->height());
+    setGeometry(xWidth, 0, sizeHint().width(), m_Edit->height());
 }
 
 void LineNumberArea::leaveEvent(QEvent *e)
@@ -1947,7 +1943,7 @@ void LineNumberArea::paintEvent(QPaintEvent *e)
     QTextBlock block = m_Edit->firstVisibleBlockProxy();
     int i = block.blockNumber();
     // add top are to push down left side widgets
-    int top = static_cast<int>(m_Edit->blockBoundingGeometryProxy(block).translated(m_Edit->contentOffsetProxy()).top() + m_Edit->statusArea->sizeHint().height());
+    int top = static_cast<int>(m_Edit->blockBoundingGeometryProxy(block).translated(m_Edit->contentOffsetProxy()).top());
     int bottom = top + static_cast<int>(m_Edit->blockBoundingRectProxy(block).height());
     const QRect full = e->rect();
     painter.fillRect(full, palette().color(QPalette::Base));
@@ -2031,7 +2027,7 @@ BreakPointArea::BreakPointArea(PlainTextEdit *edit, QWidget *parent) : QWidget(e
     breakpoint.load(IconFactory::BreakPoint);
     // setFixedWidth(breakpoint.width());
     B_blocks.reserve(5);
-    setGeometry(0, m_Edit->statusArea->sizeHint().height(), sizeHint().width(), m_Edit->height());
+    setGeometry(0, 0, sizeHint().width(), m_Edit->height());
 }
 
 bool BreakPointArea::containBlock(const int& line) {
@@ -2146,7 +2142,7 @@ ArrowArea::ArrowArea(PlainTextEdit *edit, QWidget *parent) : QWidget(edit), m_Ed
 
     const int xWidth = m_Edit->breakPointArea->sizeHint().width() + m_Edit->codeNotifyArea->sizeHint().width() +
                        m_Edit->lineNumberArea->sizeHint().width();
-    setGeometry(xWidth, m_Edit->statusArea->sizeHint().height(), sizeHint().width(), m_Edit->height());
+    setGeometry(xWidth, 0, sizeHint().width(), m_Edit->height());
 }
 
 void ArrowArea::slotShowMenu(const QPoint &pos) {
@@ -2225,7 +2221,7 @@ void ArrowArea::paintEvent(QPaintEvent *event) {
     QTextBlock block = m_Edit->firstVisibleBlockProxy();
     // y1, y2 coordinates of rectangle we are going to paint in: top, top + height of 1 line(block)
     int top = static_cast<int>(m_Edit->blockBoundingGeometryProxy(block).translated(
-            m_Edit->contentOffsetProxy()).top() + m_Edit->statusArea->sizeHint().height());
+            m_Edit->contentOffsetProxy()).top());
     int bottom = top + static_cast<int>(m_Edit->blockBoundingRectProxy(block).height());
     // widget area rectangle
     const QRect area_rect = event->rect();
@@ -2260,7 +2256,7 @@ CodeNotifyArea::CodeNotifyArea(PlainTextEdit *edit, QWidget *parent) : QWidget(e
     WH.setY(m_Edit->fontMetrics().height());
 
     // next to breakpoints
-    setGeometry(m_Edit->breakPointArea->sizeHint().width(), m_Edit->statusArea->sizeHint().height(), WH.x(), m_Edit->height());  // instead of paint event
+    setGeometry(m_Edit->breakPointArea->sizeHint().width(), 0, WH.x(), m_Edit->height());  // instead of paint event
 
     error.load(IconFactory::Error);
     warning.load(IconFactory::Warning);
@@ -2550,85 +2546,3 @@ void ScrollBar::calculateAndSetSmallEditGeometry(const int &posY) {
     */
 }
 
-
-
-
-
-StatusArea::StatusArea(PlainTextEdit *edit, QWidget *parent) : QWidget(edit), m_Edit(edit) {
-    createWindow();
-    setFixedHeight(20);
-
-    setStyleSheet("border: 0px; padding: 0px; margin: 0px; background-color: rgb(68, 68, 68);");
-
-    setGeometry(0, 0, edit->width(), 25);
-}
-
-void StatusArea::createWindow() {
-    MainLayout = new QHBoxLayout();
-    collapseAllScopes = new QToolButton(this);
-    expandAllScopes = new QToolButton(this);
-    currentSymbolBox = new QComboBox(this);
-    encoding = new QToolButton(this);
-    lineColumn = new QToolButton(this);
-    documentCode = new QToolButton(this);
-    commentTagsforThisFile = new QToolButton(this);
-
-    goToLineColumn = new GoToLineColumn(m_Edit);
-
-    collapseAllScopes->setIcon(QIcon(IconFactory::Collapse));
-    collapseAllScopes->setToolTip("Collapse All Scopes");
-    expandAllScopes->setIcon(QIcon(IconFactory::Expand));
-    expandAllScopes->setToolTip("Expand All Scopes");
-    currentSymbolBox->setMinimumWidth(100);
-    currentSymbolBox->setMaxVisibleItems(15);
-    currentSymbolBox->addItems(QStringList() << "myitem" << "youritem" << "ouritem");
-    encoding->setText("UTF-8");
-    encoding->setFixedWidth(50);
-    lineColumn->setFixedWidth(40);
-    documentCode->setText("doc");
-    documentCode->setFixedWidth(50);
-    commentTagsforThisFile->setText("Comment Tags");
-    commentTagsforThisFile->setFixedWidth(115);
-
-    connect(lineColumn, &QAbstractButton::clicked, this, [=](){
-       goToLineColumn->show();
-    });
-    connect(commentTagsforThisFile, &QToolButton::clicked, this, [=](){
-       m_Edit->tagReminder->fillView(m_Edit->getFilePath());
-       m_Edit->tagReminder->show();
-    });
-    connect(documentCode, &QToolButton::clicked, this, [=](){
-        // TODO: with clang get right position offset and params + type(void, non-void, enum)
-       m_Edit->documentationHelper->setDocData(m_Edit->getCursorPosition(), QStringList() << "mmmm" << "nnnn");
-       m_Edit->documentationHelper->show();
-    });
-
-    // TODO: connnect expand, collapse with arrowArea + take care for editor hrefs for this.
-    // TODO: make function for this to call.
-
-
-    MainLayout->addWidget(collapseAllScopes);
-    MainLayout->addWidget(expandAllScopes);
-    MainLayout->addWidget(currentSymbolBox);
-
-    MainLayout->addWidget(commentTagsforThisFile);
-    MainLayout->addWidget(documentCode);
-    MainLayout->addWidget(lineColumn);
-    MainLayout->addWidget(encoding);
-
-    MainLayout->setContentsMargins(0, 0, 0, 0);
-    MainLayout->setSpacing(0);
-
-    auto *layout = new QHBoxLayout(this);
-    auto *widget = new QWidget(this);
-
-    widget->setLayout(MainLayout);
-
-    layout->addWidget(widget);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(0);
-    widget->setStyleSheet("border-radius: 0px; border: 1px solid black; background-color: rgb(100, 100, 100);");
-
-    setLayout(layout);
-
-}

@@ -83,7 +83,6 @@ public:
     LineNumberArea *lineNumberArea;
     ArrowArea *arrowArea;
     CodeNotifyArea *codeNotifyArea;
-    StatusArea *statusArea;
     ScrollBar *scrollBar;
     // only triggers actions to do with its Handler ...
     CodeInfoDock *code_info;
@@ -589,65 +588,6 @@ private:
     void calculateAndSetSmallEditGeometry(const int &posY);
 
 };
-
-
-
-
-
-
-// this is top status bar in editor
-class StatusArea : public QWidget {
-Q_OBJECT
-public:
-    explicit StatusArea(PlainTextEdit *edit, QWidget *parent = nullptr);
-    ~StatusArea() = default;
-
-    // QSize sizeHint() const override;
-
-    QToolButton *lineColumn;
-
-
-
-private:
-    PlainTextEdit *m_Edit;
-    GoToLineColumn *goToLineColumn;
-
-    QHBoxLayout *MainLayout;
-    // top rigth
-    QToolButton *collapseAllScopes;
-    QToolButton *expandAllScopes;
-
-    // NOTE: for click, positions are still changing so that search and cursor will set by searching pos.
-    // also set up its icons
-    QComboBox *currentSymbolBox;
-
-    QToolButton *encoding;
-
-    QToolButton *documentCode;
-    QToolButton *commentTagsforThisFile;
-
-    void createWindow();
-
-};
-
-/*
-    // later consider creating new button here
-    // What if on the changed tab is no cursor set -> remain last cursor position
-    if (Tabs->isVisible()) {
-        const QPoint point = currentWidget->getCursorPosition();
-        const QString pos = QString::number(point.y()) + ":" + QString::number(point.x());// row:col
-
-        github_branch->setText(pos);
-    } else {
-        github_branch->setText("");
-    }
-*/
-
-
-
-
-
-
 
 
 

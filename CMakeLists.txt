@@ -367,6 +367,8 @@ set(SOURCE_FILES
 
         Widgets/Notifier/HelpIDEMessage.cpp
         Widgets/Notifier/HelpIDEMessage.h
+
+        External/EvolutionExternal.h   # development purpooses
         )
 
 #set(Qt5Core_DIR "/opt/Qt/5.9.3/gcc_64/lib/cmake/Qt5Core/")

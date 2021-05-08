@@ -100,6 +100,7 @@ void CommandLineExecutor::Build(const bool &cmake, const std::string &ProjectRoo
             process->start("/bin/make", QStringList() << "-j2", QProcess::ReadWrite);
             if (!process->waitForFinished())
                 qDebug() << "Process failed: " << process->errorString();
+            emit processFinished();
         }
 
     } else {
@@ -120,6 +121,7 @@ void CommandLineExecutor::Execute(const bool &cmake, const std::string &executab
         process->start(QString::fromStdString(cmake_exec), QStringList(), QProcess::ReadWrite);
         if (!process->waitForFinished())
             qDebug() << "Process failed: " << process->errorString();
+        emit processFinished();
 
     } else {
         //ExecuteCommand(executable_path, edit);

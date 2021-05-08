@@ -9,8 +9,10 @@
 #include <QProcess>
 #include <QString>
 #include <QThread>
+#include <QObject>
 
 #include "Widgets/ConsoleDock/consoledock.h"
+// #include "External/EvolutionExternal.h"
 
 class CommandLineExecutor : public QObject {
     Q_OBJECT
@@ -59,6 +61,12 @@ private:
 private slots:
 
     void slotSetOutput();
+
+
+signals:
+    // emited for IDE no toniceend of execution, build to run other functionalities.
+    void processFinished();
+
 };
 
 #endif // COMMANDLINEEXECUTOR_H

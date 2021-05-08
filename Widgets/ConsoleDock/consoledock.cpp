@@ -3,9 +3,11 @@
 #include <QScrollBar>
 #include <QShortcut>
 #include <QString>
+#include <QSettings>
 #include <iostream>
 
 #include "icons/IconFactory.h"
+#include "filemanager.h"
 #include "consoledock.h"
 /* enum QTabBar::Shape */
 
@@ -21,18 +23,78 @@ ConsoleDock::ConsoleDock(QWidget *parent) : QDockWidget(parent)
     connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [=] { this->setVisible(false); });
 
     BuildConsole();
-    setTitleBarWidget(title_bar);
+    // setTitleBarWidget(title_bar);
+    QWidget* lEmptyWidget = new QWidget(this);
+    lEmptyWidget->setFixedHeight(3);
+    setTitleBarWidget(lEmptyWidget);    // MainTab works fine either for draging
+
     Links.reserve(3);   // :)
+
+
+    // FIXME: moving not possible when set title bar widget like this
 }
 
 // change to QListWidget most probably, bc. of specific widget shows its own data and do not know
 // how to do that with tabs, at least yet
 void ConsoleDock::BuildConsole() {
-    MainLayout = new QHBoxLayout();
+    consoleLayout = new QHBoxLayout();
     tool_bar = new QToolBar(this);
-    title_bar = new QToolBar(this);
+    console = new QWidget(this);
     ConsoleOutput = new QTextBrowser(this);
     processMemoryPlot = new ProcessDataPlot(this);
+
+    MainTab = new QTabWidget(this);
+    MainTab->setTabPosition(QTabWidget::North);
+    MainTab->setTabShape(QTabWidget::Rounded);
+    MainTab->setFocusPolicy(Qt::ClickFocus);
+    QFont tabFont;
+    tabFont.setItalic(true);
+    tabFont.setFamily("Ubuntu Mono");
+    MainTab->tabBar()->setFont(tabFont);
+    hideWindow = new QToolButton(this);
+    hideWindow->setIcon(QIcon(IconFactory::Remove));
+    hideWindow->setToolTip("Close");
+    connect(hideWindow, SIGNAL(clicked()), this, SLOT(hide()));
+    MainTab->setCornerWidget(hideWindow);
+
+    linter = new QWidget(this);
+    linterLayout = new QHBoxLayout();
+    linterList = new QListWidget(this);
+    linterLayout->addWidget(linterList);
+    linterLayout->setContentsMargins(0, 0, 0, 0);
+    linterLayout->setSpacing(0);
+    linter->setLayout(linterLayout);
+
+    logger = new QWidget(this);
+    loggerLayout = new QHBoxLayout();
+    loggerTree = new QTreeWidget(this);
+    loggerLayout->addWidget(loggerTree);
+    loggerLayout->setContentsMargins(0, 0, 0, 0);
+    loggerLayout->setSpacing(0);
+    logger->setLayout(loggerLayout);
+
+    tests = new QWidget(this);
+    testsLayout = new QHBoxLayout();
+    testsLayout->setContentsMargins(0, 0, 0, 0);
+    testsLayout->setSpacing(0);
+    testList = new QListWidget(this);
+    testList->addItems(QStringList() << "halabala" << "balahala");
+    testsLayout->addWidget(testList);
+    tests->setLayout(testsLayout);
+
+    fuzzers = new QWidget(this);
+    fuzzersLayout = new QHBoxLayout();
+    fuzzersLayout->setContentsMargins(0, 0, 0, 0);
+    fuzzersLayout->setSpacing(0);
+    fuzzers->setLayout(fuzzersLayout);
+
+    memoryTracker = new QWidget(this);
+    memoryTrackerLayout = new QHBoxLayout();
+    memoryTrackerLayout->setContentsMargins(0, 0, 0, 0);
+    memoryTrackerLayout->setSpacing(0);
+    memoryTree = new QTreeWidget(this);
+    memoryTrackerLayout->addWidget(memoryTree);
+    memoryTracker->setLayout(memoryTrackerLayout);
 
     ConsoleOutput->setReadOnly(true);
     // we have ours custom signal and slot handling for clicked link, do not want to open browser
@@ -69,31 +131,25 @@ void ConsoleDock::BuildConsole() {
     tool_bar->layout()->setContentsMargins(0, 0, 0, 0);
     tool_bar->layout()->setSpacing(0);
 
-    title_bar->setMovable(false);
-    title_bar->setFixedHeight(30);
-    title_bar->setFloatable(false);
-    title_bar->setAcceptDrops(false);
-    //title_bar->setIconSize(QSize(25, 35));
-    title_bar->setToolButtonStyle(Qt::ToolButtonFollowStyle);
-    auto *spacer = new QWidget(this);// align title_bar to right with blank widget
-    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    title_bar->addWidget(spacer);
-    title_bar->addAction(QIcon(IconFactory::Remove), "Close", this, SLOT(close()));
+    consoleLayout->addWidget(tool_bar);
+    consoleLayout->addWidget(ConsoleOutput);
+    consoleLayout->addWidget(processMemoryPlot);
 
-    title_bar->layout()->setContentsMargins(0, 0, 0, 0);
-    title_bar->layout()->setSpacing(0);
+    consoleLayout->setContentsMargins(0, 0, 0, 0);
+    consoleLayout->setSpacing(0);
 
-    MainLayout->addWidget(tool_bar);
-    MainLayout->addWidget(ConsoleOutput);
-    MainLayout->addWidget(processMemoryPlot);
+    console->setLayout(consoleLayout);
 
-    MainLayout->setContentsMargins(0, 0, 0, 0);
-    MainLayout->setSpacing(0);
 
-    auto *window = new QWidget(this);
-    window->setLayout(MainLayout);
+    MainTab->addTab(console, "Console");
+    MainTab->addTab(linter, "Linter");
+    MainTab->addTab(logger, "Logger");
+    MainTab->addTab(tests, "Tests");
+    MainTab->addTab(fuzzers, "Fuzzers");
+    MainTab->addTab(memoryTracker, "Memory Tracker");
 
-    setWidget(window);
+
+    setWidget(MainTab);
 
     //ConsoleOutput->setHtml("<a href = http://google.com > moj text </a>");
     //ConsoleOutput->append("<a href = http://google.com > moj text </a>");
@@ -106,7 +162,7 @@ void ConsoleDock::BuildConsole() {
     //ConsoleOutput->append("<a style=color:lightblue; href = /home/adam/Desktop/Qt5_forum > /home/adam/Desktop/Qt5_forum </a>");                       // works well
 }
 
-
+// sentence processing
 void ConsoleDock::processText(const QString &text) {
     if (text.isEmpty()) {
         return;
@@ -201,6 +257,57 @@ void ConsoleDock::processText(const QString &text) {
     }
 
     ConsoleOutput->append(ProcessedText);
+}
+
+bool ConsoleDock::containsTests(const QString &text) {
+    // in console starts with { Success } ; { Failure }
+    if(text.contains("{ Success }") || text.contains("{ Failure }")) {
+        // process and add to list with proper icon for state and other data
+
+        return true;
+    }
+    else {
+        return false;
+    }
+
+}
+
+bool ConsoleDock::containsBenchmarks(const QString &text) {
+    if(text.contains("{ BENCHMARK }")) {
+        // process and add to list with proper icon for state and other data
+
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+bool ConsoleDock::containsFuzzers(const QString &text) {
+    return false;
+}
+
+void ConsoleDock::processFromFile() {
+    // separate to sentences and call standart function for console, works fine
+    QSettings settings("Evolution");
+    const QString basePath = settings.value("Evolution/executable_path").toString();
+    FileDirManager file_manager;
+
+    // tests
+    QString content = file_manager.read(basePath + "Tests.txt");
+    QStringList sentences = content.split("\n");
+    for(const auto& s : sentences) {
+        containsTests(s);
+    }
+
+    // benchmarks
+    content = file_manager.read(basePath + "Benchmarks.txt");
+    sentences = content.split("\n");
+    for(const auto& s : sentences) {
+        containsBenchmarks(s);
+    }
+
+    // TODO: fuzzers
 }
 
 ConsoleDock::Link ConsoleDock::findLink(const QString &filepath, const Direction &direction) const {

@@ -2,12 +2,14 @@
 #define COMPILEDOCK_H
 
 #include <QDockWidget>
-#include <QPlainTextEdit>
+#include <QPlainTextEdit>  // remove
 #include <QTabWidget>
 #include <QTextBrowser>
 #include <QToolBar>
 #include <QToolButton>
 #include <QWidget>
+#include <QListWidget>
+#include <QTreeWidget>
 
 #include <QHBoxLayout>
 
@@ -40,6 +42,12 @@ public:
     QToolButton *stop;
 
     void processText(const QString &text);
+    // also check files to read;  executable path get from registry
+    bool containsTests(const QString &text);
+    bool containsBenchmarks(const QString &text);
+    bool containsFuzzers(const QString &text);
+    // called after execution or when some crash occured
+    void processFromFile();
 
     // the only way to track links (num) is to store them
 
@@ -60,8 +68,30 @@ public:
     Link findLink(const QString &filepath, const Direction &next = Current) const;
 
 private:
-    QHBoxLayout *MainLayout;
-    QToolBar *title_bar;
+    QTabWidget *MainTab;
+    QToolButton *hideWindow;  // corner tab widget
+
+    QWidget *linter;
+    QHBoxLayout *linterLayout;
+    QListWidget *linterList;
+
+    QWidget *logger;
+    QHBoxLayout *loggerLayout;
+    QTreeWidget *loggerTree;
+
+    QWidget *tests;
+    QHBoxLayout *testsLayout;
+    QListWidget *testList;
+
+    QWidget *fuzzers;
+    QHBoxLayout *fuzzersLayout;
+
+    QWidget *memoryTracker;
+    QHBoxLayout *memoryTrackerLayout;
+    QTreeWidget *memoryTree;
+
+    QWidget *console;
+    QHBoxLayout *consoleLayout;
     QToolBar *tool_bar;
 
     void BuildConsole();
