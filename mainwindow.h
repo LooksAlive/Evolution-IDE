@@ -144,8 +144,6 @@ private:
 
     CommentTagsReminder *tagReminder;
 
-    HelpIDEMessage *helpMessage;
-
     // top tool bar
     QToolBar *topToolBar;
     QComboBox *currentSymbolBox;
@@ -214,6 +212,11 @@ private:
 
     GitDock *gitDock;
 
+
+    HelpIDEMessage *helpMessage;
+    QList<HelpIDEMessage*> informativeWindows;
+    void addInformativeWindow(const HelpIDEMessage::InfoType& type);
+
     void dragEnterEvent(QDragEnterEvent *drag_event) override;
     void dropEvent(QDropEvent *drop_event) override;
 
@@ -230,7 +233,7 @@ private:
 
     void SetupGitDock();
 
-    void SetupTagsReminderAndHelpMessage();
+    void SetupTagsReminder();
 
     void SetupVerticalBar();
     void SetupNodeView();

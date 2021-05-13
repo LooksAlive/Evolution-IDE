@@ -118,7 +118,7 @@ public:
 
     void setTagReminder(CommentTagsReminder *reminder) { tagReminder = reminder; }
 
-    void setLineButton(QToolButton *Lbtn) { lineButton = Lbtn;}
+    void setLineButton(QToolButton *Lbtn) { lineButton = Lbtn; }
 
     // tab width
     static constexpr unsigned int TAB_STOP_WIDTH = 4;
@@ -181,7 +181,7 @@ public:
     QString getFilePath() const;
 
     // returns how many times there is indentation for line
-    int countSpaceTabs(const QString& lineContent, const int& indentation);
+    int countSpaceTabsIndentation(const QString& lineContent, const int& indentation);
 
     // false -> removed;   true -> created
     bool toggleBreakPoint(const int& line) const;
@@ -204,8 +204,21 @@ public:
     QString tempWordUnderCursor;
     QList<QTextEdit::ExtraSelection> extra_selections_line;
     QList<QTextEdit::ExtraSelection> extra_selections_underline;
-    // this one is fixed
+    // this one is fixed; current line selection
     QList<QTextEdit::ExtraSelection> extra_selections_current_line;
+
+    // when () word under cursor or ( ... ) or { ... }
+    bool activeTemporarSelection = false;
+    QPoint temporarSelectionPosition;
+    QList<QTextEdit::ExtraSelection> extra_selections_temporar;
+    // key release event functions with characters + also look ups closest siblings
+    // -------------------------------------------------------------------------------------
+    void handleTemporarSelection(QTextCursor& cursor);
+    // ()) - 2 times remains () ; but 3. times -> (()) etc. if in the center
+    bool pressedTwice = false;
+    // returns true, if pressed twice , false is third
+    // TODO: what if we moving around ...
+    bool twoTimesPressedCharPair(QTextCursor& cursor, const QString& ch);
 
     enum selectionType {
         Warning = 0,
@@ -229,6 +242,7 @@ public:
 
     // works with extra_selections_search_touched_results, select pairs, nested also
     // lookup pairs like <> () {} ""
+    // -------------------------------------------------------------------------------------
     void searchPairsSelections(QTextCursor &cursor, const QString &first);
 
     // missing selected text for return -> no use for now

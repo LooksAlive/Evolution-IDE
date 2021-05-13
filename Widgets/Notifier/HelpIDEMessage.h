@@ -2,9 +2,10 @@
 #define HELPIDEMESSAGE_H
 
 #include <QWidget>
-#include <QLabel>
+#include <QTextBrowser>
+#include <QToolBar>
 #include <QPushButton>
-#include <QHBoxLayout>
+#include <QVBoxLayout>
 
 class HelpIDEMessage : public QWidget
 {
@@ -15,14 +16,20 @@ public:
 
 
     QPushButton *contact;
+    QPushButton *close;
+
+    enum InfoType {
+        Contact = 0,
+        Update
+    };
 
 private:
     void createWindow();
-    QHBoxLayout *MainLayout;
-    QLabel *MainMessaage;
-    QPushButton *close;
+    QVBoxLayout *MainLayout;
 
+    QToolBar *topBar;
 
+    QTextBrowser *MainMessaage;
 
 };
 

@@ -43,9 +43,14 @@ public:
 
     void processText(const QString &text);
     // also check files to read;  executable path get from registry
-    bool containsTests(const QString &text);
-    bool containsBenchmarks(const QString &text);
-    bool containsFuzzers(const QString &text);
+    bool containsTests(const QString &line);
+    bool containsMemTrack(const QString& line);
+    bool containsLogs(const QString& line);
+    bool containsBenchmarks(const QString &line);
+    bool containsFuzzers(const QString &line);
+
+    // emit signal and backtrace, callstack data
+    bool containsBackTrace(const QString &line);
     // called after execution or when some crash occured
     void processFromFile();
 
@@ -71,6 +76,10 @@ private:
     QTabWidget *MainTab;
     QToolButton *hideWindow;  // corner tab widget
 
+    QWidget *console;
+    QHBoxLayout *consoleLayout;
+    QToolBar *tool_bar;
+
     QWidget *linter;
     QHBoxLayout *linterLayout;
     QListWidget *linterList;
@@ -81,18 +90,19 @@ private:
 
     QWidget *tests;
     QHBoxLayout *testsLayout;
-    QListWidget *testList;
-
-    QWidget *fuzzers;
-    QHBoxLayout *fuzzersLayout;
+    QTreeWidget *testTree;
 
     QWidget *memoryTracker;
     QHBoxLayout *memoryTrackerLayout;
     QTreeWidget *memoryTree;
 
-    QWidget *console;
-    QHBoxLayout *consoleLayout;
-    QToolBar *tool_bar;
+    QWidget *benchmark;
+    QHBoxLayout *benchmarkLayout;
+    QTreeWidget *benchmarkTree;
+
+    QWidget *fuzzers;
+    QHBoxLayout *fuzzersLayout;
+    QTreeWidget *fuzzersTree;
 
     void BuildConsole();
 

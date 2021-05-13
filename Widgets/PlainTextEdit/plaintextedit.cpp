@@ -1006,7 +1006,7 @@ QString PlainTextEdit::findStoreUrlsInText(const QString &text) {
     return newText;
 }
 
-int PlainTextEdit::countSpaceTabs(const QString &lineContent, const int &indentation) {
+int PlainTextEdit::countSpaceTabsIndentation(const QString &lineContent, const int &indentation) {
     int spaces = 0;
     int tabs = 0;
     for(const auto& ch : lineContent) {
@@ -1235,7 +1235,7 @@ void PlainTextEdit::setCollapsableText(const QPoint &start, const QPoint &end) {
     const QString originalText = cursor.selectedText();
     cursor.removeSelectedText();
     cursor.insertHtml(
-            "<a style=text-decoration:none;color:gray; href= " + originalText + ">..." + "</a>");  // or insertHtml()
+            "<a style=text-decoration:none;color:gray; href= " + originalText + ">{ ... }" + "</a>");  // or insertHtml()
     setTextCursor(cursor);
 }
 
@@ -1414,7 +1414,8 @@ void PlainTextEdit::slotTextChanged()
 void PlainTextEdit::searchByMouseTouch() {
     qDebug() << "activated with " + wordUnderCursor;
     QTextCursor cursor = textCursor();
-    wordUnderCursor = getWordUnderCursor();
+    cursor.select(QTextCursor::WordUnderCursor);
+    wordUnderCursor = cursor.selectedText();
     if (wordUnderCursor != tempWordUnderCursor && wordUnderCursor != "") {
         extra_selections_search_touched_results.clear();
         // update them ??? this will not remove them and they are repainting again !!!
@@ -1447,6 +1448,75 @@ void PlainTextEdit::searchByMouseTouch() {
         }
     }
     updateExtraSelections();
+}
+
+void PlainTextEdit::handleTemporarSelection(QTextCursor& cursor) {
+    cursor.select(QTextCursor::WordUnderCursor);
+    if(cursor.selectedText().contains(")") || cursor.selectedText().contains("(")
+            || cursor.selectedText().contains("{") || cursor.selectedText().contains("}") || cursor.selectedText().contains("<")
+            || cursor.selectedText().contains("<") || cursor.selectedText().contains("[") || cursor.selectedText().contains("]")
+            || cursor.selectedText().contains("'") || cursor.selectedText().contains("\"")) {
+
+        activeTemporarSelection = true;
+
+        if(activeTemporarSelection && temporarSelectionPosition == getCursorPosition(cursor)) {
+            cursor.clearSelection();
+            return;
+        }
+        // also we might have moved only a bit ( x^)
+        if(activeTemporarSelection && temporarSelectionPosition != getCursorPosition(cursor)) {
+            extra_selections_temporar.clear();
+            // add selection
+            QTextEdit::ExtraSelection selection;
+            selection.cursor = cursor;
+            selection.format.setBackground(Qt::darkGreen);
+            extra_selections_temporar.push_back(selection);
+            selection.cursor.clearSelection();
+            temporarSelectionPosition = getCursorPosition(cursor);
+
+            cursor.clearSelection();
+            return;
+        }
+
+        if(!activeTemporarSelection) {
+            // add selection
+            QTextEdit::ExtraSelection selection;
+            selection.cursor = cursor;
+            selection.format.setBackground(Qt::darkGreen);
+            extra_selections_temporar.push_back(selection);
+            selection.cursor.clearSelection();
+            temporarSelectionPosition = getCursorPosition(cursor);
+
+            cursor.clearSelection();
+            return;
+        }
+    }
+    else {
+        extra_selections_temporar.clear();
+        activeTemporarSelection = false;
+        // temporarSelectionPosition = QPoint();
+
+        cursor.clearSelection();
+    }
+}
+
+bool PlainTextEdit::twoTimesPressedCharPair(QTextCursor& cursor, const QString& ch) {
+    cursor.select(QTextCursor::WordUnderCursor);
+    if((cursor.selectedText().contains("()") && (ch == "(" || ch == ")")) || (cursor.selectedText().contains("{}")  && (ch == "{" || ch == "}"))
+            || (cursor.selectedText().contains("<>") && (ch == "<" || ch == ">")) || (cursor.selectedText().contains("[]") && (ch == "[" || ch == "]"))
+            || (cursor.selectedText().contains("\'\'") && ch == "\'") || (cursor.selectedText().contains("\"\"") && ch == "\"")) {
+        if(pressedTwice) {
+            pressedTwice = false;
+            return false;
+        }
+        else {
+            pressedTwice = true;
+            return true;
+        }
+    }
+    // not matched or just somewhere else
+    pressedTwice = false;
+    return false;
 }
 
 
@@ -1483,13 +1553,13 @@ void PlainTextEdit::mouseReleaseEvent(QMouseEvent *event) {
         cursor.select(QTextCursor::WordUnderCursor);
         cursor.removeSelectedText();
         cursor.insertText(anchor);
+        setTextCursor(cursor);
 
         QApplication::setOverrideCursor(Qt::ArrowCursor);
         anchor.clear();
         // handle arrowArea to paint propertly
         arrowArea->expanded.erase(
                 std::find(arrowArea->expanded.begin(), arrowArea->expanded.end(), cursor.blockNumber()));
-        setTextCursor(cursor);
     }
     QPlainTextEdit::mouseReleaseEvent(event);
 }
@@ -1501,8 +1571,14 @@ void PlainTextEdit::mouseMoveEvent(QMouseEvent *event) {
     // TODO: some ms before hiding.
     if (hoverInfo->isVisible()) {
         hoverInfo->hide();
+    }
+    if(spellCheckPopup->isVisible()) {
         spellCheckPopup->hide();
+    }
+    if(smallEdit->isVisible()) {
         smallEdit->hide();
+    }
+    if(tagListPopup->isVisible()) {
         tagListPopup->hide();
     }
     QPlainTextEdit::mouseMoveEvent(event);
@@ -1561,7 +1637,7 @@ void PlainTextEdit::paintEvent(QPaintEvent *event) {
             // each indent for 1 line
             setCursorPosition(cursor, 1, i + 1);
             const QString lineContent = getLineUnderCursor(cursor);
-            const int times = countSpaceTabs(lineContent, 4);
+            const int times = countSpaceTabsIndentation(lineContent, 4);
             // skip if there is only one indent (it is done similarly everywhere)
             if(times == 1)
                 goto skip;
@@ -1602,6 +1678,8 @@ void PlainTextEdit::resizeEvent(QResizeEvent *event) {
 
 void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
     QTextCursor cursor = textCursor();
+
+    handleTemporarSelection(cursor);
 
     /*
     if (event->modifiers() == Qt::ControlModifier) {
@@ -1695,12 +1773,18 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
             if (autoTextSurrounding(cursor, "[")) {
                 return;
             }
+            if(twoTimesPressedCharPair(cursor, "[")) {
+                return;
+            }
             cursor.insertText("]");
             cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
             setTextCursor(cursor);
             break;
         case Qt::Key_BraceLeft:
             if (autoTextSurrounding(cursor, "{")) {
+                return;
+            }
+            if(twoTimesPressedCharPair(cursor, "{")) {
                 return;
             }
             cursor.insertText("}");
@@ -1711,6 +1795,9 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
             if (autoTextSurrounding(cursor, "(")) {
                 return;
             }
+            if(twoTimesPressedCharPair(cursor, "(")) {
+                return;
+            }
             cursor.insertText(")");
             cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
             setTextCursor(cursor);
@@ -1719,12 +1806,18 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
             if (autoTextSurrounding(cursor, "<")) {
                 return;
             }
+            if(twoTimesPressedCharPair(cursor, "<")) {
+                return;
+            }
             cursor.insertText(">");
             cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor);
             setTextCursor(cursor);
             break;
         case Qt::Key_QuoteLeft:
-            if (autoTextSurrounding(cursor, "'")) {
+            if (autoTextSurrounding(cursor, "\'")) {
+                return;
+            }
+            if(twoTimesPressedCharPair(cursor, "\'")) {
                 return;
             }
             cursor.insertText("'");
@@ -1733,6 +1826,9 @@ void PlainTextEdit::keyReleaseEvent(QKeyEvent *event) {
             break;
         case Qt::Key_QuoteDbl:
             if (autoTextSurrounding(cursor, "\"")) {
+                return;
+            }
+            if(twoTimesPressedCharPair(cursor, "\"")) {
                 return;
             }
             cursor.insertText("\"");
@@ -1853,6 +1949,7 @@ bool PlainTextEdit::event(QEvent *event) {
     // TODO: and if we will going to show, can avoid action thread run (run it just once for all file)
     if (event->type() == QEvent::ToolTip) {
         setToolTip(QString()); // clear
+        // map cursor to event position
         const auto *helpEvent = static_cast<QHelpEvent *>(event);
         QTextCursor cursor = cursorForPosition(helpEvent->pos());
 
@@ -1861,20 +1958,20 @@ bool PlainTextEdit::event(QEvent *event) {
         if (!collapsedText.isEmpty()) {
             // smallEdit shows collapsed scope
             smallEdit->setPlainText(collapsedText);
-            smallEdit->setGeometry(cursorRect());
+            smallEdit->setGeometry(cursorRect(cursor));
+            smallEdit->setMinimumSize(fontMetrics().boundingRect(collapsedText).width() + 15, fontMetrics().boundingRect(collapsedText).height() + 15);
             // TODO: height: set sext, get num lines compute height ... numlines*lineheight
-            smallEdit->setMinimumSize(fontMetrics().boundingRect(collapsedText).width(), 125);
             smallEdit->show();
             // setToolTip(collapsedText);
             goto end;
         }
 
-        // preformance: match only line
-        const int line = cursor.blockNumber();
+        // spelling
+        // perf: match only line
         for (const auto &suggestion : code_info->spellCheckWorker->suggestions) {
-            if (suggestion.startPosition.y() == line) {
+            if (suggestion.startPosition.y() == cursor.blockNumber()) {
                 spellCheckPopup->setItemList(suggestion.suggestions);
-                spellCheckPopup->setGeometry(cursorRect());
+                spellCheckPopup->setGeometry(cursorRect(cursor));
                 spellCheckPopup->show();
                 spellCheckPopup->setFocus();
                 goto end;
@@ -1882,6 +1979,7 @@ bool PlainTextEdit::event(QEvent *event) {
             }
         }
 
+        // Hover Informations
         // QCursor cur = this->cursor();
         cursor.select(QTextCursor::WordUnderCursor);
         if (!cursor.selectedText().isEmpty()) {
@@ -1890,7 +1988,7 @@ bool PlainTextEdit::event(QEvent *event) {
                     cursor.selectedText() + "</a>";
             hoverInfo->setLabelText(label);
             //hoverInfo->setMinimumSize(fontMetrics().boundingRect(cursor.selectedText()).width() + 15, fontMetrics().boundingRect(cursor.selectedText()).height() + 15);
-            hoverInfo->setGeometry(cursorRect());
+            hoverInfo->setGeometry(cursorRect(cursor));
             // rect()   -> top left corner
             hoverInfo->show();
             // FIXME: this is done async. set also rectangle to track if we still want to show it
@@ -1902,7 +2000,7 @@ bool PlainTextEdit::event(QEvent *event) {
             // ------------- good but very bad ----------------------
             // QWhatsThis::showText(helpEvent->globalPos(), cursor.selectedText(), hoverInfo);
             // QStatusTipEvent(cursor.selectedText());
-            setStatusTip(cursor.selectedText());
+            //                                            setStatusTip(cursor.selectedText());
         }
         //else
         //QToolTip::hideText();
@@ -2149,6 +2247,7 @@ void ArrowArea::slotShowMenu(const QPoint &pos) {
     viewMenu->exec(mapToGlobal(pos));
 }
 
+// TODO:
 void ArrowArea::slotExpandAllScopes() {
 
 }
@@ -2163,12 +2262,17 @@ void ArrowArea::collapseOrExpand(const int &line) {
         expanded.erase(std::find(expanded.begin(), expanded.end(), line));
         // match line and get point
         // m_Edit->code_info->collapsableBoundariesRanges...
+
+        // editor
         const QPoint start(0, 0);
         const QPoint end(0, 0);
         m_Edit->setCollapsableText(start, end);
-    } else {
+    }
+    else {
         // expand it
         expanded.push_back(line);
+
+        // editor
         QTextCursor cursor = m_Edit->textCursor();
         cursor.movePosition(QTextCursor::EndOfLine);
         cursor.select(QTextCursor::WordUnderCursor);
@@ -2513,8 +2617,7 @@ float ScrollBar::computeHeightForLine(const int &line) {
         // we have more lines than our height()
         // we have to get <= height()
         // TODO: this down not work
-        const float H = (float(height() / m_Edit->blockCount())) * height();
-        return H;
+        return (float(height() / m_Edit->blockCount())) * height();
     }
 }
 

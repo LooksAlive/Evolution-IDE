@@ -40,7 +40,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     //CreateFile();
     SetupStatusBar();
-    SetupTagsReminderAndHelpMessage();
+    SetupTagsReminder();
 
     SetupDockWidgetsLayering();
 
@@ -55,6 +55,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     executor = new CommandLineExecutor(this);
 
     LoadRegisters();
+
+
+    // addInformativeWindow(HelpIDEMessage::Contact);
 }
 
 MainWindow::~MainWindow() {
@@ -70,7 +73,7 @@ void MainWindow::dragEnterEvent(QDragEnterEvent *drag_event) {
 void MainWindow::dropEvent(QDropEvent *drop_event) {
     QList<QUrl> url_list = drop_event->mimeData()->urls();
     // set dir into file explorer as default for project; handled in drop event
-    foreach (QUrl url, url_list) {
+    foreach (const QUrl& url, url_list) {
         QString path = url.url(QUrl::RemoveScheme);
         OpenFile(path);
     }
@@ -650,7 +653,7 @@ void MainWindow::SetupFileDocker() {
     addDockWidget(Qt::LeftDockWidgetArea, Docker);
 }
 
-void MainWindow::SetupTagsReminderAndHelpMessage() {
+void MainWindow::SetupTagsReminder() {
     tagReminder = new CommentTagsReminder(this);
     tagReminder->setSources(file_manager.source_files);
     tagReminder->searchEverywhere();
@@ -658,11 +661,32 @@ void MainWindow::SetupTagsReminderAndHelpMessage() {
     connect(tagReminder->view, SIGNAL(itemDoubleClicked(QTreeWidgetItem * , int)), this,
             SLOT(openCommentTag(QTreeWidgetItem * , int)));
 
+}
+
+void MainWindow::addInformativeWindow(const HelpIDEMessage::InfoType& type) {
     helpMessage = new HelpIDEMessage(this);
+
+
+    if(informativeWindows.size() != 0) {
+        helpMessage->setGeometry(width() - helpMessage->width(), height() - statusbar->height() - (helpMessage->height()) * informativeWindows.size(),
+                                 helpMessage->width(), helpMessage->height());
+    }
+    else {
+        helpMessage->setGeometry(width() - helpMessage->width(), height() - helpMessage->height() - statusbar->height(),
+                                 helpMessage->width(), helpMessage->height());
+    }
+    helpMessage->show();
 
     connect(helpMessage->contact, &QAbstractButton::clicked, this, [=] {
         contactDeveloper->show();
     });
+    connect(helpMessage->close, &QAbstractButton::clicked, this, [=] {
+        // update other widgets in row
+        informativeWindows.removeOne(helpMessage);
+        helpMessage->deleteLater();
+    });
+
+    informativeWindows.push_back(helpMessage);
 }
 
 void MainWindow::openCommentTag(QTreeWidgetItem *item, int column) {
@@ -683,8 +707,12 @@ void MainWindow::SetupCompileDock() {
     // exteranals links
     connect(console_dock->ConsoleOutput, SIGNAL(anchorClicked(const QUrl &)), this, SLOT(slotOpenUrl(const QUrl &)));
 
-    connect(new QShortcut(Qt::CTRL + Qt::Key_F, this), &QShortcut::activated, [=] { slotFind(); });
 
+    // TODO: other tree windows click requests
+
+
+
+    connect(new QShortcut(Qt::CTRL + Qt::Key_F, this), &QShortcut::activated, [=] { slotFind(); });
     addDockWidget(Qt::BottomDockWidgetArea, console_dock);
 }
 
@@ -723,11 +751,6 @@ void MainWindow::slotFind() {
         searchBox->lineEdit->setText(text);
         searchBox->slotNext();
     }
-    /*
-    helpMessage->setGeometry(centralWidget()->geometry().x() + currentWidget->lineNumberArea->width(),
-                             centralWidget()->geometry().y() + Tabs->tabBar()->height(), 300, 70);
-    helpMessage->show();
-    */
 
     /*
     searchBox->move(vertical_bar->width(), menuBar->height() + topToolBar->height() + Tabs->height());
@@ -954,6 +977,8 @@ void MainWindow::CreateFile() {
     currentWidget->setClang(clangBridge);
     currentWidget->setTagReminder(tagReminder);
     currentWidget->setNodeView(nodeView);
+    currentWidget->setLineButton(lineColumn);
+
 
     // go to line/column
     connect(currentWidget, SIGNAL(textChanged()), this, SLOT(UpdateParameter()));
@@ -1302,6 +1327,7 @@ void MainWindow::OpenFile(const QModelIndex &file_index) {
         currentWidget->setClang(clangBridge);
         currentWidget->setTagReminder(tagReminder);
         currentWidget->setNodeView(nodeView);
+        currentWidget->setLineButton(lineColumn);
 
         // breakpoints
         connect(currentWidget->breakPointArea, SIGNAL(breakPointCreated(const int &)), this,
@@ -1379,7 +1405,7 @@ void MainWindow::slotBuild() {
         for (int i = 0; i < file_manager.source_files.size(); i++) {
             generator.addSourceFile((file_manager.source_files[i].toStdString()));
         }
-        generator.createCmakeLists(file_manager.Project_Dir.toStdString());
+        // generator.createCmakeLists(file_manager.Project_Dir.toStdString());
         executor->Build(cmake, file_manager.Project_Dir.toStdString(), console_dock);
 
         // non static function need also an object to call it
@@ -1494,72 +1520,62 @@ void MainWindow::UpdateCurrentIndexOnDelete(int) {
 
 // text operations
 void MainWindow::slotCopy() {
-    if (!currentWidget) {
-        return;
+    if (currentWidget) {
+        currentWidget->copy();
     }
-    currentWidget->copy();
 }
 
 void MainWindow::slotCut() {
-    if (!currentWidget) {
-        return;
+    if (currentWidget) {
+        currentWidget->cut();
     }
-    currentWidget->cut();
 }
 
 void MainWindow::slotUndo() {
-    if (!currentWidget) {
-        return;
+    if (currentWidget) {
+        currentWidget->undo();
     }
-    currentWidget->undo();
 }
 void MainWindow::slotRedo() {
-    if (!currentWidget) {
-        return;
+    if (currentWidget) {
+        currentWidget->redo();
     }
-    currentWidget->redo();
 }
 
 void MainWindow::slotSelectAll() {
-    if (!currentWidget) {
-        return;
+    if (currentWidget) {
+        currentWidget->selectAll();
     }
-    currentWidget->selectAll();
 }
 
 void MainWindow::slotPaste() {
-    if (!currentWidget) {
-        return;
+    if (currentWidget) {
+        currentWidget->paste();
     }
-    currentWidget->paste();
 }
 
 void MainWindow::slotRemoveAll() {
-    if (!currentWidget) {
-        return;
+    if (currentWidget) {
+        currentWidget->clear();
     }
-    currentWidget->clear();
 }
 
 void MainWindow::slotExpand() {
-    if (!currentWidget) {
-        return;
+    if (currentWidget) {
+        currentWidget->slotExpand();
     }
-    currentWidget->slotExpand();
 }
 
 void MainWindow::slotCollapse() {
-    if (!currentWidget) {
-        return;
+    if (currentWidget) {
+        currentWidget->slotCollapse();
     }
-    currentWidget->slotCollapse();
 }
 
 void MainWindow::slotToggleComment() {
-    if (!currentWidget) {
-        return;
+    if (currentWidget) {
+        currentWidget->toggleComment();
     }
-    currentWidget->toggleComment();
 }
 
 void MainWindow::slotFormat() {

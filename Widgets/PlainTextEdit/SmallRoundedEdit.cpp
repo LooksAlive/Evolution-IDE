@@ -2,9 +2,10 @@
 
 
 SmallRoundedEdit::SmallRoundedEdit(PlainTextEdit *edit) : m_Edit(edit) {
-    setStyleSheet("border-radius: 15px; border: 3px solid gray; background-color: gray;");
+    setStyleSheet("border-radius: 15px; border: 3px solid gray; background-color: gray; margin: 0px; padding: 2px;");
     // background:transparent;      cause no background
     setVisible(false);
+    setWordWrapMode(QTextOption::NoWrap);
 
     // setAttribute(Qt::WA_TranslucentBackground);
     setWindowFlags(Qt::FramelessWindowHint);
