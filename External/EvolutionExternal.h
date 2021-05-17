@@ -571,7 +571,7 @@ extern inline void FUZZ_RANDOM(const int& range, const T& data, const Operation&
 
     va_end(arguments);
 
-    for(int i = 0; i< range; i++) {
+    for(int i = 0; i < range; i++) {
         T retVal = func(0, 0, 0);
         // manage return value for function
 

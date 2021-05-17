@@ -2,6 +2,7 @@
 #include <QMessageBox>
 #include <QApplication>
 #include <QClipboard>
+#include <QMessageBox>
 #include "icons/IconFactory.h"
 #include "fileexplorer.h"
 
@@ -188,6 +189,8 @@ void FileExplorer::slotCreate() {
         if(FileModel->isDir(touched_index)){
             QString path = FileModel->filePath(touched_index);
             fmanager.write(path + "/" + file_name, "");
+            QApplication::clipboard()->setText(path + "/" + file_name);
+            QMessageBox::warning(this, "File created", "file path inserted to clipboard :  " + path + "/" + file_name);
         }
         else{
             // file touched, create in the same location
@@ -195,6 +198,8 @@ void FileExplorer::slotCreate() {
             int len = FileModel->fileName(touched_index).length();
             path.remove(path.length() - len, len);      // path without touched file name
             fmanager.write(path + "/" + file_name, "");
+            QApplication::clipboard()->setText(path + "/" + file_name);
+            QMessageBox::warning(this, "File created", "file path inserted to clipboard :  " + path + "/" + file_name);
         }
     }
     if(!CPP_name.isEmpty()){
@@ -203,6 +208,8 @@ void FileExplorer::slotCreate() {
         if(FileModel->isDir(touched_index)){
             QString path = FileModel->filePath(touched_index);
             fmanager.write(path + "/" + CPP_name, SourceTemplates::CPP);
+            QApplication::clipboard()->setText(path + "/" + CPP_name);
+            QMessageBox::warning(this, "File created", "file path inserted to clipboard :  " + path + "/" + CPP_name);
         }
         else{
             // file touched, create in the same location
@@ -210,6 +217,8 @@ void FileExplorer::slotCreate() {
             int len = FileModel->fileName(touched_index).length();
             path.remove(path.length() - len, len);      // path without touched file name
             fmanager.write(path + "/" + CPP_name, SourceTemplates::CPP);   // .cpp template
+            QApplication::clipboard()->setText(path + "/" + CPP_name);
+            QMessageBox::warning(this, "File created", "file path inserted to clipboard :  " + path + "/" + CPP_name);
         }
     }
     if(!H_name.isEmpty()){
@@ -218,6 +227,8 @@ void FileExplorer::slotCreate() {
         if(FileModel->isDir(touched_index)){
             QString path = FileModel->filePath(touched_index);
             fmanager.write(path + "/" + H_name, SourceTemplates::H);
+            QApplication::clipboard()->setText(path + "/" + H_name);
+            QMessageBox::warning(this, "File created", "file path inserted to clipboard :  " + path + "/" + H_name);
         }
         else{
             // file touched, create in the same location
@@ -225,6 +236,8 @@ void FileExplorer::slotCreate() {
             int len = FileModel->fileName(touched_index).length();
             path.remove(path.length() - len, len);      // path without touched file name
             fmanager.write(path + "/" + H_name, SourceTemplates::H);   // .h template
+            QApplication::clipboard()->setText(path + "/" + H_name);
+            QMessageBox::warning(this, "File created", "file path inserted to clipboard :  " + path + "/" + H_name);
         }
     }
     if(!new_rename.isEmpty()){

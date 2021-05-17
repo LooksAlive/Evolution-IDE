@@ -309,7 +309,7 @@ void ConsoleDock::processText(const QString &text) {
             }
         }
         // we took it at the start
-        ProcessedText.append("\n");
+        ProcessedText.append("<br>"); // equivalent to \n
     }
 
     ConsoleOutput->insertHtml(ProcessedText);

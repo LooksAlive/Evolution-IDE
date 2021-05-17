@@ -305,9 +305,10 @@ private:
     bool autoEnterTextIndentation();
 
     // when removing empty line(Backspace) with spaces, tabs in or not in scope
+    // TODO: if more spaces than position of x coord. \n\n^\n  -> skip removing
     void autoBlankLineDeletion();
 
-    // from: sometext (selected)    to: "selected"    ; also manages indentation
+    // from: selected (selected)    to: "selected"    ; also manages indentation
     // returns true when text were formated
     bool autoTextSurrounding(QTextCursor &cursor, const QString &pair);
 

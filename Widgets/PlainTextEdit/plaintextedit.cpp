@@ -483,6 +483,7 @@ QString PlainTextEdit::indentText(QString text, int count) const
 
 bool PlainTextEdit::autoEnterTextIndentation() {
     QTextCursor cursor = textCursor();
+    cursor.movePosition(QTextCursor::PreviousBlock);
     // we are at line we were before enter, return, just with pointer
     // get line content
     const QString lineContent = getLineUnderCursor(cursor);
@@ -502,9 +503,10 @@ bool PlainTextEdit::autoEnterTextIndentation() {
     // insert 1 line with spaces, tabs
     if (spaces != 0) {
         QString space;
+        cursor.movePosition(QTextCursor::NextBlock);
         // cursor.movePosition(QTextCursor::NextBlock, QTextCursor::MoveAnchor);
         cursor.beginEditBlock();
-        cursor.insertText(space.fill(QLatin1Char(' '), spaces).prepend("\n"));
+        cursor.insertText(space.fill(QLatin1Char(' '), spaces)); // .prepend("\n")
         cursor.endEditBlock();
         setTextCursor(cursor);
         return true;
@@ -513,7 +515,7 @@ bool PlainTextEdit::autoEnterTextIndentation() {
         QString space;
         // cursor.movePosition(QTextCursor::NextBlock, QTextCursor::MoveAnchor);
         cursor.beginEditBlock();
-        cursor.insertText(space.fill(QLatin1Char('\t'), tabs).prepend("\n"));
+        cursor.insertText(space.fill(QLatin1Char('\t'), tabs));  // .prepend("\n")
         cursor.endEditBlock();
         setTextCursor(cursor);
         return true;
@@ -922,7 +924,6 @@ void PlainTextEdit::SetupAdditionalWidgets() {
     infoMessage = new InformativeMessage(this);
 
     smallEdit = new SmallRoundedEdit(this);
-    smallEdit->verticalScrollBar()->setVisible(false);
 
     documentationHelper = new DocumentationHelper(this);
     documentationHelper->setEdit(this);
@@ -1017,8 +1018,8 @@ int PlainTextEdit::countSpaceTabsIndentation(const QString &lineContent, const i
             tabs++;
         }
         if(ch != ' ' || ch == '\t') {
-            qDebug() << "spaces: ";
-            qDebug() << spaces;
+            //qDebug() << "spaces: ";
+            //qDebug() << spaces;
 
             if(spaces != 0) {
                 return spaces / indentation;
@@ -1506,14 +1507,22 @@ bool PlainTextEdit::twoTimesPressedCharPair(QTextCursor& cursor, const QString& 
             || (cursor.selectedText().contains("<>") && (ch == "<" || ch == ">")) || (cursor.selectedText().contains("[]") && (ch == "[" || ch == "]"))
             || (cursor.selectedText().contains("\'\'") && ch == "\'") || (cursor.selectedText().contains("\"\"") && ch == "\"")) {
         if(pressedTwice) {
+            qDebug() << "More than 2";
             pressedTwice = false;
+            cursor.clearSelection();
             return false;
         }
         else {
+            qDebug() << "Exactly than 2";
             pressedTwice = true;
+            cursor.clearSelection();
             return true;
         }
     }
+    qDebug() << "NONE";
+    qDebug() << cursor.selectedText() + "\n";
+    qDebug() << ch;
+    cursor.clearSelection();
     // not matched or just somewhere else
     pressedTwice = false;
     return false;
@@ -1569,8 +1578,17 @@ void PlainTextEdit::mouseMoveEvent(QMouseEvent *event) {
     // TODO: check rect position if we are not in hoverInfoWidget if later
     // TODO: we will want to add some more functionalities or for now add
     // TODO: some ms before hiding.
-    if (hoverInfo->isVisible()) {
-        hoverInfo->hide();
+    if (hoverInfo->isVisible() && !hoverInfo->underMouse()) {
+        QTimer::singleShot(1500, this, [=] {
+            if(hoverInfo->underMouse()) {
+                return;
+            }
+            else {
+                hoverInfo->hide();
+            }
+
+        });
+
     }
     if(spellCheckPopup->isVisible()) {
         spellCheckPopup->hide();

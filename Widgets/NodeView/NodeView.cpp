@@ -162,17 +162,22 @@ void NodeView::drawBackground(QPainter* painter, const QRectF& r) {
         }
     };
 
-    QBrush bBrush = backgroundBrush();
+    const QBrush bBrush = backgroundBrush();
 
-    QPen pfine(FineGridColor, 1.0);
+    const QPen pfine(FineGridColor, 1.0);
 
     painter->setPen(pfine);
     drawGrid(15);
 
-    QPen p(CoarseGridColor, 1.0);
+    const QPen p(CoarseGridColor, 1.0);
 
     painter->setPen(p);
     drawGrid(150);
+
+    if(drawingSelection) {
+        // selectionStart ...
+        // TODO: handle in click event SHIFT
+    }
 }
 
 void NodeView::wheelEvent(QWheelEvent *event) {

@@ -247,6 +247,8 @@ const QStringList pythonTypes = {
         "while",
         "if",
         "else",
+        "continue",
+        "break"
 };
 
 

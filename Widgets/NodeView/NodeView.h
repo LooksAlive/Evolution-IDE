@@ -77,6 +77,9 @@ private:
     // moving items arround the scene
     QPointF clickPos;
 
+    bool drawingSelection = false;
+    QPoint selectionStart;
+
 
 protected:
     void wheelEvent(QWheelEvent *event) override;
@@ -108,9 +111,13 @@ private slots:
     void slotShowMenu(const QPoint &pos);
 
 private:
-    QColor BackgroundColor = QColor(53, 53, 53);
-    QColor FineGridColor = QColor(60, 60, 60);
-    QColor CoarseGridColor = QColor(25, 25, 25);
+    const QColor BackgroundColor { 53, 53, 53 };
+    const QColor FineGridColor = { 60, 60, 60 };
+    const QColor CoarseGridColor { 25, 25, 25 };
+
+    const QColor SelectionFillColor { 25, 50, 200 };
+    const QColor SelectionBorderColor { 25, 50, 230 };
+
 
 
 

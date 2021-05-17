@@ -53,7 +53,7 @@ QPainterPath Connection::shape() const {
     }
 
     QPainterPathStroker stroker;
-    stroker.setWidth(8);
+    stroker.setWidth(5);
 
     return stroker.createStroke(path);
 }
