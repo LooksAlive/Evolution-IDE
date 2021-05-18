@@ -367,6 +367,8 @@ set(SOURCE_FILES
 
         Widgets/Notifier/HelpIDEMessage.cpp
         Widgets/Notifier/HelpIDEMessage.h
+        Widgets/CompilationFlags/CompilationFlags.cpp
+        Widgets/CompilationFlags/CompilationFlags.h
 
         External/EvolutionExternal.h   # development purpooses
         )
