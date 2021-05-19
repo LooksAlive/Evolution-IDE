@@ -39,10 +39,10 @@
 #include "Widgets/CommentTagsReminder/CommentTagsReminder.h"
 #include "Widgets/DocumentationHelper/DocumentationHelper.h"
 #include "GoToLineColumn.h"
+#include "EnvironmentSettings.h"    // completer default data for file type
 
 #include "completer.h"
 #include "HoverInfoWidget.h"
-#include "EnvironmentSettings.h"    // completer default data for file type
 #include "SpellCheckList.h"         // spell suggestions popup
 #include "CommentTagList.h"
 #include "InformativeMessage.h"
@@ -443,7 +443,6 @@ class ArrowArea : public QWidget {
 Q_OBJECT
 public:
     explicit ArrowArea(PlainTextEdit *edit, QWidget *parent = nullptr);
-
     ~ArrowArea() = default;
 
     // reprezents height, width or area even while changing its dimensions, TODO: handle increasing view
@@ -451,6 +450,9 @@ public:
 
     // only collapsed lines, other draw automatically collapse arrow
     std::vector<int> expanded;
+    // according to arrowArea collapsed, expanded lines (are updated with index, so we do not miss any data arround)
+    // href is only function name with {...} ; this contains all scopes (function names too)
+    std::vector<QString> collapsedDataScopes;
     // arrows in line, set by clang
     std::vector<int> arrows;
 

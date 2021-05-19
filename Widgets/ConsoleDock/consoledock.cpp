@@ -34,6 +34,14 @@ ConsoleDock::ConsoleDock(QWidget *parent) : QDockWidget(parent)
     // FIXME: moving not possible when set title bar widget like this
 }
 
+void ConsoleDock::clearAllDataInTrees() {
+    loggerTree->reset();
+    testTree->reset();
+    memoryTree->reset();
+    benchmarkTree->reset();
+    fuzzersTree->reset();
+}
+
 // change to QListWidget most probably, bc. of specific widget shows its own data and do not know
 // how to do that with tabs, at least yet
 void ConsoleDock::BuildConsole() {
@@ -41,7 +49,7 @@ void ConsoleDock::BuildConsole() {
     tool_bar = new QToolBar(this);
     console = new QWidget(this);
     ConsoleOutput = new QTextBrowser(this);
-    processMemoryPlot = new ProcessDataPlot(this);
+    // processMemoryPlot = new ProcessDataPlot(this);
 
     MainTab = new QTabWidget(this);
     MainTab->setTabPosition(QTabWidget::North);
@@ -148,7 +156,7 @@ void ConsoleDock::BuildConsole() {
 
     consoleLayout->addWidget(tool_bar);
     consoleLayout->addWidget(ConsoleOutput);
-    consoleLayout->addWidget(processMemoryPlot);
+    // consoleLayout->addWidget(processMemoryPlot);
 
     consoleLayout->setContentsMargins(0, 0, 0, 0);
     consoleLayout->setSpacing(0);
@@ -168,9 +176,11 @@ void ConsoleDock::BuildConsole() {
 
     //ConsoleOutput->setHtml("<a href = http://google.com > moj text </a>");
     //ConsoleOutput->append("<a href = http://google.com > moj text </a>");
-    processText("warning /home/adam/Desktop/Qt5_forum:5:5 kjskldafjhk kjsadfhkjsdlhakjf gfdsgakhfg");
-    processText("error /home/adam/Desktop/GITHUB sjkdfh b");
-    processText("kkwjrlwhetjhlew jkew /home/adam/Desktop/GITHUB lahfjakslhdj ");
+    processText("<br> warning: /home/adam/Desktop/Qt5_forum:5:5: kjskldafjhk kjsadfhkjsdlhakjf gfdsgakhfg");
+    processText("error:        /home/adam/Desktop/GITHUB sjkdfh b");
+    processText("kkwjrlwhetjhlew jkew                                     /home/adam/Desktop/GITHUB lahfjakslhdj ");
+    // processText("note: sometinsib sdf");
+    // processText("note: somethhh  warning: sdfjka error: jskhdfskj -fjhd jksdhfjkshalkf -Waa jshdlfja");
     //processText("kkwjrlwhetjhlew    /home/adam/Desktop/GITHUB");
     //ConsoleOutput->append("<a style=color:red; href = /home/adam/Desktop/Qt5_forum > /home/adam/Desktop/Qt5_forum </a>");                             // works well
     //ConsoleOutput->append("<a style='color:red;background-color:lightblue;' href = /home/adam/Desktop/Qt5_forum > /home/adam/Desktop/Qt5_forum </a>");// works well
@@ -178,28 +188,20 @@ void ConsoleDock::BuildConsole() {
 }
 
 // sentence processing
+// TODO: when building its OK to format, but in run NO. user could have printed controversal string
 void ConsoleDock::processText(const QString &text) {
     qDebug() << "PROCESSING:   " + text;
-
-    const QString Stag = "<a ";
-    const QString href = " href = ";
-    const QString Mtag = ">";
-    const QString Etag = "</a> ";
     // right after <a {}        ++ possible background ,  !! hover <style> not working ...
-    const QString styleWarning = "style=color:yellow;";
-    const QString styleError = "style=color:red;";
 
-    QString ProcessedText;
-    QString link;
-    int row; // y
-    int col; // x
-
-    bool Warning = false;
-    bool Error = false;
+    QString ProcessedLinks;
 
     const QStringList sentences = text.split("\n");
 
-    for(const auto& line : sentences) {
+    for(QString line : sentences) {
+        QString link;
+        QString linkPosition;
+        int row = 0; // y
+        int col = 0; // x
         // always better to check this one
         if (line.isEmpty()) {
             continue;
@@ -225,18 +227,12 @@ void ConsoleDock::processText(const QString &text) {
             continue;   // next sentence
         }
 
-        // these words might be after filename, pos
-        if (line.contains("warning")) {
-            Warning = true;
-        }
-        if (line.contains("error")) {
-            Error = true;
-        }
 
         // separate to words
         //const QStringList words = line.split(QRegExp("\\s+"), QString::SkipEmptyParts);
 
         // select whole link
+
         for (int i = 0; i < line.length(); i++) {
             if (line[i] == "/") {
                 // take whole path, find space from index i
@@ -247,72 +243,121 @@ void ConsoleDock::processText(const QString &text) {
                 }
                 link = line.mid(i, pos - i);
                 qDebug() << "link first:" + link;
-                // often after links follows position in format row:col ; or line: xx ; or line xx
-                // with clang there is no space for ex.: error_file.cpp:25:45 or in cmake only row
+                // often after links follows position in format :row:col: ; or line: xx ; or line xx
+                // with clang there is no space for ex.: error_file.cpp:25:45: or in cmake only row
                 if (link.contains(":")) {
                     // we have a position too, this will be the first occurence so go only forward
                     const int endOfLink = link.indexOf(":");
-                    const QString position = link.mid(endOfLink + 1);   // till end
-                    const int secondPos = position.indexOf(":");
-                    link = link.mid(0, endOfLink);  // real, final link
-                    qDebug() << "link position:" + position;
-                    qDebug() << "link after:" + link;
-
-                    row = QString(position.mid(0, secondPos)).toInt();
+                    linkPosition = link.mid(endOfLink + 1);   // till end, jump first :
+                    const int secondPos = linkPosition.indexOf(":");
+                    const QString colstr = linkPosition.mid(secondPos + 1);
+                    link = link.mid(0, endOfLink);  // real, final link to check existence
+                    /*
+                    qDebug() << "link after " + link;
+                    qDebug() << "position " + position;
+                    qDebug() << "secondPos " + QString::number(secondPos);
+                    qDebug() << "making row " + position.mid(0, secondPos);
+                    qDebug() << "colstr " + colstr;
+                    qDebug() << "making col " + position.mid(secondPos + 1, colstr.length() - 1);
+                    */
+                    row = linkPosition.mid(0, secondPos).toInt();
                     qDebug() << "row: " + QString::number(row);
                     // col is the rest
-                    col = QString(position.mid(secondPos + 1)).toInt();
+                    col = linkPosition.mid(secondPos + 1, colstr.length() - 1).toInt();
                     qDebug() << "col: " + QString::number(col);
+
+                    // stripped + 1 char in position
+                    linkPosition.prepend(":");
                 }
 
                 if (QFileInfo(link).exists()) {
                     if(QFileInfo(link).isDir()) {
                         i = pos; // jump over dir link, also position
                         qDebug() << "DIR_LINK:      " + link;
-                        ProcessedText.append("<span style=color:green;> " + link + "</span>");
+                        ProcessedLinks.append(" <span style=color:green;>" + link + "</span> ");
                         // link.clear();
                         link.clear();
                         // continue;
                     }
                     if(QFileInfo(link).isFile()) {
                         i = pos; // jump over link, also position
-                        qDebug() << "LINK:      " + link;
-                        Links.push_back(Link{ link, ConsoleOutput->textCursor().blockNumber() + 1,
+                        // qDebug() << "LINK:      " + link;
+                        Links.push_back(Link{ link + linkPosition, link, ConsoleOutput->textCursor().blockNumber() + 1,
                                              QPoint(col + 1, row + 1) }); // starts from 0
 
-                        QString tagText = link;
-                        link.insert(0, Stag);
-                        // change is text is good now
-                        if (Warning) {
-                            link = Stag + styleWarning + href + tagText + Mtag + tagText + Etag;// <a style=...; href= ... > (real text)
-                            //qDebug() << link;
-                            Warning = false;
+                        const QString tagText = link;
+                        if(row != 0 && col != 0) {
+                            link = " <a style=color:powderblue; href=" + tagText + linkPosition + ">" + tagText + linkPosition + "</a> ";
                         }
-                        if (Error) {
-                            link = Stag + styleError + href + tagText + Mtag + tagText + Etag;// <a style=...; href= ... > (real text)
-                            //qDebug() << link;
-                            Error = false;
-                        } else
-                            link = Stag + href + tagText + Mtag + tagText + Etag;
-                            qDebug() << "OFF_LINK:      " + link;
+                        else {
+                            link = " <a style=color:powderblue; href=" + tagText + ">" + tagText + "</a> ";
+                        }
+                        // qDebug() << "OFF_LINK:      " + link;
 
-                        ProcessedText.append(link);
+                        ProcessedLinks.append(link);
                         link.clear();
-                        tagText.clear();
                     }
-
+                }
+                else {
+                    // preserve slashes: /
+                    ProcessedLinks.append("/");
                 }
             }
             // There is no way that 2 links can be merged so no need to clear variables
-            else {
-                ProcessedText.append(line[i]);
+            /*
+            else if(line[i] == "\'") {
+                // 'some code'
+                const int endOfcode = link.indexOf("\'");
+                const QString code = line.mid(i, endOfcode - i);
+                i = endOfcode;
+
+                const QString final = "<span style=color:lightblue;>" + code + "</span>";
+                ProcessedLinks.append(final);
             }
+            */
+            else {
+                ProcessedLinks.append(line[i]);
+            }
+            row = 0;
+            col = 0;
         }
+
         // we took it at the start
-        ProcessedText.append("<br>"); // equivalent to \n
+        ProcessedLinks.append("<br>"); // equivalent to \n
     }
 
-    ConsoleOutput->insertHtml(ProcessedText);
+    // highlighting words
+    const auto words = ProcessedLinks.split(" ");
+    QString finalText = "";
+    for(const auto& w : words) {
+        bool touched = false;
+        // surround woth html tags according to sentence with Wpos in it
+        if(w.contains("-f") || w.contains("-W")) {
+            touched = true;
+            finalText += " <span style=color:purple;>" + w + "</span> ";
+        }
+        if(w == "not" || w == "from" || w == "type") {
+            touched = true;
+            finalText += " <span style=color:lightgreen;>" + w + "</span> ";
+        }
+        if(w == "warning:") {
+            touched = true;
+            finalText += " <span style=color:yellow;>" + w + "</span> ";
+        }
+        if(w == "error:") {
+            touched = true;
+            finalText += " <span style=color:red;>" + w + "</span> ";
+        }
+        if(w == "note:") {
+            touched = true;
+            finalText += " <span style=color:gray;>" + w + "</span> ";
+        }
+        if(!touched) {
+            finalText += w + " ";
+        }
+    }
+
+    ConsoleOutput->insertHtml(finalText);
 }
 
 bool ConsoleDock::containsTests(const QString &line) {
@@ -472,9 +517,9 @@ void ConsoleDock::processFromFile() {
     // TODO: fuzzers
 }
 
-ConsoleDock::Link ConsoleDock::findLink(const QString &filepath, const Direction &direction) const {
+ConsoleDock::Link ConsoleDock::findLink(const QString &linkPathAndPos, const Direction &direction) const {
     for (auto it = Links.begin(); it != Links.end(); it++) {
-        if (it->filePath == filepath) {
+        if (it->linkPathAndPos == linkPathAndPos) {
             if (direction == Direction::Current)
                 return *it;
             if (direction == Direction::Next)

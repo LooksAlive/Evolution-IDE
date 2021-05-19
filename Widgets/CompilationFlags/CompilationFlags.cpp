@@ -1,3 +1,6 @@
+#include "icons/IconFactory.h"
+#include <QClipboard>
+#include <QDesktopServices>
 #include "CompilationFlags.h"
 
 CompilationFlags::CompilationFlags(QWidget *parent) : QWidget(parent) {
@@ -9,6 +12,12 @@ CompilationFlags::CompilationFlags(QWidget *parent) : QWidget(parent) {
 
 void CompilationFlags::buildWindow() {
     MainLayout = new QHBoxLayout(this);
+    MainBar = new QToolBar(this);
+    close = new QToolButton(this);
+    clear = new QToolButton(this);
+    copy = new QToolButton(this);
+    reference = new QToolButton(this);
+
     optionContainer = new QListWidget(this);
     stack = new QStackedWidget(this);
     constructedFlags = new QPlainTextEdit(this);
@@ -17,6 +26,26 @@ void CompilationFlags::buildWindow() {
     debugInformations = new QListWidget(this);
     optimization = new QListWidget(this);
     sanitizers = new QListWidget(this);
+
+    MainBar->setOrientation(Qt::Vertical);
+    MainBar->setFixedWidth(25);
+    close->setIcon(QIcon(IconFactory::Remove));
+    close->setToolTip("Hide");
+    connect(close, &QAbstractButton::clicked, this, [=] { hide(); });
+    MainBar->addWidget(close);
+    copy->setIcon(QIcon(IconFactory::Copy));
+    copy->setToolTip("Copy");
+    connect(copy, &QAbstractButton::clicked, this, [=] { QApplication::clipboard()->setText(constructedFlags->toPlainText()); });
+    MainBar->addWidget(copy);
+    reference->setIcon(QIcon(IconFactory::Search));
+    reference->setToolTip("Reference Page");
+    connect(reference, &QAbstractButton::clicked, this, [=] { QDesktopServices::openUrl(QUrl(ReferencePage, QUrl::TolerantMode)); });
+    MainBar->addWidget(reference);
+    clear->setIcon(QIcon(IconFactory::Cut)); // TODO: find for clear
+    clear->setToolTip("Reference Page");
+    connect(clear, &QAbstractButton::clicked, this, [=] { constructedFlags->clear(); });
+    MainBar->addWidget(clear);
+
 
     stack->addWidget(templates);
     stack->addWidget(debugInformations);

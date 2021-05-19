@@ -717,15 +717,18 @@ void MainWindow::SetupCompileDock() {
 }
 
 void MainWindow::slotOpenUrl(const QUrl &url) {
-    const QString filepath = url.url(QUrl::RemoveScheme);
-    const ConsoleDock::Link link = console_dock->findLink(filepath);
+    const QString linkPathAndPos = url.url(QUrl::None);
+    const ConsoleDock::Link link = console_dock->findLink(linkPathAndPos);
 
     // at the end we return Links{}  -> check it for any element
     if (link.filePath.isEmpty()) {
         return;
     }
 
-    OpenFile(filepath);
+    qDebug() << "matched: " + linkPathAndPos + " , " + link.linkPathAndPos;
+    qDebug() << "matched: " + link.filePath;
+
+    OpenFile(link.filePath);
     currentWidget->setCursorPosition(link.position.x(), link.position.y());
 }
 
@@ -1440,6 +1443,7 @@ void MainWindow::slotRun() {
     console_dock->show();
     // clear terminal window
     console_dock->ConsoleOutput->clear();
+    console_dock->clearAllDataInTrees();
 
     bool cmake = true;
     if (CHANGES_IN_PROJECT) {

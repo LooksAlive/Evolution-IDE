@@ -460,7 +460,7 @@ extern inline void BENCH_END(const std::string& bench_label, const std::string& 
     }
 }
 
-#define BENCHMARK_END(bench_label) BENCH_END(bench_label, __FILE__, std::to_string(__LINE__), __PRETTY_FUNCTION__);
+inline void BENCHMARK_END(const std::string& bench_label) {BENCH_END(bench_label, __FILE__, std::to_string(__LINE__), __PRETTY_FUNCTION__);}
 
 
 

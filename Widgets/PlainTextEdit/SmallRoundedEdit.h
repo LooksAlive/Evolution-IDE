@@ -4,11 +4,6 @@
 #include <QWidget>
 #include <QPlainTextEdit>
 
-
-class PlainTextEdit;
-// class PlainTextEditExtra;
-
-
 /*
  * shows collapsed code like edit
  * requires to set width, height, and geometry
@@ -17,18 +12,11 @@ class PlainTextEdit;
 class SmallRoundedEdit : public QPlainTextEdit {
 Q_OBJECT
 public:
-    explicit SmallRoundedEdit(PlainTextEdit *edit);
-    // explicit SmallRoundedEdit(PlainTextEditExtra *edit);
-
+    explicit SmallRoundedEdit(QWidget *parent = nullptr);
     ~SmallRoundedEdit() = default;
 
     bool inWidget = false;
     int timesAplified = 1;
-
-private:
-    PlainTextEdit *m_Edit = nullptr;
-    // PlainTextEditExtra *editExtra = nullptr;
-
 
 protected:
     void enterEvent(QEvent *event) override;

@@ -35,11 +35,13 @@ public:
     ~ConsoleDock() = default;
 
     QTextBrowser *ConsoleOutput;
-    ProcessDataPlot *processMemoryPlot;
+    // ProcessDataPlot *processMemoryPlot;
 
     QToolButton *run;
     QToolButton *rerun;// stop and run again
     QToolButton *stop;
+
+    void clearAllDataInTrees();
 
     void processText(const QString &text);
     // also check files to read;  executable path get from registry
@@ -57,6 +59,7 @@ public:
     // the only way to track links (num) is to store them
 
     struct Link {
+        QString linkPathAndPos;
         QString filePath;
         int lineNumber;   // line in browser,   ? is column num also needed ?
         QPoint position;
@@ -70,7 +73,7 @@ public:
         Previous
     };
 
-    Link findLink(const QString &filepath, const Direction &next = Current) const;
+    Link findLink(const QString &linkPathAndPos, const Direction &next = Current) const;
 
 private:
     QTabWidget *MainTab;

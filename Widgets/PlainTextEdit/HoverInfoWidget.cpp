@@ -32,7 +32,7 @@ void HoverInfoWidget::setLabelText(const QString &label, const QString &position
 }
 
 void HoverInfoWidget::createWidnow() {
-    MainLayout = new QVBoxLayout();
+    MainLayout = new QVBoxLayout(this);
     MainWidget = new QTextBrowser(this);
 
     //QPalette newPal;
@@ -47,9 +47,10 @@ void HoverInfoWidget::createWidnow() {
     MainWidget->setUpdatesEnabled(true);
     MainWidget->setWordWrapMode(QTextOption::WordWrap);
     MainWidget->setLineWrapMode(QTextEdit::WidgetWidth);
-    MainWidget->setMarkdown("kjhdsf");
+    // MainWidget->setMarkdown("kjhdsf");
     //MainWidget->setPalette(newPal);
     MainWidget->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    MainWidget->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     MainLayout->addWidget(MainWidget);
     MainLayout->setContentsMargins(0, 0, 0, 0);
@@ -60,6 +61,5 @@ void HoverInfoWidget::createWidnow() {
     //auto *layout = new QVBoxLayout();
     //layout->setContentsMargins(0, 0, 0, 0);
     //layout->setSpacing(0);
-    setLayout(MainLayout);
 }
 

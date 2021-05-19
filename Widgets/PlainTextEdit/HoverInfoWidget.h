@@ -12,7 +12,6 @@ class HoverInfoWidget : public QWidget {
 Q_OBJECT
 public:
     HoverInfoWidget(QWidget *parent = nullptr);
-
     ~HoverInfoWidget() = default;
 
     // already formated html

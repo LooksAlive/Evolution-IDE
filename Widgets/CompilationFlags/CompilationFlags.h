@@ -6,6 +6,8 @@
 #include <QStackedWidget>
 #include <QPlainTextEdit>
 #include <QHBoxLayout>
+#include <QToolBar>
+#include <QToolButton>
 
 class CompilationFlags : public QWidget
 {
@@ -27,6 +29,12 @@ private:
     void buildWindow();
 
     QHBoxLayout *MainLayout;
+    QToolBar *MainBar;
+    QToolButton *close;
+    QToolButton *clear;
+    QToolButton *copy;
+    QToolButton *reference;
+
     QListWidget *optionContainer;
     QStackedWidget *stack;
     // also editable, inserts already used flags from cmake or so + insert to it by emited signal
@@ -49,19 +57,24 @@ signals:
 
 
 private:
-    const QString ReferencePage = "https://clang.llvm.org/docs/UsersManual.html";
+    static constexpr auto ReferencePage = "https://clang.llvm.org/docs/UsersManual.html";
 
-    const QList<QPair<QString, QString>> TemplatesFlags = {
-
+    static constexpr auto TemplatesFlags = {
+        QPair{ "Debug 1", "" },
+        QPair{ "Debug 2", "" },
+        QPair{ "Debug 3", "" },
+        QPair{ "Optimize 1", "" },
+        QPair{ "Optimize 2", "" },
+        QPair{ "Optimize 3", "" }
     };
 
     // flag, description(used as a hover information, tooltip)
-    const QList<QPair<QString, QString>> DebugInformationsFlags = {
+    static constexpr auto DebugInformationsFlags = {
         QPair{ "-g0", "No debug information" },
         QPair{ "-g", "debug information" }
     };
-
-    const QList<QPair<QString, QString>> OptimizationFlags = {
+    // const QList<QPair<QString, QString>>
+    static constexpr auto OptimizationFlags = {
         QPair{ "-O0", "" },
         QPair{ "-O1", "" },
         QPair{ "-O2", "" },
@@ -70,8 +83,8 @@ private:
         QPair{ "-Os", "" }
     };
 
-    const QList<QPair<QString, QString>> SanitizersFlags = {
-
+    static constexpr auto SanitizersFlags = {
+        QPair{ "-fsanitize-address", "" }
     };
 
 

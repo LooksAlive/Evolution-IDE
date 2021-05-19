@@ -93,7 +93,7 @@ PlainTextEdit::PlainTextEdit(QWidget *parent)
 
     createMenu();
     ensureCursorVisible();
-    appendHtml("<a style=text-decoration:none;color:gray; href=content>hrejfForContent</a><br>");
+    appendHtml("<a style=text-decoration:none;color:gray;display:none; href=someSunftion() {...}>hrejfForContent</a>");
     arrowArea->expanded.push_back(1);   // first line
     arrowArea->expanded.push_back(2);   // first line
     arrowArea->expanded.push_back(3);   // first line
@@ -1973,14 +1973,21 @@ bool PlainTextEdit::event(QEvent *event) {
 
         // collapsed text set as default QToolTip
         const QString collapsedText = anchorAt(helpEvent->pos());
+        // FIXME: how to track this ?? by href ? by line ?
         if (!collapsedText.isEmpty()) {
-            // smallEdit shows collapsed scope
-            smallEdit->setPlainText(collapsedText);
-            smallEdit->setGeometry(cursorRect(cursor));
-            smallEdit->setMinimumSize(fontMetrics().boundingRect(collapsedText).width() + 15, fontMetrics().boundingRect(collapsedText).height() + 15);
-            // TODO: height: set sext, get num lines compute height ... numlines*lineheight
-            smallEdit->show();
-            // setToolTip(collapsedText);
+            const int line = cursor.blockNumber();
+            for(const auto& ex : arrowArea->expanded) {
+                if(ex == line) {
+                    // smallEdit shows collapsed scope
+                    smallEdit->setPlainText(collapsedText);
+                    smallEdit->setGeometry(cursorRect(cursor));
+                    smallEdit->setMinimumSize(fontMetrics().boundingRect(collapsedText).width() + 15, fontMetrics().boundingRect(collapsedText).height() + 15);
+                    // TODO: height: set sext, get num lines compute height ... numlines*lineheight
+                    smallEdit->show();
+                    // setToolTip(collapsedText);
+                    break;
+                }
+            }
             goto end;
         }
 
@@ -2510,7 +2517,6 @@ ScrollBar::ScrollBar(PlainTextEdit *edit, QWidget *parent) : QScrollBar(edit), m
     smallEdit->setFont(f);
     // pointer ---> changes possible reflects to real editor
     smallEdit->setDocument(m_Edit->document());
-    smallEdit->verticalScrollBar()->setVisible(false);
 }
 
 void ScrollBar::paintEvent(QPaintEvent *event) {
@@ -2644,16 +2650,22 @@ void ScrollBar::calculateAndSetSmallEditGeometry(const int &posY) {
     HEIGHT = 300 * smallEdit->timesAplified;
     // TODO: change 200 to fit width exactly with side widgets
     smallEdit->setGeometry(200, posY - (HEIGHT / 2), m_Edit->width() - width() - (HEIGHT / 2), HEIGHT);
+    /*
     const int widthPerLine = height() / m_Edit->blockCount();
     const int betweenLinePos = widthPerLine * posY;
     const int lineHeight = m_Edit->fontMetrics().height();
+    */
     /*
     if(height() < m_Edit->blockCount())
         smallEdit->scroll(0, posY);
     else
         smallEdit->scroll(0, betweenLinePos);
     */
-    smallEdit->scroll(0, widthPerLine * lineHeight);
+    // smallEdit->scroll(0, widthPerLine * lineHeight);
+    QTextCursor cursor = smallEdit->textCursor();
+    cursor.setPosition(smallEdit->document()->findBlockByNumber(computeHeightForLine(posY) - 1).position());
+    smallEdit->setTextCursor(cursor);
+    smallEdit->ensureCursorVisible();
     // one line has height 15
     // const int numLinesToFit = 400 / 15;
     // by ranges
